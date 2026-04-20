@@ -109,6 +109,8 @@ public enum TipoEvento
 - **No** referencia ninguna otra capa del proyecto.
 - Organizar en clases estáticas agrupadas por contexto funcional.
 - Los mensajes de correo usan `{placeholder}` (llaves simples) para los valores dinámicos que se reemplazan en runtime.
+- **Regla:** todo mensaje visible al usuario (errores, éxito, correos) debe venir de una clase `Constant`. Nunca strings hardcodeados en controllers o services.
+- **Ejemplo:**
 
 ```csharp
 // Constants/Messages/InicioSesionConstant.cs
@@ -176,7 +178,10 @@ public static class EmailConstant
 - Clases de utilidad reutilizables sin lógica de negocio.
 - Cada helper tiene su interfaz correspondiente para permitir inyección de dependencias y testing.
 - Registrar todas las implementaciones en `HelperAccessDependency`.
-
+- **Ejemplos de helpers comunes:**
+  - `EmailHelper` → envío de correos con plantillas.
+  - `PasswordHelper` → generación y verificación de hashes de contraseña.
+  - `CodigoGeneradorHelper` → generación de códigos únicos para verificación o recuperación.
 #### EmailHelper
 
 ```csharp

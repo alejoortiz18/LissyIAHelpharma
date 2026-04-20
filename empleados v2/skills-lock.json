@@ -1,11 +1,6 @@
 {
   "version": 1,
   "skills": {
-    "web-design-guidelines": {
-      "source": "vercel-labs/agent-skills",
-      "sourceType": "github",
-      "computedHash": "d8e7d3afe37dcc8a97b99ffb5afdb4d0919ae0092ea8b68f44eb201f035e33ac"
-    },
     "dotnet-layered-architecture": {
       "source": "custom",
       "sourceType": "local",
@@ -16,6 +11,11 @@
       "sourceType": "local",
       "computedHash": null
     },
+    "requesting-code-review": {
+      "source": "obra/superpowers",
+      "sourceType": "github",
+      "computedHash": "246e65cd72a7e360987d94e6c61564ce6d71c6361d1784d529d70e4cbbe8522d"
+    },
     "sqlserver-conventions": {
       "source": "custom",
       "sourceType": "local",
@@ -25,6 +25,11 @@
       "source": "custom",
       "sourceType": "local",
       "computedHash": null
+    },
+    "web-design-guidelines": {
+      "source": "vercel-labs/agent-skills",
+      "sourceType": "github",
+      "computedHash": "d8e7d3afe37dcc8a97b99ffb5afdb4d0919ae0092ea8b68f44eb201f035e33ac"
     }
   }
 }
