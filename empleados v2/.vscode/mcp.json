@@ -1,0 +1,11 @@
+{
+  "servers": {
+    "GestionPersonal": {
+      "command": "C:/Users/alejandro.ortiz/AppData/Local/Python/pythoncore-3.14-64/python.exe",
+      "args": [
+        "${workspaceFolder}/.mcp/sqlserver.py"
+      ],
+      "env": {}
+    }
+  }
+}

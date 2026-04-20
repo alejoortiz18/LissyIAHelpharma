@@ -1,5 +1,5 @@
 -- ============================================================
--- SISTEMA DE ADMINISTRACIÓN DE EMPLEADOS — GestionRH
+-- SISTEMA DE ADMINISTRACIÓN DE EMPLEADOS — GestionPersonal
 -- Script DDL completo para SQL Server
 -- Versión: 1.0 | Fecha: 2026-04-20
 --
@@ -22,11 +22,11 @@
 -- ============================================================
 -- CREAR BASE DE DATOS
 -- ============================================================
-CREATE DATABASE GestionRH
+CREATE DATABASE GestionPersonal
     COLLATE SQL_Latin1_General_CP1_CI_AS;
 GO
 
-USE GestionRH;
+USE GestionPersonal;
 GO
 
 -- ============================================================

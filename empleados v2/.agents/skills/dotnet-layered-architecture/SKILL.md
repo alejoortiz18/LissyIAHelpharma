@@ -6,39 +6,75 @@ metadata:
   version: "2.0.0"
 ---
 
-# Arquitectura en Capas — ASP.NET Core MVC (.NET 10)
+# Arquitectura en Capas – ASP.NET Core MVC (.NET 10)
 
 Guía de convenciones y patrones para proyectos C# con arquitectura en capas sobre ASP.NET Core MVC.
 
 ## Estructura de Proyectos (Solución)
 
 ```
-GestionRH.sln
-├── GestionRH.Web/                   ← Capa de Presentación (MVC)
+GestionPersonal.sln
+├── GestionPersonal.Web/                   ← Capa de Presentación (MVC)
 │   ├── Controllers/
 │   ├── Views/
 │   ├── ViewModels/
+│   ├── AutoMapper/
+│   │   └── AutoMapperURT.cs         ← Perfil único de AutoMapper
+│   ├── DependencyContainer/
+│   │   └── DependencyContainer.cs   ← Punto único de registro de dependencias
 │   └── wwwroot/
-├── GestionRH.Application/           ← Capa de Aplicación (lógica de negocio)
+├── GestionPersonal.Application/           ← Capa de Aplicación (lógica de negocio)
 │   ├── Services/
 │   ├── Interfaces/
-│   ├── DTOs/
-│   ├── Mappers/
 │   └── AccessDependency/
 │       └── ApplicationAccessDependency.cs
-├── GestionRH.Domain/                ← Capa de Dominio (entidades y contratos)
-│   ├── Entities/                    ← generadas con scaffold de EF Core
-│   ├── Enums/
-│   └── Interfaces/
-├── GestionRH.Infrastructure/        ← Capa de Infraestructura (EF Core, repositorios)
-│   ├── Data/
-│   │   ├── AppDbContext.cs
-│   │   └── Configurations/
+├── GestionPersonal.Models/                ← Capa de Modelos (centraliza DTOs, entidades y enums)
+│   ├── DTOs/                        ← Data Transfer Objects por módulo
+│   │   ├── Empleado/
+│   │   │   ├── EmpleadoDto.cs
+│   │   │   ├── EmpleadoListaDto.cs
+│   │   │   ├── CrearEmpleadoDto.cs
+│   │   │   └── EditarEmpleadoDto.cs
+│   │   ├── EventoLaboral/
+│   │   │   ├── EventoLaboralDto.cs
+│   │   │   └── CrearEventoLaboralDto.cs
+│   │   ├── HoraExtra/
+│   │   ├── Turno/
+│   │   ├── Dashboard/
+│   │   └── Cuenta/
+│   │       ├── UsuarioSesionDto.cs
+│   │       └── LoginDto.cs
+│   ├── Entities/                    ← Generadas con EF Core scaffold
+│   │   └── GestionPersonalEntities/       ← Carpeta nombrada: {NombreProyecto}Entities
+│   │       ├── AppDbContext.cs      ← DbContext de la base de datos
+│   │       ├── Configurations/      ← IEntityTypeConfiguration<T> por entidad
+│   │       │   ├── EmpleadoConfiguration.cs
+│   │       │   ├── SedeConfiguration.cs
+│   │       │   └── ...
+│   │       ├── Empleado.cs
+│   │       ├── Sede.cs
+│   │       ├── Cargo.cs
+│   │       └── ...
+│   ├── Models/                      ← Modelos de resultado, paginación y respuesta
+│   │   ├── ResultadoOperacion.cs
+│   │   └── PaginacionModel.cs
+│   └── Enums/                       ← Enums del dominio (accesibles por todas las capas)
+│       ├── EstadoEmpleado.cs
+│       ├── RolUsuario.cs
+│       ├── TipoVinculacion.cs
+│       ├── TipoEvento.cs
+│       └── ...
+├── GestionPersonal.Domain/                ← Capa de Dominio (contratos de repositorios)
+│   └── Interfaces/                  ← Solo interfaces; las entidades viven en Models
+│       ├── IEmpleadoRepository.cs
+│       ├── IEventoLaboralRepository.cs
+│       └── ...
+├── GestionPersonal.Infrastructure/        ← Capa de Infraestructura (repositorios, migraciones)
 │   ├── Repositories/
-│   ├── Migrations/
+│   ├── Migrations/                  ← Migraciones EF Core (DbContext vive en Models)
 │   └── AccessDependency/
 │       └── InfrastructureAccessDependency.cs
-├── GestionRH.Helpers/               ← Capa de Helpers (utilidades reutilizables)
+├── GestionPersonal.Helpers/               ← Capa de Helpers (utilidades reutilizables)
 │   ├── Email/
 │   │   ├── IEmailHelper.cs
 │   │   └── EmailHelper.cs
@@ -48,57 +84,113 @@ GestionRH.sln
 │   │   └── PasswordHelper.cs
 │   └── AccessDependency/
 │       └── HelperAccessDependency.cs
-└── GestionRH.Constants/             ← Capa de Constantes (mensajes, enums globales)
-    ├── Messages/
-    │   ├── InicioSesionConstant.cs
-    │   ├── EmpleadoConstant.cs
-    │   └── EmailConstant.cs
-    └── Enums/
-        ├── EstadoEmpleado.cs
-        ├── RolUsuario.cs
-        ├── TipoVinculacion.cs
-        └── TipoEvento.cs
+└── GestionPersonal.Constants/             ← Capa de Constantes (mensajes de texto sin dependencias)
+    └── Messages/
+        ├── InicioSesionConstant.cs
+        ├── EmpleadoConstant.cs
+        └── EmailConstant.cs
 ```
 
 ## Convenciones por Capa
 
-### Capa de Dominio (`Domain`)
-- Contiene únicamente entidades POCO, enums e interfaces de repositorio.
-- Las entidades se generan con `scaffold` de EF Core (ver sección "Scaffold de Entidades").
-- **No** tienen dependencias externas ni referencias a EF Core en clases de dominio propias.
-- Los **Enums globales** del sistema se ubican en `Domain/Enums/` y se referencian desde todas las capas.
+### Capa de Models (`Models`) ← **capa central de modelos**
+- Proyecto de clase referenciado por **todas** las capas. Es la única fuente de verdad para entidades, DTOs, enums y modelos de resultado.
+- Tiene **package reference** a `Microsoft.EntityFrameworkCore.SqlServer` (necesario para `AppDbContext` y las configuraciones).
+- **No** referencia `Application`, `Infrastructure`, `Web` ni `Domain`.
+
+#### Subcarpetas
+
+| Carpeta | Contenido |
+|---|---|
+| `DTOs/` | Data Transfer Objects agrupados por módulo |
+| `Entities/{Proyecto}Entities/` | POCOs generados por scaffold + `AppDbContext.cs` + `Configurations/` |
+| `Models/` | Modelos de resultado, respuesta y paginación |
+| `Enums/` | Todos los enums del dominio |
+
+#### Convención de nombre para la carpeta de entidades
+
+La carpeta dentro de `Entities/` se nombra **`{NombreProyecto}Entities`** (sin punto ni espacio):
+- Proyecto `GestionPersonal` → carpeta `GestionPersonalEntities`
+
+Esta carpeta contiene exactamente lo que genera el scaffold de EF Core más las clases de configuración:
+
+```
+Entities/
+└── GestionPersonalEntities/
+    ├── AppDbContext.cs          ← DbContext (generado por scaffold, ajustar namespace)
+    ├── Configurations/          ← IEntityTypeConfiguration<T> por entidad
+    │   ├── EmpleadoConfiguration.cs
+    │   ├── SedeConfiguration.cs
+    │   └── ...
+    ├── Empleado.cs
+    ├── Sede.cs
+    ├── Cargo.cs
+    └── ...
+```
+
+#### Enums en `Models/Enums/`
+
+Todos los enums del dominio viven en `Models/Enums/` y son accesibles por todas las capas:
 
 ```csharp
-// Domain/Enums/EstadoEmpleado.cs
-public enum EstadoEmpleado
+// Models/Enums/EstadoEmpleado.cs
+public enum EstadoEmpleado { Activo, Inactivo }
+
+// Models/Enums/RolUsuario.cs
+public enum RolUsuario { Jefe, Regente, AuxiliarRegente, Operario, Administrador }
+
+// Models/Enums/TipoVinculacion.cs
+public enum TipoVinculacion { Directo, Temporal }
+
+// Models/Enums/TipoEvento.cs
+public enum TipoEvento { Vacaciones, Incapacidad, Permiso }
+```
+
+#### Modelos de resultado en `Models/Models/`
+
+```csharp
+// Models/Models/ResultadoOperacion.cs
+public class ResultadoOperacion
 {
-    Activo,
-    Inactivo
+    public bool   Exito   { get; init; }
+    public string Mensaje { get; init; } = string.Empty;
+    public static ResultadoOperacion Ok(string mensaje = "")   => new() { Exito = true,  Mensaje = mensaje };
+    public static ResultadoOperacion Fail(string mensaje)      => new() { Exito = false, Mensaje = mensaje };
 }
 
-// Domain/Enums/RolUsuario.cs
-public enum RolUsuario
+public class ResultadoOperacion<T> : ResultadoOperacion
 {
-    Jefe,
-    Regente,
-    AuxiliarRegente,
-    Operario,
-    Administrador
+    public T? Datos { get; init; }
+    public static ResultadoOperacion<T> Ok(T datos, string mensaje = "")
+        => new() { Exito = true, Datos = datos, Mensaje = mensaje };
 }
 
-// Domain/Enums/TipoVinculacion.cs
-public enum TipoVinculacion
+// Models/Models/PaginacionModel.cs
+public class PaginacionModel
 {
-    Directo,
-    Temporal
+    public int Pagina        { get; set; } = 1;
+    public int TamanioPagina { get; set; } = 10;
+    public static readonly int[] OpcionesTamanio = [10, 25, 50, 100];
 }
+```
 
-// Domain/Enums/TipoEvento.cs
-public enum TipoEvento
+---
+
+### Capa de Dominio (`Domain`)
+- Contiene **únicamente interfaces de repositorio**. Las entidades, enums y DTOs se trasladaron a `Models`.
+- Referencia `GestionPersonal.Models` para usar los tipos de entidad en las firmas de sus interfaces.
+- **No** contiene lógica ni implementaciones.
+
+```csharp
+// Domain/Interfaces/IEmpleadoRepository.cs
+// Los tipos Empleado, EstadoEmpleado, etc. vienen de GestionPersonal.Models
+public interface IEmpleadoRepository
 {
-    Vacaciones,
-    Incapacidad,
-    Permiso
+    Task<Empleado?> ObtenerPorIdAsync(int id, CancellationToken ct = default);
+    Task<IReadOnlyList<Empleado>> ObtenerActivosPorSedeAsync(int sedeId, CancellationToken ct = default);
+    void Agregar(Empleado empleado);
+    void Actualizar(Empleado empleado);
+    Task<int> GuardarCambiosAsync(CancellationToken ct = default);
 }
 ```
 
@@ -142,29 +234,29 @@ public static class EmailConstant
 
     public const string CuerpoRestablecerContrasena = @"
         <p>Estimado usuario,</p>
-        <p>Hemos recibido una solicitud para restablecer la contraseña de su cuenta en <strong>GestiónRH</strong>.</p>
+        <p>Hemos recibido una solicitud para restablecer la contraseña de su cuenta en <strong>GestiónPersonal</strong>.</p>
         <p>Para completar el proceso, utilice el siguiente código:</p>
         <h2 style='color: #1e3a8a;'>{codigo}</h2>
         <p><strong>Este código es de un solo uso y tiene una vigencia de 1 hora.</strong></p>
         <p>Si no solicitó este cambio, ignore este mensaje.</p>
-        <p>Atentamente,<br/><strong>Equipo GestiónRH</strong></p>";
+        <p>Atentamente,<br/><strong>Equipo GestiónPersonal</strong></p>";
 
     #endregion
 
     #region CREAR USUARIO
 
-    public const string AsuntoUsuarioNuevo = "Bienvenid@ a GestiónRH";
+    public const string AsuntoUsuarioNuevo = "Bienvenid@ a GestiónPersonal";
 
     public const string CuerpoCrearUsuario = @"
         <p>Estimado usuario,</p>
-        <p>Tu cuenta en <strong>GestiónRH</strong> ha sido creada exitosamente.</p>
+        <p>Tu cuenta en <strong>GestiónPersonal</strong> ha sido creada exitosamente.</p>
         <p>Tus credenciales de acceso son:</p>
         <ul>
           <li><strong>Correo:</strong> {correo}</li>
           <li><strong>Contraseña temporal:</strong> {contrasenaTemp}</li>
         </ul>
         <p>Deberás cambiar tu contraseña al iniciar sesión por primera vez.</p>
-        <p>Atentamente,<br/><strong>Equipo GestiónRH</strong></p>";
+        <p>Atentamente,<br/><strong>Equipo GestiónPersonal</strong></p>";
 
     #endregion
 }
@@ -182,6 +274,7 @@ public static class EmailConstant
   - `EmailHelper` → envío de correos con plantillas.
   - `PasswordHelper` → generación y verificación de hashes de contraseña.
   - `CodigoGeneradorHelper` → generación de códigos únicos para verificación o recuperación.
+
 #### EmailHelper
 
 ```csharp
@@ -252,7 +345,7 @@ public class EmailHelper : IEmailHelper
 > "Email": {
 >   "Host": "smtp.tuproveedor.com",
 >   "Port": "587",
->   "Remitente": "noreply@gestionrh.com",
+>   "Remitente": "noreply@gestionpersonal.com",
 >   "Contrasena": ""
 > }
 > ```
@@ -261,7 +354,7 @@ public class EmailHelper : IEmailHelper
 
 ```csharp
 // Helpers/Security/PasswordHelper.cs
-// Clase estática — no requiere interfaz ni inyección de dependencias
+// Clase estática → no requiere interfaz ni inyección de dependencias
 public static class PasswordHelper
 {
     private const int Iteraciones = 10000;
@@ -365,31 +458,9 @@ public static class HelperAccessDependency
 
 ### Capa de Aplicación (`Application`)
 - Los **Services** orquestan la lógica de negocio, coordinan repositorios y usan helpers.
-- Reciben y devuelven **DTOs**; nunca exponen entidades de dominio hacia la capa Web.
-- Los **Mappers** convierten entidades ↔ DTOs ↔ ViewModels.
-
-#### Mapper (AutoMapper o manual)
-
-```csharp
-// Application/Mappers/EmpleadoMapper.cs
-public static class EmpleadoMapper
-{
-    public static EmpleadoDto ToDto(this Empleado entidad) => new()
-    {
-        Id             = entidad.Id,
-        NombreCompleto = entidad.NombreCompleto,
-        Cedula         = entidad.Cedula,
-        Estado         = entidad.Estado,
-        Cargo          = entidad.Cargo?.Nombre ?? string.Empty,
-        Sede           = entidad.Sede?.Nombre  ?? string.Empty,
-    };
-
-    public static IEnumerable<EmpleadoDto> ToDtoList(this IEnumerable<Empleado> lista)
-        => lista.Select(ToDto);
-}
-```
-
-> Si el proyecto usa **AutoMapper**, registrar el perfil en `Application/Mappers/EmpleadoProfile.cs` y registrar con `services.AddAutoMapper(typeof(EmpleadoProfile).Assembly)` en el `ApplicationAccessDependency`.
+- Reciben y devuelven **DTOs** que viven en `GestionPersonal.Models/DTOs/`; **nunca** exponen entidades hacia la capa Web.
+- **No** contiene DTOs propios; los importa directamente de `GestionPersonal.Models`.
+- Referencia: `GestionPersonal.Domain` (interfaces de repositorio) + `GestionPersonal.Models` (DTOs, entidades, enums, modelos de resultado) + `GestionPersonal.Helpers` + `GestionPersonal.Constants`.
 
 #### AccessDependency de Application
 
@@ -414,6 +485,10 @@ public static class ApplicationAccessDependency
 ---
 
 ### Capa de Infraestructura (`Infrastructure`)
+- **No** contiene `AppDbContext.cs` ni configuraciones de entidad → esos archivos viven en `GestionPersonal.Models/Entities/{Proyecto}Entities/`.
+- Solo contiene repositorios, migraciones y su `AccessDependency`.
+- Referencia: `GestionPersonal.Domain` (interfaces) + `GestionPersonal.Models` (entidades, DbContext, enums).
+- Las **Migrations** se generan en este proyecto usando `MigrationsAssembly`.
 
 ```csharp
 // Infrastructure/AccessDependency/InfrastructureAccessDependency.cs
@@ -422,10 +497,11 @@ public static class InfrastructureAccessDependency
     public static IServiceCollection AddInfrastructure(
         this IServiceCollection services, IConfiguration configuration)
     {
+        // AppDbContext vive en GestionPersonal.Models; las Migrations se almacenan aquí
         services.AddDbContext<AppDbContext>(options =>
             options.UseSqlServer(
                 configuration.GetConnectionString("Default"),
-                sql => sql.MigrationsAssembly("GestionRH.Infrastructure")));
+                sql => sql.MigrationsAssembly("GestionPersonal.Infrastructure")));
 
         services.AddScoped<IEmpleadoRepository, EmpleadoRepository>();
         services.AddScoped<IUsuarioRepository, UsuarioRepository>();
@@ -438,27 +514,27 @@ public static class InfrastructureAccessDependency
 
 #### Scaffold de Entidades desde BD existente
 
-Ejecutar **después** de crear la base de datos. Genera las entidades POCO automáticamente a partir del esquema SQL:
+Ejecutar **después** de crear la base de datos. El destino es **`GestionPersonal.Models`**, carpeta `Entities/{Proyecto}Entities`:
 
 ```bash
 dotnet ef dbcontext scaffold \
-  "Server=SERVIDOR\SQLEXPRESS;Database=GestionRH;Trusted_Connection=True;TrustServerCertificate=True;" \
+  "Server=SERVIDOR\SQLEXPRESS;Database=GestionPersonal;Trusted_Connection=True;TrustServerCertificate=True;" \
   Microsoft.EntityFrameworkCore.SqlServer \
-  -o Entities \
+  -o Entities/GestionPersonalEntities \
   --context AppDbContext \
   --force \
-  --project "ruta\GestionRH.Domain\GestionRH.Domain.csproj" \
-  --startup-project "ruta\GestionRH.Web\GestionRH.Web.csproj"
+  --project "ruta\GestionPersonal.Models\GestionPersonal.Models.csproj" \
+  --startup-project "ruta\GestionPersonal.Web\GestionPersonal.Web.csproj"
 ```
 
 > **Flags importantes:**
-> - `-o Entities` → carpeta de salida dentro del proyecto destino.
+> - `-o Entities/GestionPersonalEntities` → subcarpeta nombrada `{Proyecto}Entities` dentro de `Entities/`.
 > - `--context AppDbContext` → nombre de la clase DbContext generada.
 > - `--force` → sobreescribe archivos si ya existen.
-> - `--project` → proyecto donde se generan las entidades (`Domain`).
+> - `--project` → **`GestionPersonal.Models`** (no Domain); aquí vivirán entidades y DbContext.
 > - `--startup-project` → proyecto con `appsettings.json` (generalmente `Web`).
 
-Después del scaffold, **mover** `AppDbContext.cs` a `GestionRH.Infrastructure/Data/` y ajustar el namespace.
+> Después del scaffold, crear la carpeta `Entities/GestionPersonalEntities/Configurations/` y mover o crear los archivos `IEntityTypeConfiguration<T>` allí. El namespace de `AppDbContext.cs` debe quedar `GestionPersonal.Models.Entities.GestionPersonalEntities`.
 
 ---
 
@@ -517,7 +593,7 @@ public class CrearEmpleadoViewModel : IValidatableObject
     [Required(ErrorMessage = "El tipo de vinculación es obligatorio.")]
     public TipoVinculacion TipoVinculacion { get; set; }
 
-    // Campos condicionales — solo obligatorios si TipoVinculacion = Temporal
+    // Campos condicionales → solo obligatorios si TipoVinculacion = Temporal
     public int? EmpresaTemporalId { get; set; }
 
     [DataType(DataType.Date)]
@@ -665,18 +741,38 @@ public class CuentaController : Controller
 
 ## Registro de Dependencias en Program.cs
 
+El único punto de entrada es `DependencyContainer`, ubicado en `Web/DependencyContainer/DependencyContainer.cs`. Centraliza el registro de todas las capas e internamente llama a cada `AccessDependency`.
+
 ```csharp
-// Program.cs — orden de registro
+// Web/DependencyContainer/DependencyContainer.cs
+public static class DependencyContainer
+{
+    public static IServiceCollection DependencyInjection(
+        this IServiceCollection services, IConfiguration configuration)
+    {
+        services.AddInfrastructure(configuration);   // EF Core + repositorios
+        services.AddApplication();                   // services de negocio
+        services.AddHelpers();                       // Email, Password, Excel, etc.
+        services.AddAutoMapper(typeof(AutoMapperURT)); // perfil único en Web/AutoMapper/
+
+        services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+            .AddCookie(options => { /* ver sección Cookies de Sesión */ });
+
+        services.AddAuthorization();
+        services.AddControllersWithViews(options =>
+            options.Filters.Add(new ResponseCacheAttribute
+            {
+                NoStore = true, Location = ResponseCacheLocation.None
+            }));
+
+        return services;
+    }
+}
+
+// Program.cs → una sola línea
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services
-    .AddInfrastructure(builder.Configuration)   // Infrastructure/AccessDependency
-    .AddApplication()                           // Application/AccessDependency
-    .AddHelpers();                              // Helpers/AccessDependency
-
-builder.Services.AddAuthentication(...)         // Cookies (ver sección anterior)
-builder.Services.AddAuthorization();
-builder.Services.AddControllersWithViews();
+builder.Services.DependencyInjection(builder.Configuration);
 
 var app = builder.Build();
 
@@ -693,38 +789,50 @@ app.Run();
 
 ## Convenciones de Nomenclatura
 
-| Elemento              | Convención                          | Ejemplo                           |
-|-----------------------|-------------------------------------|-----------------------------------|
-| Clases                | PascalCase                          | `EmpleadoService`                 |
-| Interfaces            | PascalCase con `I` prefijo          | `IEmpleadoRepository`             |
-| Métodos async         | PascalCase + sufijo `Async`         | `ObtenerPorIdAsync`               |
-| Variables locales     | camelCase                           | `empleadoDto`                     |
-| Constantes            | PascalCase                          | `UsuarioIncorrecto`               |
-| Parámetros            | camelCase                           | `sedeId`, `motivoRetiro`          |
-| DTOs                  | Nombre + sufijo `Dto`               | `EmpleadoDto`, `CrearEmpleadoDto` |
-| ViewModels            | Nombre + sufijo `ViewModel`         | `CrearEmpleadoViewModel`          |
-| Mappers (estáticos)   | Nombre + sufijo `Mapper`            | `EmpleadoMapper`                  |
-| AccessDependency      | Capa + `AccessDependency`           | `HelperAccessDependency`          |
-| Constants             | Contexto + `Constant`               | `InicioSesionConstant`            |
-| Helpers               | Función + `Helper`                  | `PasswordHelper`, `EmailHelper`   |
+| Elemento                    | Convención                               | Ejemplo                                    |
+|-----------------------------|------------------------------------------|--------------------------------------------|
+| Clases                      | PascalCase                               | `EmpleadoService`                          |
+| Interfaces                  | PascalCase con `I` prefijo               | `IEmpleadoRepository`                      |
+| Métodos async               | PascalCase + sufijo `Async`              | `ObtenerPorIdAsync`                        |
+| Variables locales           | camelCase                                | `empleadoDto`                              |
+| Constantes                  | PascalCase                               | `UsuarioIncorrecto`                        |
+| Parámetros                  | camelCase                                | `sedeId`, `motivoRetiro`                   |
+| DTOs                        | Nombre + sufijo `Dto`                    | `EmpleadoDto`, `CrearEmpleadoDto`          |
+| ViewModels                  | Nombre + sufijo `ViewModel`              | `CrearEmpleadoViewModel`                   |
+| AutoMapper perfil           | `AutoMapper` + nombre del proyecto       | `AutoMapperURT`                            |
+| Carpeta de entidades        | `{NombreProyecto}Entities`               | `GestionPersonalEntities`                  |
+| Modelos de resultado        | Nombre + sufijo `Model` o `Operacion`    | `ResultadoOperacion`, `PaginacionModel`    |
+| AccessDependency            | Capa + `AccessDependency`                | `HelperAccessDependency`                   |
+| DependencyContainer         | Siempre `DependencyContainer`            | `DependencyContainer.cs`                   |
+| Constants                   | Contexto + `Constant`                    | `InicioSesionConstant`                     |
+| Helpers                     | Función + `Helper`                       | `PasswordHelper`, `EmailHelper`            |
 
 ---
 
 ## Flujo de Referencias entre Capas
 
 ```
-Web  →  Application  →  Domain  ←  Infrastructure
- ↓           ↓                           ↓
-Constants  Helpers  ←  Constants      Constants
+Web  ----------→  Application  ----------→  Domain
+ ↓                    ↓                       ↓
+ ↓                    ↓                       ↓
+ ↓                 Helpers                Infrastructure
+ ↓                    ↓                       ↓
+ ↓                    ↓                       ↓
+ +--------------------------------------------+
+            ↓                     ↓
+          Models  ←----------  Constants
 ```
 
-- `Constants` no referencia a nadie.
-- `Helpers` referencia `Constants` (para mensajes de correo).
-- `Domain` referencia `Constants` (para enums).
-- `Application` referencia `Domain`, `Constants` y `Helpers`.
-- `Infrastructure` referencia `Domain` y `Constants`.
-- `Web` referencia `Application`, `Constants` y `Helpers` (solo a través de interfaces).
+- `Constants` no referencia a nadie. Solo `string const` y sin dependencias externas.
+- `Models` referencia únicamente `Constants` (para mensajes en modelos, si aplica). Tiene `Microsoft.EntityFrameworkCore.SqlServer`.
+- `Helpers` referencia `Constants`.
+- `Domain` referencia `Models` (tipos de entidad en interfaces de repositorio).
+- `Application` referencia `Domain`, `Models`, `Helpers` y `Constants`.
+- `Infrastructure` referencia `Domain` y `Models` (entidades, DbContext, enums).
+- `Web` referencia `Application`, `Models`, `Constants` y `Helpers` (solo a través de interfaces).
 - **Nunca** `Infrastructure` referencia `Web`.
+- **Nunca** `Application` referencia `Infrastructure` directamente (solo vía interfaces de `Domain`).
+- **Nunca** ninguna capa referencia `Web`.
 
 ---
 
@@ -737,4 +845,3 @@ Constants  Helpers  ←  Constants      Constants
 - Validar `ModelState.IsValid` en cada `[HttpPost]` antes de llamar al servicio.
 - Usar `[ValidateAntiForgeryToken]` en todos los formularios POST (prevención CSRF).
 - Los mensajes al usuario siempre desde clases `Constant`; nunca strings literales en controllers.
-
