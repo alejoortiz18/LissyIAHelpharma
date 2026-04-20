@@ -1,0 +1,486 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#1e3a8a">
+  <title>Eventos Laborales — GestiónRH</title>
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/components.css">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Saltar al contenido principal</a>
+
+<div class="app-layout">
+  <aside class="app-sidebar" id="sidebar-mount" aria-label="Navegación principal"></aside>
+
+  <header class="app-topbar" role="banner">
+    <div class="topbar-left">
+      <nav aria-label="Ruta de navegación">
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item"><span class="bc-current">Eventos Laborales</span></li>
+        </ol>
+      </nav>
+    </div>
+    <div class="topbar-right">
+      <div class="demo-badge">
+        <span class="demo-label">Demo&nbsp;— Rol:</span>
+        <select class="demo-select" id="role-switcher" aria-label="Cambiar rol">
+          <option value="jefe">Jefe de Sede</option>
+          <option value="regente">Regente</option>
+          <option value="auxiliar">Auxiliar de Regente</option>
+          <option value="operario">Operario</option>
+        </select>
+      </div>
+    </div>
+  </header>
+
+  <main class="app-main" id="main-content">
+    <div class="page-header">
+      <div class="page-header-info">
+        <h1 class="page-title">Eventos Laborales</h1>
+        <p class="page-desc">Vacaciones, incapacidades y permisos de los empleados de la sede.</p>
+      </div>
+      <div class="page-actions">
+        <button class="btn btn-primary" data-modal-open="modal-nuevo-evento" data-roles="jefe,regente,auxiliar">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+          Registrar evento
+        </button>
+      </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="filter-bar" role="search" aria-label="Filtros de eventos">
+      <input class="form-input filter-search" type="search" id="f-empleado"
+             placeholder="Buscar empleado…" autocomplete="off" aria-label="Buscar por empleado">
+      <select class="form-select" id="f-tipo" aria-label="Tipo de evento">
+        <option value="">Todos los tipos</option>
+        <option value="vacaciones">Vacaciones</option>
+        <option value="incapacidad">Incapacidad</option>
+        <option value="permiso">Permiso</option>
+      </select>
+      <select class="form-select" id="f-estado" aria-label="Estado del evento">
+        <option value="">Todos los estados</option>
+        <option value="activo">Activo</option>
+        <option value="finalizado">Finalizado</option>
+        <option value="anulado">Anulado</option>
+      </select>
+      <input class="form-input" type="date" id="f-desde" aria-label="Desde fecha">
+      <input class="form-input" type="date" id="f-hasta" aria-label="Hasta fecha">
+      <button class="btn btn-ghost btn-sm" id="btn-clear" type="button">Limpiar</button>
+    </div>
+
+    <!-- Table -->
+    <div class="table-wrapper">
+      <div class="table-scroll">
+        <table aria-label="Eventos laborales">
+          <thead>
+            <tr>
+              <th scope="col">Empleado</th>
+              <th scope="col">Sede</th>
+              <th scope="col">Tipo</th>
+              <th scope="col">Período</th>
+              <th scope="col">Días/Info</th>
+              <th scope="col">Autorizado por</th>
+              <th scope="col">Estado</th>
+              <th scope="col"><span class="sr-only">Acciones</span></th>
+            </tr>
+          </thead>
+          <tbody id="tbody-eventos"></tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Modal Nuevo Evento -->
+<div class="modal-overlay" id="modal-nuevo-evento" hidden aria-modal="true"
+     aria-labelledby="modal-evento-title" role="dialog">
+  <div class="modal modal--lg">
+    <div class="modal-header">
+      <h2 class="modal-title" id="modal-evento-title">Registrar evento laboral</h2>
+      <button class="modal-close btn" data-modal-close aria-label="Cerrar">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <form id="form-evento" novalidate>
+        <div class="form-grid form-grid-2" style="margin-bottom:var(--sp-4)">
+          <div class="form-group" style="margin-bottom:0">
+            <label class="form-label" for="ev-empleado">Empleado <span class="required" aria-hidden="true">*</span></label>
+            <select class="form-select" id="ev-empleado" name="empleado" required>
+              <option value="">Selecciona empleado…</option>
+            </select>
+          </div>
+          <div class="form-group" style="margin-bottom:0">
+            <label class="form-label" for="ev-tipo">Tipo de evento <span class="required" aria-hidden="true">*</span></label>
+            <select class="form-select" id="ev-tipo" name="tipo" required>
+              <option value="">Selecciona tipo…</option>
+              <option value="vacaciones">Vacaciones</option>
+              <option value="incapacidad">Incapacidad</option>
+              <option value="permiso">Permiso</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Vacation balance -->
+        <div id="vac-balance-widget" hidden>
+          <div class="vac-balance" aria-live="polite">
+            <div class="vac-balance-row">
+              <span class="vac-balance-label">Días acumulados</span>
+              <span class="vac-balance-val" id="vac-acumulados">—</span>
+            </div>
+            <div class="vac-balance-row">
+              <span class="vac-balance-label">Días tomados</span>
+              <span class="vac-balance-val" id="vac-tomados">—</span>
+            </div>
+            <div class="vac-balance-row" style="margin-bottom:var(--sp-3)">
+              <span class="vac-balance-label" style="font-weight:700">Saldo disponible</span>
+              <span class="vac-balance-val" id="vac-disponibles" style="font-size:1.125rem">—</span>
+            </div>
+            <div class="vac-bar-track" aria-hidden="true">
+              <div class="vac-bar-fill" id="vac-bar" style="width:0%"></div>
+            </div>
+          </div>
+          <div class="alert alert--error" id="vac-sin-saldo" hidden role="alert">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+            <div class="alert-body"><p class="alert-title">Saldo insuficiente</p><p>El empleado no tiene días disponibles para el período solicitado.</p></div>
+          </div>
+        </div>
+
+        <div class="form-grid form-grid-2">
+          <div class="form-group">
+            <label class="form-label" for="ev-inicio">Fecha inicio <span class="required" aria-hidden="true">*</span></label>
+            <input class="form-input" type="date" id="ev-inicio" name="fecha-inicio" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="ev-fin">Fecha fin <span class="required" aria-hidden="true">*</span></label>
+            <input class="form-input" type="date" id="ev-fin" name="fecha-fin" required>
+          </div>
+          <div class="form-group" id="campo-dias" hidden>
+            <label class="form-label" for="ev-dias-calc">Días solicitados</label>
+            <input class="form-input" type="text" id="ev-dias-calc" readonly aria-readonly="true" value="—">
+            <span class="form-hint">Calculado automáticamente (excluye domingos).</span>
+          </div>
+        </div>
+
+        <!-- Incapacidad fields -->
+        <div id="campos-incapacidad" hidden>
+          <div class="form-grid form-grid-2">
+            <div class="form-group">
+              <label class="form-label" for="ev-tipo-incap">Tipo de incapacidad <span class="required" aria-hidden="true">*</span></label>
+              <select class="form-select" id="ev-tipo-incap" name="tipo-incapacidad">
+                <option value="">Selecciona tipo…</option>
+                <option value="Enfermedad general">Enfermedad general</option>
+                <option value="Accidente de trabajo">Accidente de trabajo</option>
+                <option value="Enfermedad laboral">Enfermedad laboral</option>
+                <option value="Maternidad/Paternidad">Maternidad/Paternidad</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="ev-entidad">Entidad que expide <span class="required" aria-hidden="true">*</span></label>
+              <input class="form-input" type="text" id="ev-entidad" name="entidad" autocomplete="off" placeholder="Nombre de la EPS o ARL…">
+            </div>
+          </div>
+        </div>
+
+        <!-- Permiso fields -->
+        <div id="campos-permiso" hidden>
+          <div class="form-group">
+            <label class="form-label" for="ev-descripcion">Descripción / justificación <span class="required" aria-hidden="true">*</span></label>
+            <textarea class="form-textarea" id="ev-descripcion" name="descripcion" placeholder="Motivo del permiso…" style="min-height:4rem"></textarea>
+          </div>
+        </div>
+
+        <!-- Common -->
+        <div class="form-grid form-grid-2">
+          <div class="form-group" style="margin-bottom:0">
+            <label class="form-label" for="ev-autorizante">Autorizado por <span class="required" aria-hidden="true">*</span></label>
+            <input class="form-input" type="text" id="ev-autorizante" name="autorizante" autocomplete="off" placeholder="Nombre de quien autoriza…" required>
+          </div>
+          <div class="form-group" style="margin-bottom:0">
+            <label class="form-label" for="ev-documento">Documento de soporte</label>
+            <input class="form-input" type="file" id="ev-documento" name="documento"
+                   accept=".pdf,.jpg,.jpeg,.png" style="padding-top:.375rem">
+            <span class="form-hint" id="doc-hint">Opcional — PDF, JPG o PNG (máx.&nbsp;5&nbsp;MB).</span>
+          </div>
+        </div>
+
+        <div class="alert alert--info" style="margin-top:var(--sp-4)" role="note">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
+          </svg>
+          <div class="alert-body">
+            <p>El sistema verificará que el empleado no tenga otro evento activo en el mismo rango de fechas antes de guardar.</p>
+          </div>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" data-modal-close>Cancelar</button>
+      <button class="btn btn-primary" id="btn-guardar-evento">Registrar evento</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Anular Evento -->
+<div class="modal-overlay" id="modal-anular" hidden aria-modal="true"
+     aria-labelledby="anular-title" role="dialog">
+  <div class="modal modal--sm">
+    <div class="modal-header">
+      <h2 class="modal-title" id="anular-title">Anular evento</h2>
+      <button class="modal-close btn" data-modal-close aria-label="Cerrar">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label" for="motivo-anulacion">Motivo de anulación <span class="required" aria-hidden="true">*</span></label>
+        <textarea class="form-textarea" id="motivo-anulacion" name="motivo-anulacion"
+                  placeholder="Describe el motivo de la anulación…" style="min-height:4rem"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" data-modal-close>Cancelar</button>
+      <button class="btn btn-danger" id="btn-confirmar-anulacion">Anular evento</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/data.js"></script>
+<script src="js/app.js"></script>
+<script>
+let anularEventoId = null;
+
+function calcDiasHabiles(inicio, fin) {
+  if (!inicio || !fin) return 0;
+  let d = new Date(inicio + 'T12:00:00');
+  const end = new Date(fin + 'T12:00:00');
+  let count = 0;
+  while (d <= end) {
+    if (d.getDay() !== 0) count++; /* exclude Sundays */
+    d.setDate(d.getDate() + 1);
+  }
+  return count;
+}
+
+function checkSolapamiento(empId, inicio, fin, excludeId) {
+  return DB.eventos.some(e =>
+    e.empleadoId === empId &&
+    e.estado === 'activo' &&
+    e.id !== excludeId &&
+    e.fechaInicio <= fin && e.fechaFin >= inicio
+  );
+}
+
+function loadEmpleados() {
+  const sel = document.getElementById('ev-empleado');
+  const role = getRole();
+  let emps = DB.empleados.filter(e => e.estado === 'activo');
+  if (role !== 'jefe') {
+    const user = DEMO_USER[role];
+    emps = emps.filter(e => e.sedeId === user.sedeId);
+  }
+  emps.forEach(e => {
+    const o = document.createElement('option');
+    o.value = e.id; o.textContent = e.nombre; sel.appendChild(o);
+  });
+}
+
+function updateVacBalance() {
+  const empId = parseInt(document.getElementById('ev-empleado').value);
+  const tipo  = document.getElementById('ev-tipo').value;
+  const widget = document.getElementById('vac-balance-widget');
+  if (!empId || tipo !== 'vacaciones') { widget.hidden = true; return; }
+  const emp = DB.getEmpleado(empId);
+  if (!emp) { widget.hidden = true; return; }
+  const b = calcVacBalance(emp);
+  document.getElementById('vac-acumulados').textContent  = `${b.acumulados} días`;
+  document.getElementById('vac-tomados').textContent     = `${b.tomados} días`;
+  document.getElementById('vac-disponibles').textContent = `${b.disponibles} días`;
+  const pct = b.acumulados > 0 ? Math.min(100, (b.disponibles / b.acumulados) * 100) : 0;
+  const bar = document.getElementById('vac-bar');
+  bar.style.width = pct + '%';
+  bar.className = `vac-bar-fill${pct <= 20 ? ' is-empty' : pct <= 40 ? ' is-low' : ''}`;
+  widget.hidden = false;
+}
+
+function updateDiasCalc() {
+  const inicio = document.getElementById('ev-inicio').value;
+  const fin    = document.getElementById('ev-fin').value;
+  const tipo   = document.getElementById('ev-tipo').value;
+  const campo  = document.getElementById('campo-dias');
+  if (tipo === 'vacaciones' && inicio && fin) {
+    const dias = calcDiasHabiles(inicio, fin);
+    document.getElementById('ev-dias-calc').value = `${dias} día${dias !== 1 ? 's' : ''} hábiles`;
+    campo.hidden = false;
+    /* Check balance */
+    const empId = parseInt(document.getElementById('ev-empleado').value);
+    const emp = DB.getEmpleado(empId);
+    const b = emp ? calcVacBalance(emp) : { disponibles: Infinity };
+    document.getElementById('vac-sin-saldo').hidden = dias <= b.disponibles;
+  } else {
+    campo.hidden = true;
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  loadEmpleados();
+  renderTabla();
+
+  /* Filters */
+  ['f-empleado','f-tipo','f-estado','f-desde','f-hasta'].forEach(id => {
+    document.getElementById(id).addEventListener(id === 'f-empleado' ? 'input' : 'change', renderTabla);
+  });
+  document.getElementById('btn-clear').addEventListener('click', () => {
+    ['f-empleado','f-tipo','f-estado','f-desde','f-hasta'].forEach(id => document.getElementById(id).value = '');
+    renderTabla();
+  });
+
+  /* Event type toggle */
+  document.getElementById('ev-tipo').addEventListener('change', function() {
+    document.getElementById('campos-incapacidad').hidden = this.value !== 'incapacidad';
+    document.getElementById('campos-permiso').hidden     = this.value !== 'permiso';
+    const docHint = document.getElementById('doc-hint');
+    docHint.textContent = this.value === 'incapacidad'
+      ? 'Requerido — certificado médico (PDF, JPG o PNG, máx. 5 MB).'
+      : 'Opcional — PDF, JPG o PNG (máx. 5 MB).';
+    updateVacBalance();
+    updateDiasCalc();
+  });
+  document.getElementById('ev-empleado').addEventListener('change', () => { updateVacBalance(); updateDiasCalc(); });
+  document.getElementById('ev-inicio').addEventListener('change', updateDiasCalc);
+  document.getElementById('ev-fin').addEventListener('change', updateDiasCalc);
+
+  /* Save event */
+  document.getElementById('btn-guardar-evento').addEventListener('click', () => {
+    const form    = document.getElementById('form-evento');
+    const empId   = parseInt(document.getElementById('ev-empleado').value);
+    const tipo    = document.getElementById('ev-tipo').value;
+    const inicio  = document.getElementById('ev-inicio').value;
+    const fin     = document.getElementById('ev-fin').value;
+    const autorizante = document.getElementById('ev-autorizante').value.trim();
+
+    if (!empId || !tipo || !inicio || !fin || !autorizante) {
+      showToast('Completa todos los campos obligatorios.', 'error'); return;
+    }
+    if (checkSolapamiento(empId, inicio, fin, null)) {
+      showToast('El empleado ya tiene un evento activo en ese rango de fechas.', 'error'); return;
+    }
+    /* Vacation balance check */
+    if (tipo === 'vacaciones') {
+      const dias = calcDiasHabiles(inicio, fin);
+      const emp  = DB.getEmpleado(empId);
+      const b    = emp ? calcVacBalance(emp) : { disponibles: 0 };
+      if (dias > b.disponibles) {
+        showToast('Saldo de vacaciones insuficiente.', 'error'); return;
+      }
+      if (emp) emp.diasVacacionesTomados = (emp.diasVacacionesTomados || 0) + dias;
+    }
+    DB.eventos.push({
+      id: Date.now(), empleadoId: empId, tipo, fechaInicio: inicio, fechaFin: fin,
+      autorizadoPor: autorizante, estado: 'activo',
+      tipoIncapacidad: document.getElementById('ev-tipo-incap').value || undefined,
+      entidadExpide: document.getElementById('ev-entidad').value || undefined,
+      descripcion: document.getElementById('ev-descripcion').value || undefined,
+      diasSolicitados: tipo === 'vacaciones' ? calcDiasHabiles(inicio, fin) : undefined,
+    });
+    closeModal('modal-nuevo-evento');
+    form.reset();
+    document.getElementById('vac-balance-widget').hidden = true;
+    document.getElementById('campos-incapacidad').hidden = true;
+    document.getElementById('campos-permiso').hidden = true;
+    showToast('Evento registrado correctamente.', 'success');
+    renderTabla();
+  });
+
+  /* Anular confirm */
+  document.getElementById('btn-confirmar-anulacion').addEventListener('click', () => {
+    const motivo = document.getElementById('motivo-anulacion').value.trim();
+    if (!motivo) { showToast('El motivo es obligatorio.', 'error'); return; }
+    const ev = DB.eventos.find(e => e.id === anularEventoId);
+    if (ev) { ev.estado = 'anulado'; ev.motivoAnulacion = motivo; }
+    closeModal('modal-anular');
+    document.getElementById('motivo-anulacion').value = '';
+    showToast('Evento anulado.', 'default');
+    renderTabla();
+  });
+});
+
+function renderTabla() {
+  const search = document.getElementById('f-empleado').value.trim().toLowerCase();
+  const tipo   = document.getElementById('f-tipo').value;
+  const estado = document.getElementById('f-estado').value;
+  const desde  = document.getElementById('f-desde').value;
+  const hasta  = document.getElementById('f-hasta').value;
+  const role   = getRole();
+
+  let data = [...DB.eventos].reverse();
+  if (role !== 'jefe') {
+    const user = DEMO_USER[role];
+    data = data.filter(e => { const emp = DB.getEmpleado(e.empleadoId); return emp && emp.sedeId === user.sedeId; });
+  }
+  if (search) data = data.filter(e => { const emp = DB.getEmpleado(e.empleadoId); return emp && emp.nombre.toLowerCase().includes(search); });
+  if (tipo)   data = data.filter(e => e.tipo === tipo);
+  if (estado) data = data.filter(e => e.estado === estado);
+  if (desde)  data = data.filter(e => e.fechaFin >= desde);
+  if (hasta)  data = data.filter(e => e.fechaInicio <= hasta);
+
+  const canAnular = can('eventos.anular');
+  const tbody = document.getElementById('tbody-eventos');
+
+  if (data.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="8">
+      <div class="empty-state">
+        <div class="empty-icon" aria-hidden="true">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+          </svg>
+        </div>
+        <p class="empty-title">Sin eventos</p>
+        <p class="empty-desc">No se encontraron eventos con los filtros aplicados.</p>
+      </div>
+    </td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = data.map(ev => {
+    const emp  = DB.getEmpleado(ev.empleadoId);
+    const sede = emp ? DB.getSede(emp.sedeId) : null;
+    const dias = ev.diasSolicitados ? `${ev.diasSolicitados} días` : ev.tipoIncapacidad || ev.descripcion?.slice(0,30) || '—';
+    return `<tr>
+      <td><a href="empleado-perfil.html?id=${emp?.id}" class="table-link">${emp?.nombre || '—'}</a></td>
+      <td>${sede?.nombre || '—'}</td>
+      <td>${badgeTipo(ev.tipo)}</td>
+      <td class="tabular-nums" style="font-size:.8125rem;white-space:nowrap">${fmt.date(ev.fechaInicio)} → ${fmt.date(ev.fechaFin)}</td>
+      <td style="font-size:.8125rem;max-width:10rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${dias}">${dias}</td>
+      <td style="font-size:.8125rem">${ev.autorizadoPor || '—'}</td>
+      <td>${badgeEstado(ev.estado)}</td>
+      <td>
+        ${canAnular && ev.estado === 'activo' ? `
+        <button class="btn btn-ghost btn-sm" onclick="iniciarAnular(${ev.id})" aria-label="Anular evento">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>
+          </svg>
+          Anular
+        </button>` : ''}
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function iniciarAnular(id) {
+  anularEventoId = id;
+  openModal('modal-anular');
+}
+</script>
+</body>
+</html>

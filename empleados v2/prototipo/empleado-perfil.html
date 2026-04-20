@@ -1,0 +1,557 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#1e3a8a">
+  <title>Perfil de Empleado — GestiónRH</title>
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/components.css">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Saltar al contenido principal</a>
+
+<div class="app-layout">
+  <aside class="app-sidebar" id="sidebar-mount" aria-label="Navegación principal"></aside>
+
+  <header class="app-topbar" role="banner">
+    <div class="topbar-left">
+      <nav aria-label="Ruta de navegación">
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item">
+            <a href="empleados.html" class="bc-link">Empleados</a>
+            <span class="bc-sep" aria-hidden="true">/</span>
+          </li>
+          <li class="breadcrumb-item">
+            <span class="bc-current" id="bc-nombre">Perfil</span>
+          </li>
+        </ol>
+      </nav>
+    </div>
+    <div class="topbar-right">
+      <div class="demo-badge">
+        <span class="demo-label">Demo&nbsp;— Rol:</span>
+        <select class="demo-select" id="role-switcher" aria-label="Cambiar rol">
+          <option value="jefe">Jefe de Sede</option>
+          <option value="regente">Regente</option>
+          <option value="auxiliar">Auxiliar de Regente</option>
+          <option value="operario">Operario</option>
+        </select>
+      </div>
+    </div>
+  </header>
+
+  <main class="app-main" id="main-content">
+    <div id="perfil-container">
+      <p style="color:var(--c-gray-400); text-align:center; padding:var(--sp-16)">Cargando perfil…</p>
+    </div>
+  </main>
+</div>
+
+<!-- Modal Desactivar Empleado -->
+<div class="modal-overlay" id="modal-desvincular" hidden aria-modal="true"
+     aria-labelledby="desv-title" role="dialog">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 class="modal-title" id="desv-title">Desvincular empleado</h2>
+      <button class="modal-close btn" data-modal-close aria-label="Cerrar">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+             fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="alert alert--warning" style="margin-bottom:var(--sp-5)" role="alert">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+          <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+        </svg>
+        <div class="alert-body">
+          <p class="alert-title">Acción irreversible</p>
+          <p>El registro pasará a estado Inactivo y quedará en modo solo&nbsp;lectura. No se elimina del sistema.</p>
+        </div>
+      </div>
+      <div class="form-grid form-grid-2" style="margin-bottom:var(--sp-4)">
+        <div class="form-group" style="margin-bottom:0">
+          <label class="form-label" for="fecha-desvinculacion">
+            Fecha de desvinculación <span class="required" aria-hidden="true">*</span>
+          </label>
+          <input class="form-input" type="date" id="fecha-desvinculacion" name="fecha-desvinculacion" required>
+        </div>
+        <div></div>
+      </div>
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label" for="motivo-desvinculacion">
+          Motivo de retiro <span class="required" aria-hidden="true">*</span>
+        </label>
+        <textarea class="form-textarea" id="motivo-desvinculacion" name="motivo-desvinculacion"
+                  placeholder="Describe el motivo de la desvinculación…" style="min-height:5rem"></textarea>
+        <span class="form-error" id="desv-error" role="alert" hidden></span>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" data-modal-close>Cancelar</button>
+      <button class="btn btn-danger" id="btn-confirmar-desvinculacion">Desvincular</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Asignar Turno -->
+<div class="modal-overlay" id="modal-turno" hidden aria-modal="true"
+     aria-labelledby="turno-title" role="dialog">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 class="modal-title" id="turno-title">Asignar turno</h2>
+      <button class="modal-close btn" data-modal-close aria-label="Cerrar">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+             fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid form-grid-2">
+        <div class="form-group">
+          <label class="form-label" for="sel-turno">
+            Plantilla de turno <span class="required" aria-hidden="true">*</span>
+          </label>
+          <select class="form-select" id="sel-turno" name="turno" required>
+            <option value="">Selecciona una plantilla…</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="vigencia-desde">
+            Vigente desde <span class="required" aria-hidden="true">*</span>
+          </label>
+          <input class="form-input" type="date" id="vigencia-desde" name="vigencia-desde" required>
+        </div>
+      </div>
+      <div id="turno-preview" style="display:none"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" data-modal-close>Cancelar</button>
+      <button class="btn btn-primary" id="btn-guardar-turno">Guardar asignación</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/data.js"></script>
+<script src="js/app.js"></script>
+<script>
+const DIAS_LABEL = { lunes:'Lun', martes:'Mar', miercoles:'Mié', jueves:'Jue', viernes:'Vie', sabado:'Sáb', domingo:'Dom' };
+
+function getEmpId() {
+  const params = new URLSearchParams(window.location.search);
+  return parseInt(params.get('id'), 10) || 1;
+}
+
+function renderPerfil(emp) {
+  const cargo = DB.getCargo(emp.cargoId);
+  const sede  = DB.getSede(emp.sedeId);
+  const jefe  = emp.jefeInmediatoId ? DB.getEmpleado(emp.jefeInmediatoId) : null;
+  const empTemp = emp.empresaTemporalId ? DB.getEmpresaTemporal(emp.empresaTemporalId) : null;
+  const canEdit  = can('empleados.editar');
+  const canDeact = can('empleados.desactivar') && emp.estado === 'activo';
+  const isInactive = emp.estado === 'inactivo';
+
+  document.getElementById('bc-nombre').textContent = emp.nombre;
+  document.title = `${emp.nombre} — GestiónRH`;
+
+  document.getElementById('perfil-container').innerHTML = `
+    <!-- Profile Header -->
+    <div class="profile-header">
+      <div class="profile-avatar" aria-hidden="true">${initials(emp.nombre)}</div>
+      <div class="profile-info">
+        <h1 class="profile-name">${emp.nombre}</h1>
+        <p class="profile-cc">CC ${emp.cc}</p>
+        <div class="profile-tags">
+          ${badgeEstado(emp.estado)}
+          ${badgeRol(emp.rol)}
+          ${badgeTipo(emp.tipoVinculacion)}
+          <span class="badge" style="background:var(--c-gray-100);color:var(--c-gray-600)">${sede?.nombre || '—'}</span>
+        </div>
+      </div>
+      <div class="profile-actions">
+        ${canEdit && !isInactive ? `<a href="empleado-nuevo.html?id=${emp.id}" class="btn btn-secondary">
+          <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
+            <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+          </svg>
+          Editar
+        </a>` : ''}
+        ${canDeact ? `<button class="btn btn-danger-outline" id="btn-desvincular">
+          <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
+            <circle cx="8.5" cy="7" r="4"/>
+            <line x1="18" y1="8" x2="23" y2="13"/><line x1="23" y1="8" x2="18" y2="13"/>
+          </svg>
+          Desvincular
+        </button>` : ''}
+      </div>
+    </div>
+
+    ${isInactive ? `
+    <div class="alert alert--error" style="margin-bottom:var(--sp-5)" role="alert">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+      <div class="alert-body">
+        <p class="alert-title">Empleado desvinculado</p>
+        <p>Fecha de desvinculación: <strong>${fmt.date(emp.fechaDesvinculacion)}</strong> — ${emp.motivoRetiro}</p>
+      </div>
+    </div>` : ''}
+
+    <!-- Tabs -->
+    <div data-tabs-container>
+      <div class="tabs" role="tablist" aria-label="Secciones del perfil">
+        <button class="tab-btn is-active" data-tab="tab-datos"    role="tab" aria-selected="true"  aria-controls="tab-datos">Datos</button>
+        <button class="tab-btn"           data-tab="tab-historial" role="tab" aria-selected="false" aria-controls="tab-historial">Historial</button>
+        <button class="tab-btn"           data-tab="tab-horario"   role="tab" aria-selected="false" aria-controls="tab-horario">Horario</button>
+      </div>
+
+      <!-- TAB DATOS -->
+      <div class="tab-panel is-active" id="tab-datos" role="tabpanel" tabindex="0">
+
+        <div class="form-section">
+          <div class="form-section-header">
+            <div class="form-section-icon" aria-hidden="true">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/>
+              </svg>
+            </div>
+            <h2 class="form-section-title">Datos personales</h2>
+          </div>
+          <div class="form-section-body">
+            <div class="dl-grid">
+              <div class="dl-item"><p class="dl-label">Nombre completo</p><p class="dl-value">${emp.nombre}</p></div>
+              <div class="dl-item"><p class="dl-label">Cédula de ciudadanía</p><p class="dl-value font-mono">${emp.cc}</p></div>
+              <div class="dl-item"><p class="dl-label">Fecha de nacimiento</p><p class="dl-value">${fmt.date(emp.fechaNacimiento)}</p></div>
+              <div class="dl-item"><p class="dl-label">Teléfono</p><p class="dl-value">${emp.telefono}</p></div>
+              <div class="dl-item"><p class="dl-label">Correo electrónico</p><p class="dl-value">${emp.correo}</p></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <div class="form-section-header">
+            <div class="form-section-icon" aria-hidden="true">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/>
+              </svg>
+            </div>
+            <h2 class="form-section-title">Residencia</h2>
+          </div>
+          <div class="form-section-body">
+            <div class="dl-grid dl-grid-3">
+              <div class="dl-item"><p class="dl-label">Dirección</p><p class="dl-value">${emp.direccion}</p></div>
+              <div class="dl-item"><p class="dl-label">Ciudad</p><p class="dl-value">${emp.ciudad}</p></div>
+              <div class="dl-item"><p class="dl-label">Departamento</p><p class="dl-value">${emp.departamento}</p></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <div class="form-section-header">
+            <div class="form-section-icon" aria-hidden="true">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013 5.18 2 2 0 015 3h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L9.09 10.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 17v-.08z"/>
+              </svg>
+            </div>
+            <h2 class="form-section-title">Contacto de emergencia</h2>
+          </div>
+          <div class="form-section-body">
+            <div class="dl-grid">
+              <div class="dl-item"><p class="dl-label">Nombre</p><p class="dl-value">${emp.contactoEmergenciaNombre}</p></div>
+              <div class="dl-item"><p class="dl-label">Teléfono</p><p class="dl-value">${emp.contactoEmergenciaTel}</p></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <div class="form-section-header">
+            <div class="form-section-icon" aria-hidden="true">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+              </svg>
+            </div>
+            <h2 class="form-section-title">Seguridad social</h2>
+          </div>
+          <div class="form-section-body">
+            <div class="dl-grid" style="grid-template-columns:repeat(2,1fr);max-width:32rem">
+              <div class="dl-item"><p class="dl-label">EPS</p><p class="dl-value">${emp.eps}</p></div>
+              <div class="dl-item"><p class="dl-label">ARL</p><p class="dl-value">${emp.arl}</p></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <div class="form-section-header">
+            <div class="form-section-icon" aria-hidden="true">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/>
+              </svg>
+            </div>
+            <h2 class="form-section-title">Vinculación laboral</h2>
+          </div>
+          <div class="form-section-body">
+            <div class="dl-grid">
+              <div class="dl-item"><p class="dl-label">Sede</p><p class="dl-value">${sede?.nombre || '—'}</p></div>
+              <div class="dl-item"><p class="dl-label">Cargo</p><p class="dl-value">${cargo?.nombre || '—'}</p></div>
+              <div class="dl-item"><p class="dl-label">Rol en el sistema</p><p class="dl-value">${ROLES[emp.rol]?.label || emp.rol}</p></div>
+              <div class="dl-item"><p class="dl-label">Tipo de vinculación</p><p class="dl-value">${emp.tipoVinculacion === 'directo' ? 'Contrato directo' : 'Empresa temporal'}</p></div>
+              <div class="dl-item"><p class="dl-label">Jefe inmediato</p><p class="dl-value">${jefe ? jefe.nombre : '<span class="dl-value--muted">Sin asignar</span>'}</p></div>
+              <div class="dl-item"><p class="dl-label">Fecha de ingreso</p><p class="dl-value">${fmt.date(emp.fechaIngreso)}</p></div>
+              <div class="dl-item"><p class="dl-label">Escolaridad</p><p class="dl-value">${emp.escolaridad}</p></div>
+            </div>
+            ${emp.tipoVinculacion === 'temporal' ? `
+            <div style="margin-top:var(--sp-5);padding-top:var(--sp-4);border-top:1px solid var(--c-gray-100)">
+              <p style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--c-warning-600);margin-bottom:var(--sp-3)">Contrato temporal</p>
+              <div class="dl-grid dl-grid-3">
+                <div class="dl-item"><p class="dl-label">Empresa temporal</p><p class="dl-value">${empTemp?.nombre || '—'}</p></div>
+                <div class="dl-item"><p class="dl-label">Inicio de contrato</p><p class="dl-value">${fmt.date(emp.fechaInicioContrato)}</p></div>
+                <div class="dl-item"><p class="dl-label">Fin de contrato</p><p class="dl-value">${fmt.date(emp.fechaFinContrato)}</p></div>
+              </div>
+            </div>` : ''}
+          </div>
+        </div>
+      </div><!-- /tab-datos -->
+
+      <!-- TAB HISTORIAL -->
+      <div class="tab-panel" id="tab-historial" role="tabpanel" tabindex="0">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--sp-5)">
+          <h2 style="font-size:.9375rem;font-weight:600;color:var(--c-gray-800)">Historial de actividades</h2>
+          <button class="btn btn-secondary btn-sm" onclick="exportarHistorial()" aria-label="Exportar historial a Excel">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/>
+              <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            Exportar historial (.xlsx)
+          </button>
+        </div>
+        <div class="timeline" id="timeline-container">
+          <p style="color:var(--c-gray-400);text-align:center;padding:var(--sp-8)">Cargando historial…</p>
+        </div>
+      </div>
+
+      <!-- TAB HORARIO -->
+      <div class="tab-panel" id="tab-horario" role="tabpanel" tabindex="0">
+        <div id="horario-container">
+          <p style="color:var(--c-gray-400);text-align:center;padding:var(--sp-8)">Cargando horario…</p>
+        </div>
+      </div>
+
+    </div><!-- /data-tabs-container -->
+  `;
+
+  /* Desvincular */
+  const btnDesv = document.getElementById('btn-desvincular');
+  if (btnDesv) {
+    btnDesv.addEventListener('click', () => {
+      document.getElementById('fecha-desvinculacion').value = new Date().toISOString().split('T')[0];
+      openModal('modal-desvincular');
+    });
+  }
+
+  document.getElementById('btn-confirmar-desvinculacion').addEventListener('click', () => {
+    const fecha  = document.getElementById('fecha-desvinculacion').value;
+    const motivo = document.getElementById('motivo-desvinculacion').value.trim();
+    const errEl  = document.getElementById('desv-error');
+    errEl.hidden = true;
+    if (!motivo || !fecha) {
+      errEl.textContent = 'Fecha y motivo son obligatorios.';
+      errEl.hidden = false;
+      return;
+    }
+    emp.estado = 'inactivo';
+    emp.fechaDesvinculacion = fecha;
+    emp.motivoRetiro = motivo;
+    closeModal('modal-desvincular');
+    showToast('Empleado desvinculado correctamente.', 'success');
+    renderPerfil(emp);
+  });
+
+  /* Historial */
+  renderHistorial(emp.id);
+
+  /* Horario */
+  renderHorario(emp);
+}
+
+function renderHistorial(empId) {
+  const hist = DB.getHistorial(empId);
+  const container = document.getElementById('timeline-container');
+  if (!container) return;
+  if (hist.length === 0) {
+    container.innerHTML = `<div class="empty-state">
+      <div class="empty-icon" aria-hidden="true">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/>
+        </svg>
+      </div>
+      <p class="empty-title">Sin registros</p>
+      <p class="empty-desc">Este empleado no tiene historial registrado aún.</p>
+    </div>`;
+    return;
+  }
+
+  container.innerHTML = `<div class="timeline">${hist.map(item => {
+    if (item._tipo === 'evento') {
+      const dotClass = item.tipo === 'vacaciones' ? 'vacation' : item.tipo === 'incapacidad' ? 'illness' : 'permit';
+      const iconPath = item.tipo === 'vacaciones'
+        ? '<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>'
+        : item.tipo === 'incapacidad'
+        ? '<path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>'
+        : '<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>';
+      return `<div class="timeline-item">
+        <div class="timeline-aside">
+          <div class="timeline-dot timeline-dot--${dotClass}" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${iconPath}</svg>
+          </div>
+          <div class="timeline-line" aria-hidden="true"></div>
+        </div>
+        <div class="timeline-content">
+          <p class="timeline-title">${badgeTipo(item.tipo)} ${item.tipoIncapacidad ? '— ' + item.tipoIncapacidad : ''}</p>
+          <p class="timeline-meta">${fmt.dateRange(item.fechaInicio, item.fechaFin)} · ${badgeEstado(item.estado)}</p>
+          ${item.tipo === 'vacaciones' ? `<div class="timeline-detail">${item.diasSolicitados} días · Autorizado por: ${item.autorizadoPor}</div>` : ''}
+          ${item.tipo === 'incapacidad' ? `<div class="timeline-detail">Expedida por: ${item.entidadExpide} · Autorizado por: ${item.autorizadoPor}</div>` : ''}
+          ${item.tipo === 'permiso' ? `<div class="timeline-detail">${item.descripcion} · Autorizado por: ${item.autorizadoPor}</div>` : ''}
+        </div>
+      </div>`;
+    }
+    if (item._tipo === 'horaExtra') {
+      return `<div class="timeline-item">
+        <div class="timeline-aside">
+          <div class="timeline-dot timeline-dot--overtime" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+            </svg>
+          </div>
+          <div class="timeline-line" aria-hidden="true"></div>
+        </div>
+        <div class="timeline-content">
+          <p class="timeline-title">Horas extras — ${item.horas}h</p>
+          <p class="timeline-meta">${fmt.date(item.fecha)} · ${badgeEstado(item.estado)}</p>
+          <div class="timeline-detail">${item.motivo}${item.aprobadoPor ? ' · Aprobado por: ' + item.aprobadoPor : ''}${item.motivoRechazo ? ' · Motivo rechazo: ' + item.motivoRechazo : ''}</div>
+        </div>
+      </div>`;
+    }
+    if (item._tipo === 'turno') {
+      const turno = DB.getTurno(item.turnoId);
+      return `<div class="timeline-item">
+        <div class="timeline-aside">
+          <div class="timeline-dot timeline-dot--shift" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+            </svg>
+          </div>
+          <div class="timeline-line" aria-hidden="true"></div>
+        </div>
+        <div class="timeline-content">
+          <p class="timeline-title">Turno asignado: ${turno?.nombre || '—'}</p>
+          <p class="timeline-meta">Vigente desde: ${fmt.date(item.vigenciaDesde)}</p>
+          <div class="timeline-detail">Programado por: ${item.programadoPor}</div>
+        </div>
+      </div>`;
+    }
+    return '';
+  }).join('')}</div>`;
+}
+
+function renderHorario(emp) {
+  const container = document.getElementById('horario-container');
+  if (!container) return;
+  const asig = DB.asignacionesTurno.filter(a => a.empleadoId === emp.id);
+  const actual = asig[asig.length - 1];
+  const turno  = actual ? DB.getTurno(actual.turnoId) : null;
+  const canManage = can('horarios.gestionar');
+
+  if (!turno) {
+    container.innerHTML = `<div class="empty-state">
+      <div class="empty-icon" aria-hidden="true">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+        </svg>
+      </div>
+      <p class="empty-title">Sin turno asignado</p>
+      <p class="empty-desc">Este empleado no tiene un turno activo configurado.</p>
+      ${canManage ? `<button class="btn btn-primary" data-modal-open="modal-turno">Asignar turno</button>` : ''}
+    </div>`;
+  } else {
+    const diaRows = Object.entries(turno.dias).map(([dia, cfg]) => `
+      <div class="shift-row">
+        <span class="shift-day">${DIAS_LABEL[dia] || dia}</span>
+        ${cfg.labora
+          ? `<span style="font-size:.875rem">${cfg.entrada}</span><span style="font-size:.875rem">${cfg.salida}</span><span></span>`
+          : `<span class="shift-no-work" style="grid-column:2/-1">No labora</span>`
+        }
+      </div>`).join('');
+
+    container.innerHTML = `
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--sp-4)">
+        <div>
+          <h2 style="font-size:.9375rem;font-weight:600;color:var(--c-gray-800);margin-bottom:var(--sp-1)">${turno.nombre}</h2>
+          <p style="font-size:.8125rem;color:var(--c-gray-500)">
+            Vigente desde ${fmt.date(actual.vigenciaDesde)} · Programado por ${actual.programadoPor}
+          </p>
+        </div>
+        ${canManage ? `<button class="btn btn-secondary btn-sm" data-modal-open="modal-turno">Cambiar turno</button>` : ''}
+      </div>
+      <div style="background:#fff;border:1px solid var(--c-gray-200);border-radius:var(--r-xl);overflow:hidden;padding:var(--sp-4)">
+        <div style="display:grid;grid-template-columns:5rem 1fr 1fr;gap:var(--sp-1) var(--sp-4);padding:var(--sp-2) var(--sp-4);margin-bottom:var(--sp-2)">
+          <span style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--c-gray-500)">Día</span>
+          <span style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--c-gray-500)">Entrada</span>
+          <span style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--c-gray-500)">Salida</span>
+        </div>
+        <div class="shift-grid">${diaRows}</div>
+      </div>
+      ${asig.length > 1 ? `
+      <div style="margin-top:var(--sp-5)">
+        <h3 style="font-size:.875rem;font-weight:600;color:var(--c-gray-700);margin-bottom:var(--sp-3)">Historial de asignaciones</h3>
+        ${asig.slice(0, -1).reverse().map(a => {
+          const t = DB.getTurno(a.turnoId);
+          return `<p style="font-size:.8125rem;color:var(--c-gray-500);margin-bottom:var(--sp-1)">
+            ${t?.nombre || '—'} — desde ${fmt.date(a.vigenciaDesde)} · ${a.programadoPor}
+          </p>`;
+        }).join('')}
+      </div>` : ''}
+    `;
+  }
+
+  /* Populate turno modal */
+  const selTurno = document.getElementById('sel-turno');
+  if (selTurno) {
+    selTurno.innerHTML = '<option value="">Selecciona una plantilla…</option>';
+    DB.turnos.forEach(t => {
+      const opt = document.createElement('option');
+      opt.value = t.id;
+      opt.textContent = t.nombre;
+      selTurno.appendChild(opt);
+    });
+  }
+
+  document.getElementById('btn-guardar-turno')?.addEventListener('click', () => {
+    const turnoId = parseInt(document.getElementById('sel-turno').value);
+    const vigencia = document.getElementById('vigencia-desde').value;
+    if (!turnoId || !vigencia) { showToast('Selecciona plantilla y fecha.', 'error'); return; }
+    DB.asignacionesTurno.push({ id: Date.now(), empleadoId: emp.id, turnoId, vigenciaDesde: vigencia, programadoPor: DEMO_USER[getRole()].nombre });
+    closeModal('modal-turno');
+    showToast('Turno asignado correctamente.', 'success');
+    renderHorario(emp);
+    renderHistorial(emp.id);
+  });
+}
+
+function exportarHistorial() {
+  showToast('Historial exportado a Excel (simulado en prototipo).', 'success');
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const id = getEmpId();
+  const emp = DB.getEmpleado(id) || DB.empleados[0];
+  renderPerfil(emp);
+});
+</script>
+</body>
+</html>

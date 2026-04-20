@@ -1,0 +1,383 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#1e3a8a">
+  <title>Horarios — GestiónRH</title>
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/components.css">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Saltar al contenido principal</a>
+
+<div class="app-layout">
+  <aside class="app-sidebar" id="sidebar-mount" aria-label="Navegación principal"></aside>
+
+  <header class="app-topbar" role="banner">
+    <div class="topbar-left">
+      <nav aria-label="Ruta de navegación">
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item"><span class="bc-current">Horarios</span></li>
+        </ol>
+      </nav>
+    </div>
+    <div class="topbar-right">
+      <div class="demo-badge">
+        <span class="demo-label">Demo&nbsp;— Rol:</span>
+        <select class="demo-select" id="role-switcher" aria-label="Cambiar rol">
+          <option value="jefe">Jefe de Sede</option>
+          <option value="regente">Regente</option>
+          <option value="auxiliar">Auxiliar de Regente</option>
+          <option value="operario">Operario</option>
+        </select>
+      </div>
+    </div>
+  </header>
+
+  <main class="app-main" id="main-content">
+    <div class="page-header">
+      <div class="page-header-info">
+        <h1 class="page-title">Plantillas de Turno</h1>
+        <p class="page-desc">Define y gestiona los horarios de trabajo que se pueden asignar a los empleados.</p>
+      </div>
+      <div class="page-actions">
+        <button class="btn btn-primary" data-modal-open="modal-turno" id="btn-nueva-plantilla"
+                data-roles="jefe,regente,auxiliar">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+          Nueva plantilla
+        </button>
+      </div>
+    </div>
+
+    <!-- Plantillas grid -->
+    <div id="plantillas-grid" class="stats-grid" style="--cols:3;gap:var(--sp-4);margin-bottom:var(--sp-6)"></div>
+
+    <!-- Asignaciones recientes -->
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">Asignaciones activas</h2>
+        <p class="card-desc">Empleados con turnos asignados en este momento.</p>
+      </div>
+      <div class="table-wrapper">
+        <div class="table-scroll">
+          <table aria-label="Asignaciones de turno activas">
+            <thead>
+              <tr>
+                <th scope="col">Empleado</th>
+                <th scope="col">Sede</th>
+                <th scope="col">Plantilla</th>
+                <th scope="col">Vigencia</th>
+                <th scope="col">Asignado por</th>
+                <th scope="col"><span class="sr-only">Acciones</span></th>
+              </tr>
+            </thead>
+            <tbody id="tbody-asignaciones"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- Modal Plantilla de Turno -->
+<div class="modal-overlay" id="modal-turno" hidden aria-modal="true"
+     aria-labelledby="modal-turno-title" role="dialog">
+  <div class="modal modal--lg">
+    <div class="modal-header">
+      <h2 class="modal-title" id="modal-turno-title">Nueva plantilla de turno</h2>
+      <button class="modal-close btn" data-modal-close aria-label="Cerrar">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <form id="form-turno" novalidate>
+        <div class="form-group" style="max-width:24rem;margin-bottom:var(--sp-5)">
+          <label class="form-label" for="t-nombre">Nombre de la plantilla <span class="required" aria-hidden="true">*</span></label>
+          <input class="form-input" type="text" id="t-nombre" name="nombre" placeholder="Ej. Turno mañana, Turno tarde…" required>
+        </div>
+        <div class="alert alert--info" style="margin-bottom:var(--sp-4)" role="note">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
+          </svg>
+          <div class="alert-body"><p>Configura cada día con sus horas de entrada y salida. Si el empleado no labora ese día, selecciona "No labora". Al menos un día debe tener horario.</p></div>
+        </div>
+        <div class="shift-grid" id="shift-form-grid"></div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" data-modal-close>Cancelar</button>
+      <button class="btn btn-primary" id="btn-guardar-turno">Guardar plantilla</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Ver Plantilla (detail) -->
+<div class="modal-overlay" id="modal-ver-turno" hidden aria-modal="true"
+     aria-labelledby="ver-turno-title" role="dialog">
+  <div class="modal modal--lg">
+    <div class="modal-header">
+      <h2 class="modal-title" id="ver-turno-title">Plantilla de turno</h2>
+      <button class="modal-close btn" data-modal-close aria-label="Cerrar">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+    <div class="modal-body" id="ver-turno-body"></div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" data-modal-close>Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/data.js"></script>
+<script src="js/app.js"></script>
+<script>
+const DIAS = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
+const DIAS_KEY = ['lunes','martes','miercoles','jueves','viernes','sabado','domingo'];
+
+function buildShiftFormGrid() {
+  const grid = document.getElementById('shift-form-grid');
+  grid.innerHTML = DIAS.map((dia, i) => `
+    <div class="shift-row">
+      <span class="shift-day">${dia}</span>
+      <label class="shift-toggle">
+        <input type="checkbox" class="shift-check" id="s-check-${i}" data-idx="${i}" aria-label="¿Labora ${dia}?">
+        <span class="shift-toggle-track">
+          <span class="shift-toggle-thumb"></span>
+        </span>
+        <span class="shift-toggle-label" id="s-label-${i}">No labora</span>
+      </label>
+      <div class="shift-times" id="s-times-${i}" hidden>
+        <div class="shift-time-group">
+          <label class="form-label" for="s-in-${i}" style="font-size:.75rem;margin-bottom:.125rem">Entrada</label>
+          <input class="form-input shift-time-input" type="time" id="s-in-${i}" name="entrada-${i}" value="08:00" aria-label="Hora entrada ${dia}">
+        </div>
+        <span class="shift-separator" aria-hidden="true">→</span>
+        <div class="shift-time-group">
+          <label class="form-label" for="s-out-${i}" style="font-size:.75rem;margin-bottom:.125rem">Salida</label>
+          <input class="form-input shift-time-input" type="time" id="s-out-${i}" name="salida-${i}" value="17:00" aria-label="Hora salida ${dia}">
+        </div>
+      </div>
+    </div>
+  `).join('');
+  DIAS.forEach((_, i) => {
+    document.getElementById(`s-check-${i}`).addEventListener('change', function() {
+      const times = document.getElementById(`s-times-${i}`);
+      const label = document.getElementById(`s-label-${i}`);
+      times.hidden = !this.checked;
+      label.textContent = this.checked ? 'Labora' : 'No labora';
+    });
+  });
+}
+
+function renderPlantillas() {
+  const grid = document.getElementById('plantillas-grid');
+  const role = getRole();
+  const canEdit = can('horarios.editar');
+
+  grid.innerHTML = DB.turnos.map(t => {
+    const diasLaborales = DIAS.filter((d, i) => t.dias[DIAS_KEY[i]] && t.dias[DIAS_KEY[i]] !== 'No labora');
+    const horas = diasLaborales.map(d => {
+      const k = DIAS_KEY[DIAS.indexOf(d)];
+      return t.dias[k]?.entrada ? `${t.dias[k].entrada}–${t.dias[k].salida}` : null;
+    }).filter(Boolean);
+    const horasUniq = [...new Set(horas)];
+    return `<div class="card" style="cursor:pointer" onclick="verTurno(${t.id})">
+      <div class="card-header" style="padding-bottom:var(--sp-2)">
+        <h3 class="card-title" style="font-size:1rem">${t.nombre}</h3>
+      </div>
+      <div class="card-body" style="padding-top:0">
+        <p style="font-size:.8125rem;color:var(--c-gray-500);margin-bottom:var(--sp-2)">${diasLaborales.length} días laborales · ${horasUniq.join(', ')}</p>
+        <div style="display:flex;flex-wrap:wrap;gap:var(--sp-1)">
+          ${DIAS.map((d, i) => {
+            const k = DIAS_KEY[i];
+            const labora = t.dias[k] && t.dias[k] !== 'No labora';
+            return `<span style="
+              display:inline-block;width:1.75rem;height:1.75rem;line-height:1.75rem;text-align:center;
+              border-radius:var(--r-full);font-size:.6875rem;font-weight:600;
+              background:${labora ? 'var(--c-brand-100)' : 'var(--c-gray-100)'};
+              color:${labora ? 'var(--c-brand-700)' : 'var(--c-gray-400)'}
+            " title="${d}: ${labora ? (t.dias[k].entrada + '–' + t.dias[k].salida) : 'No labora'}" aria-label="${d}">${d[0]}</span>`;
+          }).join('')}
+        </div>
+      </div>
+      ${canEdit ? `<div class="card-footer">
+        <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();editarTurno(${t.id})" aria-label="Editar plantilla ${t.nombre}">
+          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
+            <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+          </svg>
+          Editar
+        </button>
+      </div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+function renderAsignaciones() {
+  const tbody = document.getElementById('tbody-asignaciones');
+  const role  = getRole();
+
+  let data = DB.asignacionesTurno;
+  if (role !== 'jefe') {
+    const user = DEMO_USER[role];
+    data = data.filter(a => {
+      const emp = DB.getEmpleado(a.empleadoId);
+      return emp && emp.sedeId === user.sedeId;
+    });
+  }
+
+  if (data.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="6">
+      <div class="empty-state">
+        <div class="empty-icon" aria-hidden="true">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+          </svg>
+        </div>
+        <p class="empty-title">Sin asignaciones</p>
+        <p class="empty-desc">Asigna turnos desde el perfil de cada empleado.</p>
+      </div>
+    </td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = data.map(a => {
+    const emp   = DB.getEmpleado(a.empleadoId);
+    const sede  = emp ? DB.getSede(emp.sedeId) : null;
+    const turno = DB.getTurno(a.turnoId);
+    return `<tr>
+      <td><a href="empleado-perfil.html?id=${emp?.id}" class="table-link">${emp?.nombre || '—'}</a></td>
+      <td>${sede?.nombre || '—'}</td>
+      <td>
+        <button class="btn btn-ghost btn-sm" onclick="verTurno(${turno?.id})" style="font-weight:500;text-decoration:underline;text-decoration-color:transparent">
+          ${turno?.nombre || '—'}
+        </button>
+      </td>
+      <td class="tabular-nums" style="font-size:.8125rem">${a.fechaInicio ? fmt.date(a.fechaInicio) : '—'}
+        ${a.fechaFin ? ` → ${fmt.date(a.fechaFin)}` : ' en adelante'}</td>
+      <td style="font-size:.8125rem">${a.asignadoPor || '—'}</td>
+      <td>
+        <a href="empleado-perfil.html?id=${emp?.id}" class="btn btn-ghost btn-sm" aria-label="Ver perfil de ${emp?.nombre}">Ver perfil</a>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function verTurno(id) {
+  const t = DB.getTurno(id);
+  if (!t) return;
+  document.getElementById('ver-turno-title').textContent = t.nombre;
+  document.getElementById('ver-turno-body').innerHTML = `
+    <p style="margin-bottom:var(--sp-4);font-size:.875rem;color:var(--c-gray-500)">
+      Configuración semanal de la plantilla <strong>${t.nombre}</strong>.
+    </p>
+    <div class="shift-grid">
+      ${DIAS.map((dia, i) => {
+        const k = DIAS_KEY[i];
+        const d = t.dias[k];
+        const labora = d && d !== 'No labora' && d.entrada;
+        return `<div class="shift-row">
+          <span class="shift-day">${dia}</span>
+          ${labora
+            ? `<span class="badge badge-activo">Labora</span>
+               <div class="shift-times" style="display:flex">
+                 <div class="shift-time-group">
+                   <span class="form-label" style="font-size:.75rem">Entrada</span>
+                   <span style="font-size:.875rem;font-weight:600">${d.entrada}</span>
+                 </div>
+                 <span class="shift-separator" aria-hidden="true">→</span>
+                 <div class="shift-time-group">
+                   <span class="form-label" style="font-size:.75rem">Salida</span>
+                   <span style="font-size:.875rem;font-weight:600">${d.salida}</span>
+                 </div>
+               </div>`
+            : `<span class="badge badge-inactivo">No labora</span>`}
+        </div>`;
+      }).join('')}
+    </div>
+  `;
+  openModal('modal-ver-turno');
+}
+
+function editarTurno(id) {
+  const t = DB.getTurno(id);
+  if (!t) return;
+  document.getElementById('modal-turno-title').textContent = 'Editar plantilla de turno';
+  document.getElementById('t-nombre').value = t.nombre;
+  buildShiftFormGrid();
+  DIAS.forEach((_, i) => {
+    const k = DIAS_KEY[i];
+    const d = t.dias[k];
+    const labora = d && d !== 'No labora' && d.entrada;
+    const check = document.getElementById(`s-check-${i}`);
+    check.checked = labora;
+    const times = document.getElementById(`s-times-${i}`);
+    const label = document.getElementById(`s-label-${i}`);
+    times.hidden  = !labora;
+    label.textContent = labora ? 'Labora' : 'No labora';
+    if (labora) {
+      document.getElementById(`s-in-${i}`).value  = d.entrada;
+      document.getElementById(`s-out-${i}`).value = d.salida;
+    }
+  });
+  document.getElementById('btn-guardar-turno').dataset.editId = id;
+  openModal('modal-turno');
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  buildShiftFormGrid();
+  renderPlantillas();
+  renderAsignaciones();
+
+  document.getElementById('btn-nueva-plantilla').addEventListener('click', () => {
+    document.getElementById('modal-turno-title').textContent = 'Nueva plantilla de turno';
+    document.getElementById('form-turno').reset();
+    buildShiftFormGrid();
+    delete document.getElementById('btn-guardar-turno').dataset.editId;
+  });
+
+  document.getElementById('btn-guardar-turno').addEventListener('click', () => {
+    const nombre = document.getElementById('t-nombre').value.trim();
+    if (!nombre) { showToast('El nombre es obligatorio.', 'error'); return; }
+    const dias = {};
+    let algunoLabora = false;
+    DIAS.forEach((_, i) => {
+      const k = DIAS_KEY[i];
+      const labora = document.getElementById(`s-check-${i}`).checked;
+      if (labora) {
+        const entrada = document.getElementById(`s-in-${i}`).value;
+        const salida  = document.getElementById(`s-out-${i}`).value;
+        if (!entrada || !salida) { showToast(`Completa las horas del ${DIAS[i]}.`, 'error'); return; }
+        if (salida <= entrada) { showToast(`La salida del ${DIAS[i]} debe ser posterior a la entrada.`, 'error'); return; }
+        dias[k] = { entrada, salida };
+        algunoLabora = true;
+      } else {
+        dias[k] = 'No labora';
+      }
+    });
+    if (!algunoLabora) { showToast('Al menos un día debe tener horario asignado.', 'error'); return; }
+
+    const editId = document.getElementById('btn-guardar-turno').dataset.editId;
+    if (editId) {
+      const t = DB.getTurno(parseInt(editId));
+      if (t) { t.nombre = nombre; t.dias = dias; }
+      showToast('Plantilla actualizada.', 'success');
+    } else {
+      DB.turnos.push({ id: Date.now(), nombre, dias });
+      showToast('Plantilla creada.', 'success');
+    }
+    closeModal('modal-turno');
+    renderPlantillas();
+  });
+});
+</script>
+</body>
+</html>

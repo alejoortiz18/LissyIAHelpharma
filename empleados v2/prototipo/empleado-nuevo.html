@@ -1,0 +1,425 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#1e3a8a">
+  <title>Nuevo Empleado — GestiónRH</title>
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/components.css">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Saltar al contenido principal</a>
+
+<div class="app-layout">
+  <aside class="app-sidebar" id="sidebar-mount" aria-label="Navegación principal"></aside>
+
+  <header class="app-topbar" role="banner">
+    <div class="topbar-left">
+      <nav aria-label="Ruta de navegación">
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item">
+            <a href="empleados.html" class="bc-link">Empleados</a>
+            <span class="bc-sep" aria-hidden="true">/</span>
+          </li>
+          <li class="breadcrumb-item">
+            <span class="bc-current" id="bc-accion">Nuevo empleado</span>
+          </li>
+        </ol>
+      </nav>
+    </div>
+    <div class="topbar-right">
+      <div class="demo-badge">
+        <span class="demo-label">Demo&nbsp;— Rol:</span>
+        <select class="demo-select" id="role-switcher" aria-label="Cambiar rol">
+          <option value="jefe">Jefe de Sede</option>
+          <option value="regente">Regente</option>
+          <option value="auxiliar">Auxiliar de Regente</option>
+          <option value="operario">Operario</option>
+        </select>
+      </div>
+    </div>
+  </header>
+
+  <main class="app-main" id="main-content">
+    <div class="page-header">
+      <div class="page-header-info">
+        <h1 class="page-title" id="page-title">Registrar empleado</h1>
+        <p class="page-desc">Completa todos los campos obligatorios para registrar un nuevo empleado.</p>
+      </div>
+    </div>
+
+    <form id="form-empleado" novalidate>
+
+      <!-- 1. Datos personales -->
+      <div class="form-section">
+        <div class="form-section-header">
+          <div class="form-section-icon" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/>
+            </svg>
+          </div>
+          <h2 class="form-section-title">Datos personales</h2>
+        </div>
+        <div class="form-section-body">
+          <div class="form-grid form-grid-2">
+            <div class="form-group">
+              <label class="form-label" for="nombre">Nombre completo <span class="required" aria-hidden="true">*</span></label>
+              <input class="form-input" type="text" id="nombre" name="nombre" autocomplete="name" placeholder="Nombre y apellidos completos…" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="cc">Cédula de ciudadanía <span class="required" aria-hidden="true">*</span></label>
+              <input class="form-input font-mono" type="text" id="cc" name="cc"
+                     inputmode="numeric" autocomplete="off" spellcheck="false"
+                     placeholder="Número de CC…" required>
+              <span class="form-hint">Única en el sistema — no acepta duplicados.</span>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="fecha-nacimiento">Fecha de nacimiento <span class="required" aria-hidden="true">*</span></label>
+              <input class="form-input" type="date" id="fecha-nacimiento" name="fecha-nacimiento" autocomplete="bday" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="telefono">Teléfono <span class="required" aria-hidden="true">*</span></label>
+              <input class="form-input" type="tel" id="telefono" name="telefono"
+                     inputmode="tel" autocomplete="tel" placeholder="Ej. 3104567890…" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="correo">Correo electrónico <span class="required" aria-hidden="true">*</span></label>
+              <input class="form-input" type="email" id="correo" name="correo"
+                     autocomplete="email" spellcheck="false" placeholder="nombre@correo.com…" required>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. Residencia -->
+      <div class="form-section">
+        <div class="form-section-header">
+          <div class="form-section-icon" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/>
+            </svg>
+          </div>
+          <h2 class="form-section-title">Residencia</h2>
+        </div>
+        <div class="form-section-body">
+          <div class="form-grid form-grid-3">
+            <div class="form-group" style="grid-column: 1 / -1">
+              <label class="form-label" for="direccion">Dirección <span class="required" aria-hidden="true">*</span></label>
+              <input class="form-input" type="text" id="direccion" name="direccion" autocomplete="street-address" placeholder="Cra / Cll / Av + número…" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="ciudad">Ciudad <span class="required" aria-hidden="true">*</span></label>
+              <input class="form-input" type="text" id="ciudad" name="ciudad" autocomplete="address-level2" placeholder="Ciudad…" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="departamento">Departamento <span class="required" aria-hidden="true">*</span></label>
+              <input class="form-input" type="text" id="departamento" name="departamento" autocomplete="address-level1" placeholder="Departamento…" required>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. Contacto de emergencia -->
+      <div class="form-section">
+        <div class="form-section-header">
+          <div class="form-section-icon" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013 5.18 2 2 0 015 3h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L9.09 10.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 17v-.08z"/>
+            </svg>
+          </div>
+          <h2 class="form-section-title">Contacto de emergencia</h2>
+        </div>
+        <div class="form-section-body">
+          <div class="form-grid form-grid-2">
+            <div class="form-group">
+              <label class="form-label" for="c-emergencia-nombre">Nombre del contacto <span class="required" aria-hidden="true">*</span></label>
+              <input class="form-input" type="text" id="c-emergencia-nombre" name="c-emergencia-nombre" autocomplete="off" placeholder="Nombre completo del contacto…" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="c-emergencia-tel">Teléfono del contacto <span class="required" aria-hidden="true">*</span></label>
+              <input class="form-input" type="tel" id="c-emergencia-tel" name="c-emergencia-tel" inputmode="tel" autocomplete="off" placeholder="Número de contacto…" required>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4. Formación -->
+      <div class="form-section">
+        <div class="form-section-header">
+          <div class="form-section-icon" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/>
+            </svg>
+          </div>
+          <h2 class="form-section-title">Formación</h2>
+        </div>
+        <div class="form-section-body">
+          <div class="form-group" style="max-width: 20rem">
+            <label class="form-label" for="escolaridad">Nivel de escolaridad <span class="required" aria-hidden="true">*</span></label>
+            <select class="form-select" id="escolaridad" name="escolaridad" required>
+              <option value="">Selecciona nivel…</option>
+              <option value="Primaria">Primaria</option>
+              <option value="Bachillerato">Bachillerato</option>
+              <option value="Técnico">Técnico</option>
+              <option value="Tecnológico">Tecnológico</option>
+              <option value="Profesional">Profesional</option>
+              <option value="Posgrado">Posgrado</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- 5. Seguridad social -->
+      <div class="form-section">
+        <div class="form-section-header">
+          <div class="form-section-icon" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            </svg>
+          </div>
+          <h2 class="form-section-title">Seguridad social</h2>
+        </div>
+        <div class="form-section-body">
+          <div class="form-grid form-grid-2" style="max-width:32rem">
+            <div class="form-group">
+              <label class="form-label" for="eps">EPS <span class="required" aria-hidden="true">*</span></label>
+              <input class="form-input" type="text" id="eps" name="eps" autocomplete="off" placeholder="Nombre de la EPS…" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="arl">ARL <span class="required" aria-hidden="true">*</span></label>
+              <input class="form-input" type="text" id="arl" name="arl" autocomplete="off" placeholder="Nombre de la ARL…" required>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 6. Vinculación laboral -->
+      <div class="form-section">
+        <div class="form-section-header">
+          <div class="form-section-icon" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/>
+            </svg>
+          </div>
+          <h2 class="form-section-title">Vinculación laboral</h2>
+        </div>
+        <div class="form-section-body">
+          <div class="form-grid form-grid-2">
+            <div class="form-group">
+              <label class="form-label" for="sede">Sede <span class="required" aria-hidden="true">*</span></label>
+              <select class="form-select" id="sede" name="sede" required>
+                <option value="">Selecciona sede…</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="cargo">Cargo <span class="required" aria-hidden="true">*</span></label>
+              <select class="form-select" id="cargo" name="cargo" required>
+                <option value="">Selecciona cargo…</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="rol-sistema">Rol en el sistema <span class="required" aria-hidden="true">*</span></label>
+              <select class="form-select" id="rol-sistema" name="rol" required>
+                <option value="">Selecciona rol…</option>
+                <option value="jefe">Jefe de Sede</option>
+                <option value="regente">Regente</option>
+                <option value="auxiliar">Auxiliar de Regente</option>
+                <option value="operario">Operario</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="tipo-vinculacion">Tipo de vinculación <span class="required" aria-hidden="true">*</span></label>
+              <select class="form-select" id="tipo-vinculacion" name="tipo-vinculacion" required>
+                <option value="">Selecciona tipo…</option>
+                <option value="directo">Contrato directo</option>
+                <option value="temporal">Empresa temporal</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="jefe-inmediato">Jefe inmediato</label>
+              <select class="form-select" id="jefe-inmediato" name="jefe-inmediato">
+                <option value="">Selecciona jefe…</option>
+              </select>
+              <span class="form-hint">Solo empleados con rol Jefe activos en el sistema.</span>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="fecha-ingreso">Fecha de ingreso <span class="required" aria-hidden="true">*</span></label>
+              <input class="form-input" type="date" id="fecha-ingreso" name="fecha-ingreso" required>
+            </div>
+            <div class="form-group" style="grid-column: 1 / -1">
+              <label class="form-label" for="dias-tomados">Días de vacaciones ya tomados antes del sistema</label>
+              <input class="form-input" type="number" id="dias-tomados" name="dias-tomados"
+                     min="0" inputmode="numeric" placeholder="0" style="max-width:10rem">
+              <span class="form-hint">Saldo inicial para empleados que ya existían antes de implementar el sistema.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 7. Contrato temporal (conditional) -->
+      <div class="form-section" id="seccion-temporal" hidden>
+        <div class="form-section-header">
+          <div class="form-section-icon" aria-hidden="true" style="background:var(--c-warning-100)">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="var(--c-warning-600)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+              <line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
+              <polyline points="10 9 9 9 8 9"/>
+            </svg>
+          </div>
+          <h2 class="form-section-title">Contrato temporal</h2>
+        </div>
+        <div class="form-section-body">
+          <div class="form-grid form-grid-3">
+            <div class="form-group">
+              <label class="form-label" for="empresa-temporal">Empresa temporal <span class="required" aria-hidden="true">*</span></label>
+              <select class="form-select" id="empresa-temporal" name="empresa-temporal">
+                <option value="">Selecciona empresa…</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="fecha-inicio-contrato">Inicio de contrato <span class="required" aria-hidden="true">*</span></label>
+              <input class="form-input" type="date" id="fecha-inicio-contrato" name="fecha-inicio-contrato">
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="fecha-fin-contrato">Fin de contrato <span class="required" aria-hidden="true">*</span></label>
+              <input class="form-input" type="date" id="fecha-fin-contrato" name="fecha-fin-contrato">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 8. Credenciales (solo Jefe) -->
+      <div class="form-section" data-roles="jefe" id="seccion-credenciales">
+        <div class="form-section-header">
+          <div class="form-section-icon" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+              <path d="M7 11V7a5 5 0 0110 0v4"/>
+            </svg>
+          </div>
+          <h2 class="form-section-title">Acceso al sistema</h2>
+        </div>
+        <div class="form-section-body">
+          <div class="alert alert--info" style="margin-bottom:var(--sp-5)" role="note">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
+            </svg>
+            <div class="alert-body">
+              <p>Se generará una <strong>contraseña temporal</strong> de un solo uso. El empleado deberá cambiarla en su primer inicio de sesión.</p>
+            </div>
+          </div>
+          <div class="form-group" style="max-width: 22rem">
+            <label class="form-label" for="correo-acceso">Correo de acceso <span class="required" aria-hidden="true">*</span></label>
+            <input class="form-input" type="email" id="correo-acceso" name="correo-acceso"
+                   autocomplete="off" spellcheck="false" placeholder="correo@empresa.com…">
+          </div>
+        </div>
+      </div>
+
+      <!-- Form actions -->
+      <div class="card-footer" style="background:transparent; border:none; padding: var(--sp-2) 0 var(--sp-8); justify-content:flex-start; gap:var(--sp-3)">
+        <button type="submit" class="btn btn-primary btn-lg" id="btn-guardar">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/>
+            <polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/>
+          </svg>
+          Guardar empleado
+        </button>
+        <a href="empleados.html" class="btn btn-secondary btn-lg">Cancelar</a>
+      </div>
+
+    </form>
+  </main>
+</div>
+
+<script src="js/data.js"></script>
+<script src="js/app.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  /* Populate selects */
+  const selSede = document.getElementById('sede');
+  DB.sedes.forEach(s => {
+    const o = document.createElement('option');
+    o.value = s.id; o.textContent = s.nombre; selSede.appendChild(o);
+  });
+  const selCargo = document.getElementById('cargo');
+  DB.cargos.forEach(c => {
+    const o = document.createElement('option');
+    o.value = c.id; o.textContent = c.nombre; selCargo.appendChild(o);
+  });
+  const selEmpT = document.getElementById('empresa-temporal');
+  DB.empresasTemporales.forEach(e => {
+    const o = document.createElement('option');
+    o.value = e.id; o.textContent = e.nombre; selEmpT.appendChild(o);
+  });
+  const selJefe = document.getElementById('jefe-inmediato');
+  DB.empleados.filter(e => e.rol === 'jefe' && e.estado === 'activo').forEach(j => {
+    const o = document.createElement('option');
+    o.value = j.id; o.textContent = j.nombre; selJefe.appendChild(o);
+  });
+
+  /* Conditional temporal section */
+  document.getElementById('tipo-vinculacion').addEventListener('change', function() {
+    const secTemporal = document.getElementById('seccion-temporal');
+    const isTemporal  = this.value === 'temporal';
+    secTemporal.hidden = !isTemporal;
+    secTemporal.querySelectorAll('[required]').forEach(el => {
+      el.required = isTemporal;
+    });
+  });
+
+  /* Pre-fill if editing */
+  const params = new URLSearchParams(window.location.search);
+  const editId = parseInt(params.get('id'), 10);
+  if (editId) {
+    const emp = DB.getEmpleado(editId);
+    if (emp) {
+      document.getElementById('bc-accion').textContent = 'Editar empleado';
+      document.getElementById('page-title').textContent = 'Editar empleado';
+      document.getElementById('nombre').value     = emp.nombre;
+      document.getElementById('cc').value         = emp.cc;
+      document.getElementById('fecha-nacimiento').value = emp.fechaNacimiento;
+      document.getElementById('telefono').value   = emp.telefono;
+      document.getElementById('correo').value     = emp.correo;
+      document.getElementById('direccion').value  = emp.direccion;
+      document.getElementById('ciudad').value     = emp.ciudad;
+      document.getElementById('departamento').value = emp.departamento;
+      document.getElementById('c-emergencia-nombre').value = emp.contactoEmergenciaNombre;
+      document.getElementById('c-emergencia-tel').value    = emp.contactoEmergenciaTel;
+      document.getElementById('escolaridad').value = emp.escolaridad;
+      document.getElementById('eps').value = emp.eps;
+      document.getElementById('arl').value = emp.arl;
+      document.getElementById('sede').value    = emp.sedeId;
+      document.getElementById('cargo').value   = emp.cargoId;
+      document.getElementById('rol-sistema').value = emp.rol;
+      document.getElementById('tipo-vinculacion').value = emp.tipoVinculacion;
+      document.getElementById('jefe-inmediato').value = emp.jefeInmediatoId || '';
+      document.getElementById('fecha-ingreso').value = emp.fechaIngreso;
+      document.getElementById('dias-tomados').value = emp.diasVacacionesTomados || 0;
+      document.getElementById('correo-acceso').value = emp.correoAcceso;
+      if (emp.tipoVinculacion === 'temporal') {
+        document.getElementById('seccion-temporal').hidden = false;
+        document.getElementById('empresa-temporal').value = emp.empresaTemporalId || '';
+        document.getElementById('fecha-inicio-contrato').value = emp.fechaInicioContrato || '';
+        document.getElementById('fecha-fin-contrato').value = emp.fechaFinContrato || '';
+      }
+    }
+  }
+
+  /* Form submit */
+  document.getElementById('form-empleado').addEventListener('submit', e => {
+    e.preventDefault();
+    const btn = document.getElementById('btn-guardar');
+    btn.classList.add('btn-loading');
+    btn.disabled = true;
+    setTimeout(() => {
+      showToast('Empleado guardado correctamente.', 'success');
+      window.location.href = 'empleados.html';
+    }, 900);
+  });
+});
+</script>
+</body>
+</html>

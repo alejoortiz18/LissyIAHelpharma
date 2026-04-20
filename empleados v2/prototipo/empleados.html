@@ -1,0 +1,299 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#1e3a8a">
+  <title>Empleados — GestiónRH</title>
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/components.css">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Saltar al contenido principal</a>
+
+<div class="app-layout">
+  <aside class="app-sidebar" id="sidebar-mount" aria-label="Navegación principal"></aside>
+
+  <header class="app-topbar" role="banner">
+    <div class="topbar-left">
+      <nav aria-label="Ruta de navegación">
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item"><span class="bc-current">Empleados</span></li>
+        </ol>
+      </nav>
+    </div>
+    <div class="topbar-right">
+      <div class="demo-badge">
+        <span class="demo-label">Demo&nbsp;— Rol:</span>
+        <select class="demo-select" id="role-switcher" aria-label="Cambiar rol para demostración">
+          <option value="jefe">Jefe de Sede</option>
+          <option value="regente">Regente</option>
+          <option value="auxiliar">Auxiliar de Regente</option>
+          <option value="operario">Operario</option>
+        </select>
+      </div>
+    </div>
+  </header>
+
+  <main class="app-main" id="main-content">
+    <div class="page-header">
+      <div class="page-header-info">
+        <h1 class="page-title">Empleados</h1>
+        <p class="page-desc" id="emp-count">—</p>
+      </div>
+      <div class="page-actions">
+        <a href="empleado-nuevo.html" class="btn btn-primary" data-roles="jefe,regente,auxiliar"
+           aria-label="Registrar nuevo empleado">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+               fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+          Nuevo empleado
+        </a>
+      </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="filter-bar" role="search" aria-label="Filtros de empleados">
+      <input class="form-input filter-search" type="search" id="f-search"
+             placeholder="Buscar por nombre o cédula…" autocomplete="off"
+             aria-label="Buscar empleado">
+      <select class="form-select" id="f-sede" aria-label="Filtrar por sede">
+        <option value="">Todas las sedes</option>
+      </select>
+      <select class="form-select" id="f-cargo" aria-label="Filtrar por cargo">
+        <option value="">Todos los cargos</option>
+      </select>
+      <select class="form-select" id="f-estado" aria-label="Filtrar por estado">
+        <option value="">Todos los estados</option>
+        <option value="activo">Activo</option>
+        <option value="inactivo">Inactivo</option>
+      </select>
+      <select class="form-select" id="f-tipo" aria-label="Filtrar por tipo de vinculación">
+        <option value="">Tipo de vinculación</option>
+        <option value="directo">Directo</option>
+        <option value="temporal">Temporal</option>
+      </select>
+      <button class="btn btn-ghost btn-sm" id="btn-clear-filters" type="button">Limpiar filtros</button>
+    </div>
+
+    <!-- Table -->
+    <div class="table-wrapper">
+      <div class="table-scroll">
+        <table aria-label="Lista de empleados">
+          <thead>
+            <tr>
+              <th scope="col">Empleado</th>
+              <th scope="col">Cédula</th>
+              <th scope="col">Cargo</th>
+              <th scope="col">Sede</th>
+              <th scope="col">Tipo</th>
+              <th scope="col">Rol</th>
+              <th scope="col">Estado</th>
+              <th scope="col">Ingreso</th>
+              <th scope="col"><span class="sr-only">Acciones</span></th>
+            </tr>
+          </thead>
+          <tbody id="tbody-empleados">
+            <tr><td colspan="9" class="table-empty">Cargando…</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="pagination" id="pagination" aria-label="Paginación">
+        <span class="pagination-info" id="pagination-info">—</span>
+        <div class="pagination-controls" id="pagination-controls" role="navigation" aria-label="Páginas"></div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="js/data.js"></script>
+<script src="js/app.js"></script>
+<script>
+const PAGE_SIZE = 10;
+let currentPage = 1;
+let filtered = [];
+
+function loadFilters() {
+  const selSede = document.getElementById('f-sede');
+  DB.sedes.forEach(s => {
+    const opt = document.createElement('option');
+    opt.value = s.id;
+    opt.textContent = s.nombre;
+    selSede.appendChild(opt);
+  });
+  const selCargo = document.getElementById('f-cargo');
+  DB.cargos.forEach(c => {
+    const opt = document.createElement('option');
+    opt.value = c.id;
+    opt.textContent = c.nombre;
+    selCargo.appendChild(opt);
+  });
+
+  /* Apply URL params as initial filter */
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('estado')) document.getElementById('f-estado').value = params.get('estado');
+  if (params.get('rol')) {
+    /* Custom: filter by role — add option */
+    const sel = document.getElementById('f-cargo');
+    sel.value = '';
+  }
+}
+
+function getFilters() {
+  return {
+    search: document.getElementById('f-search').value.trim().toLowerCase(),
+    sede:   document.getElementById('f-sede').value,
+    cargo:  document.getElementById('f-cargo').value,
+    estado: document.getElementById('f-estado').value,
+    tipo:   document.getElementById('f-tipo').value,
+  };
+}
+
+function applyFilters() {
+  const f = getFilters();
+  const role = getRole();
+  let data = DB.empleados;
+
+  /* Operario only sees themselves */
+  if (role === 'operario') {
+    data = data.filter(e => e.id === 4); /* Diana Vargas demo operario */
+  } else if (role !== 'jefe') {
+    /* Regente / Auxiliar: only their sede */
+    const user = DEMO_USER[role];
+    data = data.filter(e => e.sedeId === user.sedeId);
+  }
+
+  if (f.search) data = data.filter(e =>
+    e.nombre.toLowerCase().includes(f.search) || e.cc.includes(f.search));
+  if (f.sede)   data = data.filter(e => String(e.sedeId) === f.sede);
+  if (f.cargo)  data = data.filter(e => String(e.cargoId) === f.cargo);
+  if (f.estado) data = data.filter(e => e.estado === f.estado);
+  if (f.tipo)   data = data.filter(e => e.tipoVinculacion === f.tipo);
+
+  filtered = data;
+  currentPage = 1;
+  render();
+}
+
+function render() {
+  const total = filtered.length;
+  const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const start = (currentPage - 1) * PAGE_SIZE;
+  const slice = filtered.slice(start, start + PAGE_SIZE);
+
+  document.getElementById('emp-count').textContent =
+    `${total} empleado${total !== 1 ? 's' : ''} encontrado${total !== 1 ? 's' : ''}`;
+
+  const role = getRole();
+  const canEdit    = can('empleados.editar');
+  const canDeact   = can('empleados.desactivar');
+
+  const tbody = document.getElementById('tbody-empleados');
+  if (slice.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="9">
+      <div class="empty-state">
+        <div class="empty-icon" aria-hidden="true">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/>
+            <path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/>
+          </svg>
+        </div>
+        <p class="empty-title">Sin resultados</p>
+        <p class="empty-desc">No se encontraron empleados con los filtros aplicados.</p>
+      </div>
+    </td></tr>`;
+  } else {
+    tbody.innerHTML = slice.map(e => {
+      const cargo = DB.getCargo(e.cargoId);
+      const sede  = DB.getSede(e.sedeId);
+      return `<tr>
+        <td>
+          <div style="display:flex;align-items:center;gap:var(--sp-3)">
+            <div style="width:2rem;height:2rem;border-radius:var(--r-full);background:var(--c-brand-100);
+                        color:var(--c-brand-700);display:flex;align-items:center;justify-content:center;
+                        font-size:.6875rem;font-weight:700;flex-shrink:0" aria-hidden="true">
+              ${initials(e.nombre)}
+            </div>
+            <a href="empleado-perfil.html?id=${e.id}" class="table-link">${e.nombre}</a>
+          </div>
+        </td>
+        <td class="font-mono" style="font-size:.8125rem">${e.cc}</td>
+        <td>${cargo?.nombre || '—'}</td>
+        <td>${sede?.nombre || '—'}</td>
+        <td>${badgeTipo(e.tipoVinculacion)}</td>
+        <td>${badgeRol(e.rol)}</td>
+        <td>${badgeEstado(e.estado)}</td>
+        <td class="tabular-nums" style="font-size:.8125rem">${fmt.date(e.fechaIngreso)}</td>
+        <td>
+          <div class="table-actions">
+            <a href="empleado-perfil.html?id=${e.id}" class="btn btn-ghost btn-sm btn-icon" aria-label="Ver perfil de ${e.nombre}">
+              <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+              </svg>
+            </a>
+            ${canEdit ? `
+            <a href="empleado-nuevo.html?id=${e.id}" class="btn btn-ghost btn-sm btn-icon" aria-label="Editar a ${e.nombre}">
+              <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
+                <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+              </svg>
+            </a>` : ''}
+          </div>
+        </td>
+      </tr>`;
+    }).join('');
+  }
+
+  /* Pagination */
+  document.getElementById('pagination-info').textContent =
+    `Mostrando ${Math.min(start + 1, total)}–${Math.min(start + PAGE_SIZE, total)} de ${total}`;
+
+  const ctrl = document.getElementById('pagination-controls');
+  ctrl.innerHTML = '';
+  const prevBtn = document.createElement('button');
+  prevBtn.className = 'page-btn';
+  prevBtn.setAttribute('aria-label', 'Página anterior');
+  prevBtn.innerHTML = '‹';
+  prevBtn.disabled = currentPage === 1;
+  prevBtn.addEventListener('click', () => { currentPage--; render(); });
+  ctrl.appendChild(prevBtn);
+
+  for (let i = 1; i <= pages; i++) {
+    const btn = document.createElement('button');
+    btn.className = `page-btn${i === currentPage ? ' is-active' : ''}`;
+    btn.textContent = i;
+    btn.setAttribute('aria-label', `Página ${i}`);
+    if (i === currentPage) btn.setAttribute('aria-current', 'page');
+    btn.addEventListener('click', () => { currentPage = i; render(); });
+    ctrl.appendChild(btn);
+  }
+
+  const nextBtn = document.createElement('button');
+  nextBtn.className = 'page-btn';
+  nextBtn.setAttribute('aria-label', 'Página siguiente');
+  nextBtn.innerHTML = '›';
+  nextBtn.disabled = currentPage === pages;
+  nextBtn.addEventListener('click', () => { currentPage++; render(); });
+  ctrl.appendChild(nextBtn);
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  loadFilters();
+  applyFilters();
+
+  ['f-search','f-sede','f-cargo','f-estado','f-tipo'].forEach(id => {
+    const el = document.getElementById(id);
+    el.addEventListener(id === 'f-search' ? 'input' : 'change', applyFilters);
+  });
+
+  document.getElementById('btn-clear-filters').addEventListener('click', () => {
+    ['f-search','f-sede','f-cargo','f-estado','f-tipo'].forEach(id => {
+      document.getElementById(id).value = '';
+    });
+    applyFilters();
+  });
+});
+</script>
+</body>
+</html>

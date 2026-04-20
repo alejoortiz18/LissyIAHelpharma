@@ -1,0 +1,431 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#1e3a8a">
+  <title>Catálogos — GestiónRH</title>
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/components.css">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Saltar al contenido principal</a>
+
+<div class="app-layout">
+  <aside class="app-sidebar" id="sidebar-mount" aria-label="Navegación principal"></aside>
+
+  <header class="app-topbar" role="banner">
+    <div class="topbar-left">
+      <nav aria-label="Ruta de navegación">
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item"><span class="bc-current">Catálogos</span></li>
+        </ol>
+      </nav>
+    </div>
+    <div class="topbar-right">
+      <div class="demo-badge">
+        <span class="demo-label">Demo&nbsp;— Rol:</span>
+        <select class="demo-select" id="role-switcher" aria-label="Cambiar rol">
+          <option value="jefe">Jefe de Sede</option>
+          <option value="regente">Regente</option>
+          <option value="auxiliar">Auxiliar de Regente</option>
+          <option value="operario">Operario</option>
+        </select>
+      </div>
+    </div>
+  </header>
+
+  <main class="app-main" id="main-content">
+    <div class="page-header">
+      <div class="page-header-info">
+        <h1 class="page-title">Catálogos del sistema</h1>
+        <p class="page-desc">Administra las sedes, cargos y empresas temporales disponibles.</p>
+      </div>
+    </div>
+
+    <!-- Access guard message (non-jefe) -->
+    <div class="alert alert--warning" id="alert-restringido" hidden role="alert">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+        <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+      </svg>
+      <div class="alert-body">
+        <p class="alert-title">Acceso restringido</p>
+        <p>Solo el <strong>Jefe de Sede</strong> puede administrar los catálogos del sistema.</p>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs" id="catalogos-tabs">
+      <div class="tab-list" role="tablist" aria-label="Catálogos">
+        <button class="tab-btn is-active" role="tab" aria-selected="true"
+                aria-controls="tab-sedes" id="btn-sedes">Sedes</button>
+        <button class="tab-btn" role="tab" aria-selected="false"
+                aria-controls="tab-cargos" id="btn-cargos" tabindex="-1">Cargos</button>
+        <button class="tab-btn" role="tab" aria-selected="false"
+                aria-controls="tab-empresas" id="btn-empresas" tabindex="-1">Empresas Temporales</button>
+      </div>
+
+      <!-- Tab: Sedes -->
+      <div class="tab-panel" role="tabpanel" id="tab-sedes" aria-labelledby="btn-sedes">
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <h2 class="card-title">Sedes</h2>
+              <p class="card-desc">Ubicaciones donde opera la empresa.</p>
+            </div>
+            <button class="btn btn-primary btn-sm" onclick="abrirModalNuevo('sede')" data-roles="jefe">
+              <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+              </svg>
+              Nueva sede
+            </button>
+          </div>
+          <div class="table-wrapper">
+            <div class="table-scroll">
+              <table aria-label="Sedes">
+                <thead>
+                  <tr>
+                    <th scope="col">Nombre</th>
+                    <th scope="col">Ciudad</th>
+                    <th scope="col">Dirección</th>
+                    <th scope="col">Empleados</th>
+                    <th scope="col">Estado</th>
+                    <th scope="col" data-roles="jefe"><span class="sr-only">Acciones</span></th>
+                  </tr>
+                </thead>
+                <tbody id="tbody-sedes"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab: Cargos -->
+      <div class="tab-panel" role="tabpanel" id="tab-cargos" aria-labelledby="btn-cargos" hidden>
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <h2 class="card-title">Cargos</h2>
+              <p class="card-desc">Posiciones laborales disponibles para los empleados.</p>
+            </div>
+            <button class="btn btn-primary btn-sm" onclick="abrirModalNuevo('cargo')" data-roles="jefe">
+              <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+              </svg>
+              Nuevo cargo
+            </button>
+          </div>
+          <div class="table-wrapper">
+            <div class="table-scroll">
+              <table aria-label="Cargos">
+                <thead>
+                  <tr>
+                    <th scope="col">Nombre del cargo</th>
+                    <th scope="col">Descripción</th>
+                    <th scope="col">Empleados asignados</th>
+                    <th scope="col">Estado</th>
+                    <th scope="col" data-roles="jefe"><span class="sr-only">Acciones</span></th>
+                  </tr>
+                </thead>
+                <tbody id="tbody-cargos"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab: Empresas Temporales -->
+      <div class="tab-panel" role="tabpanel" id="tab-empresas" aria-labelledby="btn-empresas" hidden>
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <h2 class="card-title">Empresas Temporales</h2>
+              <p class="card-desc">Agencias que proveen empleados con contratación temporal.</p>
+            </div>
+            <button class="btn btn-primary btn-sm" onclick="abrirModalNuevo('empresa')" data-roles="jefe">
+              <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+              </svg>
+              Nueva empresa
+            </button>
+          </div>
+          <div class="table-wrapper">
+            <div class="table-scroll">
+              <table aria-label="Empresas temporales">
+                <thead>
+                  <tr>
+                    <th scope="col">Nombre</th>
+                    <th scope="col">NIT</th>
+                    <th scope="col">Contacto</th>
+                    <th scope="col">Teléfono</th>
+                    <th scope="col">Empleados activos</th>
+                    <th scope="col">Estado</th>
+                    <th scope="col" data-roles="jefe"><span class="sr-only">Acciones</span></th>
+                  </tr>
+                </thead>
+                <tbody id="tbody-empresas"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Modal Crear/Editar genérico -->
+<div class="modal-overlay" id="modal-catalogo" hidden aria-modal="true"
+     aria-labelledby="modal-cat-title" role="dialog">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 class="modal-title" id="modal-cat-title">Nuevo elemento</h2>
+      <button class="modal-close btn" data-modal-close aria-label="Cerrar">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+    <div class="modal-body" id="modal-cat-body"></div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" data-modal-close>Cancelar</button>
+      <button class="btn btn-primary" id="btn-guardar-catalogo">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Confirmar desactivar -->
+<div class="modal-overlay" id="modal-desactivar" hidden aria-modal="true"
+     aria-labelledby="desact-title" role="dialog">
+  <div class="modal modal--sm">
+    <div class="modal-header">
+      <h2 class="modal-title" id="desact-title">Desactivar elemento</h2>
+      <button class="modal-close btn" data-modal-close aria-label="Cerrar">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <p id="desact-msg" style="font-size:.9375rem;color:var(--c-gray-700)"></p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" data-modal-close>Cancelar</button>
+      <button class="btn btn-danger" id="btn-confirmar-desact">Desactivar</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/data.js"></script>
+<script src="js/app.js"></script>
+<script>
+let catalogoActual = null; /* 'sede' | 'cargo' | 'empresa' */
+let editarId       = null;
+let desactivarCb   = null;
+
+const FORM_FIELDS = {
+  sede: [
+    { id: 'f-nombre',    label: 'Nombre de la sede',  type: 'text',  req: true },
+    { id: 'f-ciudad',    label: 'Ciudad',              type: 'text',  req: true },
+    { id: 'f-direccion', label: 'Dirección',           type: 'text',  req: true },
+  ],
+  cargo: [
+    { id: 'f-nombre',      label: 'Nombre del cargo',  type: 'text',     req: true },
+    { id: 'f-descripcion', label: 'Descripción',        type: 'textarea', req: false },
+  ],
+  empresa: [
+    { id: 'f-nombre',   label: 'Nombre de la empresa', type: 'text', req: true },
+    { id: 'f-nit',      label: 'NIT',                  type: 'text', req: true },
+    { id: 'f-contacto', label: 'Nombre del contacto',  type: 'text', req: false },
+    { id: 'f-tel',      label: 'Teléfono',             type: 'tel',  req: false },
+  ]
+};
+
+const CATALOG_TITLES = { sede: 'Sede', cargo: 'Cargo', empresa: 'Empresa temporal' };
+
+function abrirModalNuevo(tipo, id) {
+  catalogoActual = tipo;
+  editarId       = id || null;
+  const isEdit   = !!id;
+  document.getElementById('modal-cat-title').textContent = isEdit
+    ? `Editar ${CATALOG_TITLES[tipo].toLowerCase()}`
+    : `Nueva ${CATALOG_TITLES[tipo].toLowerCase()}`;
+  const body = document.getElementById('modal-cat-body');
+  body.innerHTML = FORM_FIELDS[tipo].map(f => `
+    <div class="form-group">
+      <label class="form-label" for="${f.id}">${f.label}${f.req ? ' <span class="required" aria-hidden="true">*</span>' : ''}</label>
+      ${f.type === 'textarea'
+        ? `<textarea class="form-textarea" id="${f.id}" style="min-height:3rem"${f.req ? ' required' : ''}></textarea>`
+        : `<input class="form-input" type="${f.type}" id="${f.id}"${f.req ? ' required' : ''}>`}
+    </div>
+  `).join('');
+
+  if (isEdit) {
+    let item;
+    if (tipo === 'sede')    item = DB.getSede(id);
+    if (tipo === 'cargo')   item = DB.cargos.find(c => c.id === id);
+    if (tipo === 'empresa') item = DB.getEmpresaTemporal(id);
+    if (item) {
+      const fields = FORM_FIELDS[tipo];
+      const vals   = tipo === 'sede'
+        ? [item.nombre, item.ciudad, item.direccion]
+        : tipo === 'cargo'
+          ? [item.nombre, item.descripcion || '']
+          : [item.nombre, item.nit || '', item.contacto || '', item.telefono || ''];
+      fields.forEach((f, i) => {
+        const el = document.getElementById(f.id);
+        if (el) el.value = vals[i] || '';
+      });
+    }
+  }
+  openModal('modal-catalogo');
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  /* Role guard */
+  const role = getRole();
+  document.getElementById('alert-restringido').hidden = role === 'jefe';
+
+  renderSedes();
+  renderCargos();
+  renderEmpresas();
+
+  document.getElementById('btn-guardar-catalogo').addEventListener('click', () => {
+    const tipo = catalogoActual;
+    if (!tipo) return;
+
+    const first = document.getElementById(FORM_FIELDS[tipo][0].id);
+    if (!first.value.trim()) { showToast('El nombre es obligatorio.', 'error'); return; }
+
+    if (tipo === 'sede') {
+      const nombre    = document.getElementById('f-nombre').value.trim();
+      const ciudad    = document.getElementById('f-ciudad').value.trim();
+      const direccion = document.getElementById('f-direccion').value.trim();
+      if (!ciudad || !direccion) { showToast('Completa todos los campos obligatorios.', 'error'); return; }
+      if (editarId) {
+        const s = DB.getSede(editarId);
+        if (s) Object.assign(s, { nombre, ciudad, direccion });
+      } else {
+        DB.sedes.push({ id: Date.now(), nombre, ciudad, direccion, activo: true });
+      }
+      renderSedes();
+    } else if (tipo === 'cargo') {
+      const nombre      = document.getElementById('f-nombre').value.trim();
+      const descripcion = document.getElementById('f-descripcion').value.trim();
+      if (editarId) {
+        const c = DB.cargos.find(x => x.id === editarId);
+        if (c) Object.assign(c, { nombre, descripcion });
+      } else {
+        DB.cargos.push({ id: Date.now(), nombre, descripcion, activo: true });
+      }
+      renderCargos();
+    } else if (tipo === 'empresa') {
+      const nombre   = document.getElementById('f-nombre').value.trim();
+      const nit      = document.getElementById('f-nit').value.trim();
+      const contacto = document.getElementById('f-contacto').value.trim();
+      const telefono = document.getElementById('f-tel').value.trim();
+      if (!nit) { showToast('El NIT es obligatorio.', 'error'); return; }
+      if (editarId) {
+        const e = DB.getEmpresaTemporal(editarId);
+        if (e) Object.assign(e, { nombre, nit, contacto, telefono });
+      } else {
+        DB.empresasTemporales.push({ id: Date.now(), nombre, nit, contacto, telefono, activo: true });
+      }
+      renderEmpresas();
+    }
+
+    closeModal('modal-catalogo');
+    showToast(editarId ? 'Elemento actualizado.' : 'Elemento creado.', 'success');
+    editarId = null;
+  });
+
+  document.getElementById('btn-confirmar-desact').addEventListener('click', () => {
+    if (desactivarCb) { desactivarCb(); desactivarCb = null; }
+    closeModal('modal-desactivar');
+  });
+});
+
+function confirmarDesactivar(nombre, cb) {
+  document.getElementById('desact-msg').textContent =
+    `¿Desactivar "${nombre}"? Los empleados asociados no se eliminarán, pero no podrá asignarse este elemento a nuevos registros.`;
+  desactivarCb = cb;
+  openModal('modal-desactivar');
+}
+
+function renderSedes() {
+  const canEdit = can('catalogos');
+  const tbody   = document.getElementById('tbody-sedes');
+  if (DB.sedes.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><p class="empty-title">Sin sedes</p></div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = DB.sedes.map(s => {
+    const total = DB.empleados.filter(e => e.sedeId === s.id && e.estado === 'activo').length;
+    return `<tr>
+      <td style="font-weight:600">${s.nombre}</td>
+      <td>${s.ciudad}</td>
+      <td style="font-size:.8125rem">${s.direccion}</td>
+      <td class="tabular-nums">${total}</td>
+      <td>${s.activo !== false ? '<span class="badge badge-activo">Activa</span>' : '<span class="badge badge-inactivo">Inactiva</span>'}</td>
+      ${canEdit ? `<td>
+        <div style="display:flex;gap:var(--sp-1)">
+          <button class="btn btn-ghost btn-sm" onclick="abrirModalNuevo('sede', ${s.id})" aria-label="Editar sede ${s.nombre}">Editar</button>
+          ${s.activo !== false ? `<button class="btn btn-danger-outline btn-sm" onclick="confirmarDesactivar('${s.nombre}', () => { DB.getSede(${s.id}).activo = false; renderSedes(); showToast('Sede desactivada.','default'); })" aria-label="Desactivar sede ${s.nombre}">Desactivar</button>` : ''}
+        </div>
+      </td>` : '<td></td>'}
+    </tr>`;
+  }).join('');
+}
+
+function renderCargos() {
+  const canEdit = can('catalogos');
+  const tbody   = document.getElementById('tbody-cargos');
+  if (DB.cargos.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state"><p class="empty-title">Sin cargos</p></div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = DB.cargos.map(c => {
+    const total = DB.empleados.filter(e => e.cargoId === c.id && e.estado === 'activo').length;
+    return `<tr>
+      <td style="font-weight:600">${c.nombre}</td>
+      <td style="font-size:.8125rem;max-width:16rem">${c.descripcion || '—'}</td>
+      <td class="tabular-nums">${total}</td>
+      <td>${c.activo !== false ? '<span class="badge badge-activo">Activo</span>' : '<span class="badge badge-inactivo">Inactivo</span>'}</td>
+      ${canEdit ? `<td>
+        <div style="display:flex;gap:var(--sp-1)">
+          <button class="btn btn-ghost btn-sm" onclick="abrirModalNuevo('cargo', ${c.id})" aria-label="Editar cargo ${c.nombre}">Editar</button>
+          ${c.activo !== false && total === 0 ? `<button class="btn btn-danger-outline btn-sm" onclick="confirmarDesactivar('${c.nombre}', () => { DB.cargos.find(x => x.id === ${c.id}).activo = false; renderCargos(); showToast('Cargo desactivado.','default'); })">Desactivar</button>` : ''}
+        </div>
+      </td>` : '<td></td>'}
+    </tr>`;
+  }).join('');
+}
+
+function renderEmpresas() {
+  const canEdit = can('catalogos');
+  const tbody   = document.getElementById('tbody-empresas');
+  if (DB.empresasTemporales.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><p class="empty-title">Sin empresas</p></div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = DB.empresasTemporales.map(e => {
+    const total = DB.empleados.filter(emp => emp.empresaTemporalId === e.id && emp.estado === 'activo').length;
+    return `<tr>
+      <td style="font-weight:600">${e.nombre}</td>
+      <td class="tabular-nums font-mono" style="font-size:.8125rem">${e.nit || '—'}</td>
+      <td>${e.contacto || '—'}</td>
+      <td>${e.telefono || '—'}</td>
+      <td class="tabular-nums">${total}</td>
+      <td>${e.activo !== false ? '<span class="badge badge-activo">Activa</span>' : '<span class="badge badge-inactivo">Inactiva</span>'}</td>
+      ${canEdit ? `<td>
+        <div style="display:flex;gap:var(--sp-1)">
+          <button class="btn btn-ghost btn-sm" onclick="abrirModalNuevo('empresa', ${e.id})" aria-label="Editar empresa ${e.nombre}">Editar</button>
+          ${e.activo !== false ? `<button class="btn btn-danger-outline btn-sm" onclick="confirmarDesactivar('${e.nombre}', () => { DB.getEmpresaTemporal(${e.id}).activo = false; renderEmpresas(); showToast('Empresa desactivada.','default'); })">Desactivar</button>` : ''}
+        </div>
+      </td>` : '<td></td>'}
+    </tr>`;
+  }).join('');
+}
+</script>
+</body>
+</html>

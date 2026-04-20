@@ -1,0 +1,544 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#1e3a8a">
+  <title>Horas Extras — GestiónRH</title>
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/components.css">
+</head>
+<body>
+<a class="skip-link" href="#main-content">Saltar al contenido principal</a>
+
+<div class="app-layout">
+  <aside class="app-sidebar" id="sidebar-mount" aria-label="Navegación principal"></aside>
+
+  <header class="app-topbar" role="banner">
+    <div class="topbar-left">
+      <nav aria-label="Ruta de navegación">
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item"><span class="bc-current">Horas Extras</span></li>
+        </ol>
+      </nav>
+    </div>
+    <div class="topbar-right">
+      <div class="demo-badge">
+        <span class="demo-label">Demo&nbsp;— Rol:</span>
+        <select class="demo-select" id="role-switcher" aria-label="Cambiar rol">
+          <option value="jefe">Jefe de Sede</option>
+          <option value="regente">Regente</option>
+          <option value="auxiliar">Auxiliar de Regente</option>
+          <option value="operario">Operario</option>
+        </select>
+      </div>
+    </div>
+  </header>
+
+  <main class="app-main" id="main-content">
+    <div class="page-header">
+      <div class="page-header-info">
+        <h1 class="page-title">Horas Extras</h1>
+        <p class="page-desc">Registro y aprobación de horas extras de los empleados.</p>
+      </div>
+      <div class="page-actions">
+        <button class="btn btn-primary" data-modal-open="modal-nueva-he" data-roles="jefe,regente,auxiliar">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+          Nueva solicitud
+        </button>
+      </div>
+    </div>
+
+    <!-- Stats (jefe only) -->
+    <div class="stats-grid" id="he-stats" data-roles="jefe,regente,auxiliar"
+         style="--cols:3;gap:var(--sp-4);margin-bottom:var(--sp-6)">
+      <div class="stat-card">
+        <span class="stat-label">Pendientes de aprobación</span>
+        <span class="stat-value" id="stat-pendientes">—</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-label">Aprobadas este mes</span>
+        <span class="stat-value" id="stat-aprobadas">—</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-label">Horas totales aprobadas</span>
+        <span class="stat-value" id="stat-horas">—</span>
+      </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="filter-bar" role="search" aria-label="Filtros de horas extras">
+      <input class="form-input filter-search" type="search" id="f-empleado"
+             placeholder="Buscar empleado…" autocomplete="off" aria-label="Buscar por empleado">
+      <input class="form-input" type="date" id="f-fecha" aria-label="Fecha del evento">
+      <select class="form-select" id="f-estado" aria-label="Estado">
+        <option value="">Todos los estados</option>
+        <option value="pendiente">Pendiente</option>
+        <option value="aprobado">Aprobado</option>
+        <option value="rechazado">Rechazado</option>
+        <option value="anulado">Anulado</option>
+        <option value="anulado">Anulado</option>
+      </select>
+      <button class="btn btn-ghost btn-sm" id="btn-clear" type="button">Limpiar</button>
+    </div>
+
+    <!-- Table -->
+    <div class="table-wrapper">
+      <div class="table-scroll">
+        <table aria-label="Solicitudes de horas extras">
+          <thead>
+            <tr>
+              <th scope="col">Empleado</th>
+              <th scope="col">Sede</th>
+              <th scope="col">Fecha</th>
+              <th scope="col">Horas</th>
+              <th scope="col">Motivo</th>
+              <th scope="col">Estado</th>
+              <th scope="col"><span class="sr-only">Acciones</span></th>
+            </tr>
+          </thead>
+          <tbody id="tbody-he"></tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Modal Nueva Solicitud -->
+<div class="modal-overlay" id="modal-nueva-he" hidden aria-modal="true"
+     aria-labelledby="he-title" role="dialog">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 class="modal-title" id="he-title">Nueva solicitud de hora extra</h2>
+      <button class="modal-close btn" data-modal-close aria-label="Cerrar">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <form id="form-he" novalidate>
+        <div class="form-group">
+          <label class="form-label" for="he-empleado">Empleado <span class="required" aria-hidden="true">*</span></label>
+          <select class="form-select" id="he-empleado" name="empleado" required>
+            <option value="">Selecciona empleado…</option>
+          </select>
+        </div>
+        <div class="form-grid form-grid-2">
+          <div class="form-group">
+            <label class="form-label" for="he-fecha">Fecha <span class="required" aria-hidden="true">*</span></label>
+            <input class="form-input" type="date" id="he-fecha" name="fecha" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="he-horas">Horas extras <span class="required" aria-hidden="true">*</span></label>
+            <input class1" max="24" step="0.5" inputmode="decimal" placeholder="Ej. 2" required>
+            <span class="form-hint">Entre 1 y 24utmode="decimal" placeholder="Ej. 2" required>
+            <span class="form-hint">Entre 1 y 24 horas por solicitud.</span>
+          </div>
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+          <label class="form-label" for="he-motivo">Motivo <span class="required" aria-hidden="true">*</span></label>
+          <textarea class="form-textarea" id="he-motivo" name="motivo"
+                    placeholder="Describe el motivo de las horas extras…" style="min-height:3.5rem" required></textarea>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" data-modal-close>Cancelar</button>
+      <button class="btn btn-primary" id="btn-guardar-he">Registrar solicitud</button>
+    </div>
+  </div>
+</div>
+Anular (sobre solicitudes Aprobadas) -->
+<div class="modal-overlay" id="modal-anular-he" hidden aria-modal="true"
+     aria-labelledby="anular-he-title" role="dialog">
+  <div class="modal modal--sm">
+    <div class="modal-header">
+      <h2 class="modal-title" id="anular-he-title">Anular horas aprobadas</h2>
+      <button class="modal-close btn" data-modal-close aria-label="Cerrar">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="alert alert--warning" role="alert" style="margin-bottom:var(--sp-4)">
+        <strong>Esta acción anula horas ya aprobadas.</strong> Es diferente a un rechazo: se usa para corregir un registro aprobado por error. El historial queda guardado.
+      </div>
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label" for="motivo-anulacion-he">Motivo de anulación <span class="required" aria-hidden="true">*</span></label>
+        <textarea class="form-textarea" id="motivo-anulacion-he" name="motivo-anulacion-he"
+                  placeholder="Describe el motivo de la anulación…" style="min-height:5rem"></textarea>
+        <span class="form-error" id="err-anulacion" role="alert" hidden>El motivo es obligatorio.</span>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" data-modal-close>Cancelar</button>
+      <button class="btn btn-danger" id="btn-confirmar-anulacion-he">Confirmar anulación</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal 
+<!-- Modal Anular (sobre solicitudes Aprobadas) -->
+<div class="modal-overlay" id="modal-anular-he" hidden aria-modal="true"
+     aria-labelledby="anular-he-title" role="dialog">
+  <div class="modal modal--sm">
+    <div class="modal-header">
+      <h2 class="modal-title" id="anular-he-title">Anular horas aprobadas</h2>
+      <button class="modal-close btn" data-modal-close aria-label="Cerrar">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="alert alert--warning" role="alert" style="margin-bottom:var(--sp-4)">
+        <strong>Esta acción anula horas ya aprobadas.</strong> Es diferente a un rechazo: se usa para corregir un registro aprobado por error. El historial queda guardado.
+      </div>
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label" for="motivo-anulacion-he">Motivo de anulación <span class="required" aria-hidden="true">*</span></label>
+        <textarea class="form-textarea" id="motivo-anulacion-he" name="motivo-anulacion-he"
+                  placeholder="Describe el motivo de la anulación…" style="min-height:5rem"></textarea>
+        <span class="form-error" id="err-anulacion" role="alert" hidden>El motivo es obligatorio.</span>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" data-modal-close>Cancelar</button>
+      <button class="btn btn-danger" id="btn-confirmar-anulacion-he">Confirmar anulación</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Rechazar -->
+let anularHeId   = null;
+
+function iniciarAnulacion(id) {
+  anularHeId = id;
+  document.getElementById('motivo-anulacion-he').value = '';
+  document.getElementById('err-anulacion').hidden = true;
+  openModal('modal-anular-he');
+}
+<div class="modal-overlay" id="modal-rechazar" hidden aria-modal="true"
+     aria-labelledby="rechazar-title" role="dialog">
+  <div class="modal modal--sm">
+    <div class="modal-header">
+      <h2 class="modal-title" id="rechazar-title">Rechazar solicitud</h2>
+      <button class="modal-close btn" data-modal-close aria-label="Cerrar">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label" for="motivo-rechazo">Motivo del rechazo <span class="required" aria-hidden="true">*</span></label>
+        <textarea class="form-textarea" id="motivo-rechazo" name="motivo-rechazo"
+                  placeholder="Explica el motivo del rechazo…" style="min-height:3.5rem"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" data-modal-close>Cancelar</button>
+      <button class="btn btn-danger" id="btn-confirmar-rechazo">Confirmar rechazo</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/data.js"></script>
+<script src="js/app.js"></script>
+<script>
+/* Simulated logged-in user mapping for "own request" logic */
+const DEMO_EMPLEADO_MAP = { jefe: 1, regente: 2, auxiliar: 3, operario: 4 };
+let rechazarHeId = null;
+let anularHeId   = null;
+
+function iniciarAnulacion(id) {
+  anularHeId = id;
+  document.getElementById('motivo-anulacion-he').value = '';
+  document.getElementById('err-anulacion').hidden = true;
+  openModal('modal-anular-he');
+}
+
+function loadEmpleadosSelect() {
+  const sel  = document.getElementById('he-empleado');
+  const role = getRole();
+  let emps   = DB.empleados.filter(e => e.estado === 'activo');
+  if (role !== 'jefe') {
+    const user = DEMO_USER[role];
+    emps = emps.filter(e => e.sedeId === user.sedeId);
+  }
+  emps.forEach(e => {
+    const o = document.createElement('option');
+    o.value = e.id; o.textContent = e.nombre; sel.appendChild(o);
+  });
+}
+
+function updateStats() {
+  const now = new Date().toISOString().slice(0,7); /* YYYY-MM */
+  const pendientes = DB.horasExtras.filter(h => h.estado === 'pendiente').length;
+  const aprobadas  = DB.horasExtras.filter(h => h.estado === 'aprobado' && h.fecha.startsWith(now)).length;
+  const horas      = DB.horasExtras
+    .filter(h => h.estado === 'aprobado' && h.fecha.startsWith(now))
+    .reduce((s, h) => s + h.horas, 0);
+  document.getElementById('stat-pendientes').textContent = pendientes;
+  document.getElementById('stat-aprobadas').textContent  = aprobadas;
+  document.getElementById('stat-horas').textContent      = `${horas} h`;
+}
+
+function renderTabla() {
+  const search = document.getElementById('f-empleado').value.trim().toLowerCase();
+  const fecha  = document.getElementById('f-fecha').value;
+  const estado = document.getElementById('f-estado').value;
+  const role   = getRole();
+  const loggedEmpId = DEMO_EMPLEADO_MAP[role];
+
+  let data = [...DB.horasExtras].reverse();-pendiente" title="Las propias horas extras requieren aprobación de Administrador Global">Requiere Admin Global</span>`;
+      } else if (canAprobar && !esMia) {
+        acciones = `
+          <div style="display:flex;gap:var(--sp-1)">
+            <button class="btn btn-success btn-sm" onclick="aprobarHE(${h.id})" aria-label="Aprobar solicitud de ${emp?.nombre}">
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polyline points="20 6 9 17 4 12"/>
+              </svg>
+              Aprobar
+            </button>
+            <button class="btn btn-danger-outline btn-sm" onclick="iniciarRechazo(${h.id})" aria-label="Rechazar solicitud de ${emp?.nombre}">
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true">
+                <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
+              Rechazar
+            </button>
+          </div>`;
+      }
+    } else if (h.estado === 'aprobado' && canAprobar) {
+      acciones = `<button class="btn btn-danger-outline btn-sm" onclick="iniciarAnulacion(${h.id})"
+        aria-label="Anular horas aprobadas de ${emp?.nombre || ''}"
+        title="Anular: corregir una aprobación realizada por error">
+          Anular
+        </button>`;
+    }
+    const metaEstado = h.estado === 'aprobado'
+      ? `<span style="display:block;font-size:.7rem;color:var(--c-gray-400);margin-top:2px">por ${h.aprobadoPor || '—'}</span>`
+      : h.estado === 'rechazado' && h.motivoRechazo
+      ? `<span style="display:block;font-size:.7rem;color:var(--c-gray-400);margin-top:2px" title="${h.motivoRechazo}">Motivo: ${h.motivoRechazo.slice(0,30)}${h.motivoRechazo.length>30?'…':''}</span>`
+      : h.estado === 'anulado' && h.anuladoPor
+      ? `<span style="display:block;font-size:.7rem;color:var(--c-gray-400);margin-top:2px">por ${h.anuladoPor}</span>`
+      : '';body.innerHTML = `<tr><td colspan="7">
+      <div class="empty-state">
+        <div class="empty-icon" aria-hidden="true">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+          </svg>
+        </div>
+        <p class="empty-title">Sin${metaEstado} solicitudes</p>
+        <p class="empty-desc">No se encontraron solicitudes con los filtros aplicados.</p>
+      </div>
+    </td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = data.map(h => {
+    const emp  = DB.getEmpleado(h.empleadoId);
+    const sede = emp ? DB.getSede(emp.sedeId) : null;
+    const esMia = h.empleadoId === loggedEmpId;
+    let acciones = '';
+    if (h.estado === 'pendiente') {
+      if (canAprobar && esMia) {
+        acciones = `<span class="badge badge--pendiente" title="Las propias horas extras requieren aprobación de Administrador Global">Requiere Admin Global</span>`;
+      } else if (canAprobar && !esMia) {
+        acciones = `
+          <div style="display:flex;gap:var(--sp-1)">
+            <button class="btn btn-success btn-sm" onclick="aprobarHE(${h.id})" aria-label="Aprobar solicitud de ${emp?.nombre}">
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polyline points="20 6 9 17 4 12"/>
+              </svg>
+              Aprobar
+            </button>
+            <button class="btn btn-danger-outline btn-sm" onclick="iniciarRechazo(${h.id})" aria-label="Rechazar solicitud de ${emp?.nombre}">
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true">
+                <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
+              Rechazar
+            </button>
+          </div>`;
+      }
+    } else if (h.estado === 'aprobado' && canAprobar) {
+      acciones = `<button class="btn btn-danger-outline btn-sm" onclick="iniciarAnulacion(${h.id})"
+        aria-label="Anular horas aprobadas de ${emp?.nombre || ''}"
+        title="Anular: corregir una aprobación realizada por error">
+          Anular
+        </button>`;
+    }
+    const metaEstado = h.estado === 'aprobado'
+      ? `<span s1 || horas > 24) {
+      showToast('Las horas deben estar entre 1 y 24.', 'error'); return;
+    }
+    /* Validación: unicidad por día (EmpleadoService rule) */
+    const duplicate = DB.horasExtras.find(h =>
+      h.empleadoId === empId && h.fecha === fecha &&
+      h.estado !== 'rechazado' && h.estado !== 'anulado'
+    );
+    if (duplicate) {
+      showToast('Ya existe una solicitud activa para este empleado en esa fecha.', 'error'); return;
+    }
+    /* Validación: disponibilidad del empleado (evento activo ese día) */
+    const activeEvent = DB.eventos.find(e =>
+      e.empleadoId === empId &&
+      e.estado === 'activo' &&
+      e.fechaInicio <= fecha && e.fechaFin >= fecha
+    );
+    if (activeEvent) {
+      const emp = DB.getEmpleado(empId);
+      showToast(`${emp?.nombre || 'El empleado'} no está disponible el ${fmt.date(fecha)} (tiene un evento activo).`, 'error'); return;
+    }
+    const loggedEmpId = DEMO_EMPLEADO_MAP[getRole()];
+    const esPropio = empId === loggedEmpId && getRole() === 'jefe';
+    DB.horasExtras.push({
+      id: Date.now(), empleadoId: empId, fecha, horas, motivo,
+      estado: 'pendiente',
+      aprobadoPor: null, fechaAprobacion: null, motivoRechazo: null,
+      anuladoPor: null, fechaAnulacion: null, motivoAnulacion: null,
+      esJefePropiasSolicitud: esPropio,
+    });
+    closeModal('modal-nueva-he');
+    document.getElementById('form-he').reset();
+    showToast('Solicitud registrada. Pendiente de aprobación.', 'success');
+    updateStats();
+    renderTabla();
+  });
+
+  document.getElementById('btn-confirmar-anulacion-he').addEventListener('click', () => {
+    const motivo = document.getElementById('motivo-anulacion-he').value.trim();
+    const errEl  = document.getElementById('err-anulacion');
+    if (!motivo) { errEl.hidden = false; document.getElementById('motivo-anulacion-he').focus(); return; }
+    errEl.hidden = true;
+    const h = DB.horasExtras.find(x => x.id === anularHeId);
+    if (h) {
+      h.estado         = 'anulado';
+      h.motivoAnulacion = motivo;
+      h.anuladoPor      = DEMO_USER[getRole()].nombre;
+      h.fechaAnulacion  = new Date().toISOString().split('T')[0];
+    }
+    closeModal('modal-anular-he');
+    showToast('Horas extras anuladas.', 'default
+      <td><a href="empleado-perfil.html?id=${emp?.id}" class="table-link">${emp?.nombre || '—'}</a></td>
+      <td>${sede?.nombre || '—'}</td>
+      <td class="tabular-nums" style="font-size:.8125rem">${fmt.date(h.fecha)}</td>
+      <td class="tabular-nums" style="font-weight:600">${h.horas} h</td>
+      <td style="font-size:.8125rem;max-width:12rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${h.motivo}">${h.motivo}</td>
+      <td>${badgeEstado(h.estado)}${metaEstado}</td>
+      <td>${acciones}</td>
+    </tr>`;
+  }).join('');
+}
+
+function aprobarHE(id) {
+  const h = DB.horasExtras.find(x => x.id === id);
+  if (h) {
+    h.estado = 'aprobado';
+    h.aprobadoPor = DEMO_USER[getRole()].nombre;
+    h.fechaAprobacion = new Date().toISOString().split('T')[0];
+  }
+  showToast('Hora extra aprobada.', 'success');
+  updateStats();
+  renderTabla();
+}
+
+function iniciarRechazo(id) {
+  rechazarHeId = id;
+  openModal('modal-rechazar');
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  loadEmpleadosSelect();
+  updateStats();
+  renderTabla();
+
+  ['f-empleado','f-fecha','f-estado'].forEach(id => {
+    document.getElementById(id).addEventListener(id === 'f-empleado' ? 'input' : 'change', renderTabla);
+  });
+  document.getElementById('btn-clear').addEventListener('click', () => {
+    ['f-empleado','f-fecha','f-estado'].forEach(id => document.getElementById(id).value = '');
+    renderTabla();
+  });
+
+  document.getElementById('btn-guardar-he').addEventListener('click', () => {
+    const empId  = parseInt(document.getElementById('he-empleado').value);
+    const fecha  = document.getElementById('he-fecha').value;
+    const horas  = parseFloat(document.getElementById('he-horas').value);
+    const motivo = document.getElementById('he-motivo').value.trim();
+    if (!empId || !fecha || !horas || !motivo) {
+      showToast('Completa todos los campos obligatorios.', 'error'); return;
+    }
+    if (horas < 1 || horas > 24) {
+      showToast('Las horas deben estar entre 1 y 24.', 'error'); return;
+    }
+    /* Validación: unicidad por día (EmpleadoService rule) */
+    const duplicate = DB.horasExtras.find(h =>
+      h.empleadoId === empId && h.fecha === fecha &&
+      h.estado !== 'rechazado' && h.estado !== 'anulado'
+    );
+    if (duplicate) {
+      showToast('Ya existe una solicitud activa para este empleado en esa fecha.', 'error'); return;
+    }
+    /* Validación: disponibilidad del empleado (evento activo ese día) */
+    const activeEvent = DB.eventos.find(e =>
+      e.empleadoId === empId &&
+      e.estado === 'activo' &&
+      e.fechaInicio <= fecha && e.fechaFin >= fecha
+    );
+    if (activeEvent) {
+      const emp = DB.getEmpleado(empId);
+      showToast(`${emp?.nombre || 'El empleado'} no está disponible el ${fmt.date(fecha)} (tiene un evento activo).`, 'error'); return;
+    }
+    const loggedEmpId = DEMO_EMPLEADO_MAP[getRole()];
+    const esPropio = empId === loggedEmpId && getRole() === 'jefe';
+    DB.horasExtras.push({
+      id: Date.now(), empleadoId: empId, fecha, horas, motivo,
+      estado: 'pendiente',
+      aprobadoPor: null, fechaAprobacion: null, motivoRechazo: null,
+      anuladoPor: null, fechaAnulacion: null, motivoAnulacion: null,
+      esJefePropiasSolicitud: esPropio,
+    });
+    closeModal('modal-nueva-he');
+    document.getElementById('form-he').reset();
+    showToast('Solicitud registrada. Pendiente de aprobación.', 'success');
+    updateStats();
+    renderTabla();
+  });
+
+  document.getElementById('btn-confirmar-anulacion-he').addEventListener('click', () => {
+    const motivo = document.getElementById('motivo-anulacion-he').value.trim();
+    const errEl  = document.getElementById('err-anulacion');
+    if (!motivo) { errEl.hidden = false; document.getElementById('motivo-anulacion-he').focus(); return; }
+    errEl.hidden = true;
+    const h = DB.horasExtras.find(x => x.id === anularHeId);
+    if (h) {
+      h.estado         = 'anulado';
+      h.motivoAnulacion = motivo;
+      h.anuladoPor      = DEMO_USER[getRole()].nombre;
+      h.fechaAnulacion  = new Date().toISOString().split('T')[0];
+    }
+    closeModal('modal-anular-he');
+    showToast('Horas extras anuladas.', 'default');
+    updateStats();
+    renderTabla();
+  });
+
+  document.getElementById('btn-confirmar-rechazo').addEventListener('click', () => {
+    const motivo = document.getElementById('motivo-rechazo').value.trim();
+    if (!motivo) { showToast('El motivo es obligatorio.', 'error'); return; }
+    const h = DB.horasExtras.find(x => x.id === rechazarHeId);
+    if (h) { h.estado = 'rechazado'; h.motivoRechazo = motivo; }
+    closeModal('modal-rechazar');
+    document.getElementById('motivo-rechazo').value = '';
+    showToast('Solicitud rechazada.', 'default');
+    updateStats();
+    renderTabla();
+  });
+});
+</script>
+</body>
+</html>

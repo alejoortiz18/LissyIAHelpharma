@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#1e3a8a">
+  <title>Iniciar sesión — GestiónRH</title>
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/components.css">
+</head>
+<body>
+  <a class="skip-link" href="#login-form">Saltar al formulario</a>
+
+  <div class="login-page">
+    <main class="login-card" id="login-form">
+
+      <!-- Brand -->
+      <div class="login-brand">
+        <div class="login-logo-box" aria-hidden="true">
+          <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24"
+               fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
+            <circle cx="9" cy="7" r="4"/>
+            <path d="M23 21v-2a4 4 0 00-3-3.87"/>
+            <path d="M16 3.13a4 4 0 010 7.75"/>
+          </svg>
+        </div>
+        <div>
+          <div class="login-brand-name">GestiónRH</div>
+          <div class="login-brand-sub">Sistema de Administración de Empleados</div>
+        </div>
+      </div>
+
+      <h1 class="login-heading">Bienvenido</h1>
+      <p class="login-sub">Ingresa tus credenciales para acceder al sistema.</p>
+
+      <!-- Login Form -->
+      <form id="form-login" novalidate>
+        <div class="form-group">
+          <label class="form-label" for="email">
+            Correo electrónico <span class="required" aria-hidden="true">*</span>
+          </label>
+          <input
+            class="form-input"
+            type="email"
+            id="email"
+            name="email"
+            autocomplete="email"
+            spellcheck="false"
+            placeholder="nombre@empresa.com…"
+            required
+          >
+          <span class="form-error" id="email-error" role="alert" hidden></span>
+        </div>
+
+        <div class="form-group" style="margin-bottom: var(--sp-2)">
+          <label class="form-label" for="password">
+            Contraseña <span class="required" aria-hidden="true">*</span>
+          </label>
+          <input
+            class="form-input"
+            type="password"
+            id="password"
+            name="password"
+            autocomplete="current-password"
+            placeholder="Tu contraseña…"
+            required
+          >
+          <span class="form-error" id="pw-error" role="alert" hidden></span>
+        </div>
+
+        <div style="text-align: right; margin-bottom: var(--sp-6)">
+          <a href="#" class="bc-link" style="font-size:.8125rem; font-weight:600">
+            ¿Olvidaste tu contraseña?
+          </a>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-lg" style="width:100%" id="btn-login">
+          Iniciar sesión
+        </button>
+      </form>
+
+      <!-- Demo Quick Login -->
+      <div class="login-footer">
+        <p class="login-footer-label">Demo — Entrar como</p>
+        <div class="quick-roles">
+          <button class="quick-role-btn" data-demo-role="jefe"     type="button">Jefe de Sede</button>
+          <button class="quick-role-btn" data-demo-role="regente"  type="button">Regente</button>
+          <button class="quick-role-btn" data-demo-role="auxiliar" type="button">Auxiliar</button>
+          <button class="quick-role-btn" data-demo-role="operario" type="button">Operario</button>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <script src="js/data.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+    /* ── Login page logic ──────────────────────────────────── */
+    const form = document.getElementById('form-login');
+    const btnLogin = document.getElementById('btn-login');
+
+    form.addEventListener('submit', e => {
+      e.preventDefault();
+      const email = document.getElementById('email').value.trim();
+      const pw    = document.getElementById('password').value;
+      let valid = true;
+
+      const emailErr = document.getElementById('email-error');
+      const pwErr    = document.getElementById('pw-error');
+      emailErr.hidden = true;
+      pwErr.hidden    = true;
+      document.getElementById('email').classList.remove('is-error');
+      document.getElementById('password').classList.remove('is-error');
+
+      if (!email) {
+        emailErr.textContent = 'El correo es obligatorio.';
+        emailErr.hidden = false;
+        document.getElementById('email').classList.add('is-error');
+        document.getElementById('email').focus();
+        valid = false;
+      }
+      if (!pw && valid) {
+        pwErr.textContent = 'La contraseña es obligatoria.';
+        pwErr.hidden = false;
+        document.getElementById('password').classList.add('is-error');
+        document.getElementById('password').focus();
+        valid = false;
+      }
+      if (!valid) return;
+
+      btnLogin.classList.add('btn-loading');
+      btnLogin.disabled = true;
+
+      setTimeout(() => {
+        /* In prototype: accept any non-empty credentials */
+        const role = localStorage.getItem('gh_role') || 'jefe';
+        window.location.href = role === 'jefe' ? 'dashboard.html' : 'empleados.html';
+      }, 900);
+    });
+
+    /* Quick demo buttons */
+    document.querySelectorAll('[data-demo-role]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const rol = btn.getAttribute('data-demo-role');
+        localStorage.setItem('gh_role', rol);
+        window.location.href = rol === 'jefe' ? 'dashboard.html' : 'empleados.html';
+      });
+    });
+
+    /* Pre-fill demo credentials on load */
+    document.getElementById('email').value = 'demo@empresa.com';
+  </script>
+</body>
+</html>
