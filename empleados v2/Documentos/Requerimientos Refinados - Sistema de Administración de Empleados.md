@@ -147,7 +147,7 @@ Desde esta vista el Jefe puede acceder al perfil completo (modo solo-lectura) y 
 | **Vinculación** | Sede, Cargo, Rol en el sistema, Tipo de vinculación (`Directo` / `Temporal`), Jefe inmediato, Fecha de ingreso | Al seleccionar la **Sede**, el campo **Jefe inmediato** se actualiza automáticamente mostrando solo los jefes activos asignados a esa sede. Si la sede no tiene Jefe asignado aún, el campo muestra “Sin Jefe asignado” (no bloquea el guardado) |
 | **Contrato temporal** *(condicional)* | Nombre de empresa temporal, Fecha inicio contrato, Fecha fin contrato | Solo visible y obligatorio si Tipo = `Temporal` |
 | **Estado** | `Activo` / `Inactivo` | Al pasar a Inactivo → activar formulario de desvinculación |
-| **Credenciales** | Correo de acceso, Contraseña (hash bcrypt) | Solo el Jefe puede crear usuarios |
+| **Credenciales** | Correo de acceso, Contraseña (hash HMACSHA512 + salt aleatorio por usuario) | Solo el Jefe puede crear usuarios |
 
 ### Flujo de desvinculación
 
@@ -530,7 +530,7 @@ Es infraestructura base. Debe construirse en paralelo o antes del Pitch 1, no al
 
 ## 3. Solución
 
-- **Inicio de sesión:** correo electrónico + contraseña. Contraseñas almacenadas con **hash bcrypt**.
+- **Inicio de sesión:** correo electrónico + contraseña. Contraseñas almacenadas con **hash HMACSHA512 + salt aleatorio por usuario** (`PasswordHash` + `PasswordSalt`, ambos `VARBINARY` en BD). Nunca se persiste la contraseña en texto plano ni como hash reversible.
 - **Contraseña temporal:** cuando el Jefe crea un usuario, el sistema asigna una contraseña temporal de un solo uso. El usuario debe cambiarla en el primer inicio de sesión.
 - **Recuperación de contraseña:** flujo estándar por correo electrónico (enlace de restablecimiento con token de un solo uso, expiración de 1 hora).
 - **Cierre de sesión por inactividad:** la sesión expira tras **30 minutos sin actividad** (configurable por el administrador global).
@@ -797,7 +797,7 @@ ObtenerResponsable(empleado):
 10. **Historial perpetuo:** todos los registros de actividades y novedades (eventos laborales, horas extras, cambios de turno, desvinculación) quedan vinculados al empleado de forma permanente, incluso si pasa a estado `Inactivo`.
 11. **Soft delete general:** ningún registro del sistema se elimina físicamente.
 12. **Saldo de vacaciones:** se calcula automáticamente a partir de la fecha de ingreso (15 días hábiles por año trabajado). El sistema descuenta los días al registrar un evento de vacaciones y bloquea el registro si no hay saldo suficiente.
-13. **Seguridad:** las contraseñas se almacenan con hash bcrypt. El servidor valida permisos en cada petición (nunca solo en el cliente).
+13. **Seguridad:** las contraseñas se almacenan con **hash HMACSHA512 + salt aleatorio por usuario** (campos `PasswordHash` y `PasswordSalt` en la tabla `Usuarios`). El servidor valida permisos en cada petición (nunca solo en el cliente).
 14. **Auditoría mínima:** toda acción de aprobación, rechazo o cambio de estado registra el usuario que la realizó y la fecha/hora exacta.
 15. **Sesión segura:** cierre de sesión automático por inactividad (30 minutos por defecto). Los tokens de recuperación de contraseña son de un solo uso y expiran en 1 hora.
 
