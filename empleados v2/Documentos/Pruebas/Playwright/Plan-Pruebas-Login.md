@@ -36,7 +36,7 @@ El objetivo no es la cobertura total del sistema. Es tener una red de seguridad 
 | **Navegador** | Chromium headless |
 | **Ambiente** | Desarrollo local — `http://localhost:5002` |
 | **BD** | `GestionPersonal` en `(localdb)\MSSQLLocalDB` |
-| **Seeding** | `Documentos/Seeding_Completo.sql` |
+| **Seeding** | `Documentos/BD/Seeding_Completo.sql` |
 
 ### Prerequisitos de entorno
 
@@ -60,7 +60,7 @@ Esperar: `Now listening on: http://localhost:5002`
 
 ### Datos de prueba
 
-Todos los datos provienen de `Documentos/Seeding_Completo.sql`. Dominio obligatorio: `@yopmail.com`.
+Todos los datos provienen de `Documentos/BD/Seeding_Completo.sql`. Dominio obligatorio: `@yopmail.com`.
 
 | Rol | Correo | Contraseña | Estado |
 |---|---|---|---|
@@ -108,7 +108,7 @@ Cubre el flujo completo desde login hasta el Dashboard cuando el usuario debe ca
 
 **Definición de "done":** El flujo completo pasa y la BD refleja `DebeCambiarPassword=0`.
 
-> **Nota de re-ejecución:** Tras TC-06, el usuario queda con contraseña `NuevaClave2026!`. Para re-ejecutar, reaplicar `Documentos/Seeding_Completo.sql`.
+> **Nota de re-ejecución:** Tras TC-06, el usuario queda con contraseña `NuevaClave2026!`. Para re-ejecutar, reaplicar `Documentos/BD/Seeding_Completo.sql`.
 
 ---
 

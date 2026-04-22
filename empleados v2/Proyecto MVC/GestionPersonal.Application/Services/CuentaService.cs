@@ -76,12 +76,19 @@ public class CuentaService : ICuentaService
         _tokenRepo.Agregar(token);
         await _tokenRepo.GuardarCambiosAsync(ct);
 
-        var cuerpo = EmailConstant.CuerpoRestablecerContrasena.Replace("{codigo}", token.Token);
-        await _emailHelper.EnviarCorreoConCodigoAsync(
-            dto.Correo,
-            EmailConstant.AsuntoRestablecerContrasena,
-            EmailConstant.CuerpoRestablecerContrasena,
-            token.Token);
+        try
+        {
+            await _emailHelper.EnviarCorreoConCodigoAsync(
+                dto.Correo,
+                EmailConstant.AsuntoRestablecerContrasena,
+                EmailConstant.CuerpoRestablecerContrasena,
+                token.Token);
+        }
+        catch
+        {
+            // El token ya fue creado. Si el SMTP falla, el usuario puede solicitar de nuevo.
+            // No se interrumpe el flujo ni se revela el error al usuario.
+        }
 
         return ResultadoOperacion.Ok();
     }

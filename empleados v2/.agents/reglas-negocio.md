@@ -46,7 +46,7 @@ Esta contraseña aplica a **todos los usuarios** creados para pruebas y para el 
 El archivo de referencia para todos los datos de prueba es:
 
 ```
-Documentos/Seeding_Completo.sql
+Documentos/BD/Seeding_Completo.sql
 ```
 
 ### Reglas de uso

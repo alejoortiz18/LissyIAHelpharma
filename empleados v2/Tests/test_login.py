@@ -15,14 +15,15 @@ import pytest
 from helpers import BASE_URL, hacer_login, hacer_logout, hay_error_formulario, obtener_texto_error
 
 # ── Datos de prueba ──────────────────────────────────────────────────────────
-CORREO_JEFE       = "carlos.rodriguez@helpharma.com"
-PASSWORD_VALIDA   = "Admin2026"
-PASSWORD_INVALIDA = "WrongPass123"
-CORREO_INEXISTENTE = "noexiste@helpharma.com"
-PASSWORD_NUEVA    = "NuevaClave2026!"
-# Usuario dedicado para TC-05: tiene DebeCambiarPassword=True al inicio
+# Dominio obligatorio: @yopmail.com (regla de negocio)
+CORREO_JEFE        = "carlos.rodriguez@yopmail.com"   # Jefe — DebeCambiarPassword=0
+PASSWORD_VALIDA    = "Usuario1"                        # Contraseña genérica del sistema
+PASSWORD_INVALIDA  = "WrongPass123"
+CORREO_INEXISTENTE = "noexiste@yopmail.com"
+PASSWORD_NUEVA     = "NuevaClave2026!"
+# Usuario dedicado para TC-05: tiene DebeCambiarPassword=1 al inicio
 # (reseteado por conftest.py antes de cada sesión de tests)
-CORREO_CAMBIO_PWD = "laura.sanchez@helpharma.com"
+CORREO_CAMBIO_PWD  = "laura.sanchez@yopmail.com"      # Regente — DebeCambiarPassword=1
 
 
 # ── TC-01: Login con credenciales correctas ─────────────────────────────────
