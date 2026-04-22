@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#1e3a8a" />
+  <title>@(ViewData["Title"] != null ? ViewData["Title"] + " — GestiónRH" : "GestiónRH")</title>
+  <link rel="stylesheet" href="~/css/main.css" asp-append-version="true" />
+  <link rel="stylesheet" href="~/css/components.css" asp-append-version="true" />
+</head>
+<body>
+  <a class="skip-link" href="#main-content">Saltar al contenido principal</a>
+  @RenderBody()
+  @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

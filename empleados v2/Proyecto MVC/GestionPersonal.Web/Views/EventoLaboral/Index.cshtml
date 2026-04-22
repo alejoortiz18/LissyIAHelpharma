@@ -1,0 +1,178 @@
+@model EventosViewModel
+@{
+    ViewData["Title"] = "Eventos laborales";
+    ViewData["BreadcrumbCurrent"] = "Eventos laborales";
+    var rol = SesionHelper.GetRol(User);
+    bool puedeRegistrar = rol != RolUsuario.Operario;
+}
+
+<div class="page-header">
+  <div class="page-header-info">
+    <h1 class="page-title">Eventos laborales</h1>
+    <p class="page-desc">@Model.TotalRegistros eventos encontrados.</p>
+  </div>
+  @if (puedeRegistrar)
+  {
+    <div class="page-actions">
+      <a asp-action="Crear" class="btn btn-primary">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+        Registrar evento
+      </a>
+    </div>
+  }
+</div>
+
+@if (TempData["Exito"] != null)
+{
+  <div class="alert alert--success alert-dismissible" role="alert">@TempData["Exito"]</div>
+}
+@if (TempData["Error"] != null)
+{
+  <div class="alert alert--error alert-dismissible" role="alert">@TempData["Error"]</div>
+}
+
+<!-- Filtros -->
+<form method="get" class="filter-bar" role="search" aria-label="Filtros de eventos">
+  <input name="buscar" type="search" class="form-input filter-search"
+         placeholder="Buscar empleado…" value="@Model.Buscar" autocomplete="off" aria-label="Buscar por empleado" />
+  <select name="tipo" class="form-select" aria-label="Tipo de evento">
+    <option value="">Todos los tipos</option>
+    <option value="Vacaciones" selected="@(Model.Tipo == "Vacaciones")">Vacaciones</option>
+    <option value="Incapacidad" selected="@(Model.Tipo == "Incapacidad")">Incapacidad</option>
+    <option value="Permiso" selected="@(Model.Tipo == "Permiso")">Permiso</option>
+  </select>
+  <select name="estado" class="form-select" aria-label="Estado del evento">
+    <option value="">Todos los estados</option>
+    <option value="Activo" selected="@(Model.Estado == "Activo")">Activo</option>
+    <option value="Finalizado" selected="@(Model.Estado == "Finalizado")">Finalizado</option>
+    <option value="Anulado" selected="@(Model.Estado == "Anulado")">Anulado</option>
+  </select>
+  <input name="desde" type="date" class="form-input" value="@Model.Desde" aria-label="Desde fecha" />
+  <input name="hasta" type="date" class="form-input" value="@Model.Hasta" aria-label="Hasta fecha" />
+  <button type="submit" class="btn btn-secondary btn-sm">Filtrar</button>
+  @if (!string.IsNullOrEmpty(Model.Buscar) || !string.IsNullOrEmpty(Model.Tipo) ||
+       !string.IsNullOrEmpty(Model.Estado) || !string.IsNullOrEmpty(Model.Desde) ||
+       !string.IsNullOrEmpty(Model.Hasta))
+  {
+    <a asp-action="Index" class="btn btn-ghost btn-sm">Limpiar</a>
+  }
+</form>
+
+<!-- Tabla -->
+@if (!Model.Eventos.Any())
+{
+  <div class="empty-state">
+    <div class="empty-icon" aria-hidden="true">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/>
+        <line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+      </svg>
+    </div>
+    <p class="empty-title">Sin eventos</p>
+    <p class="empty-desc">No se encontraron eventos con los filtros seleccionados.</p>
+  </div>
+}
+else
+{
+  <div class="table-scroll">
+        <table aria-label="Eventos laborales">
+          <thead>
+            <tr>
+              <th>Empleado</th>
+              <th>Sede</th>
+              <th>Tipo</th>
+              <th>Período</th>
+              <th>Días</th>
+              <th>Autorizado por</th>
+              <th>Estado</th>
+              @if (puedeRegistrar)
+              {
+                <th><span class="sr-only">Acciones</span></th>
+              }
+            </tr>
+          </thead>
+          <tbody>
+            @foreach (var ev in Model.Eventos)
+            {
+              <tr>
+                <td>
+                  <a asp-controller="Empleado" asp-action="Perfil" asp-route-id="@ev.EmpleadoId"
+                     asp-route-tab="historial" class="table-link">
+                    @ev.EmpleadoNombre
+                  </a>
+                </td>
+                <td>@ev.SedeNombre</td>
+                <td>@Html.Raw(BadgeTipo(ev.TipoEvento))</td>
+                <td class="tabular-nums" style="font-size:.8125rem">@ev.FechaInicio — @ev.FechaFin</td>
+                <td class="tabular-nums">@ev.DiasSolicitados d</td>
+                <td>@ev.AutorizadoPor</td>
+                <td>@Html.Raw(BadgeEstado(ev.Estado))</td>
+                @if (puedeRegistrar)
+                {
+                  <td>
+                    @if (ev.Estado == "Activo")
+                    {
+                      <form asp-action="Anular" method="post" style="display:inline">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="id" value="@ev.Id" />
+                        <input type="hidden" name="motivoAnulacion" value="Anulado desde listado" />
+                        <button type="submit" class="btn btn-ghost btn-sm"
+                                onclick="return confirm('¿Anular este evento?')">
+                          Anular
+                        </button>
+                      </form>
+                    }
+                  </td>
+                }
+              </tr>
+            }
+          </tbody>
+        </table>
+  </div>
+
+  @if (Model.TotalPaginas > 1)
+  {
+    <div class="pagination">
+      <span class="pagination-info">Página @Model.Pagina de @Model.TotalPaginas</span>
+      <div class="pagination-controls">
+        @if (Model.Pagina > 1)
+        {
+          <a asp-action="Index" asp-route-buscar="@Model.Buscar" asp-route-tipo="@Model.Tipo"
+             asp-route-estado="@Model.Estado" asp-route-desde="@Model.Desde" asp-route-hasta="@Model.Hasta"
+             asp-route-pagina="@(Model.Pagina - 1)" class="page-btn">&#8249;</a>
+        }
+        @for (int p = 1; p <= Model.TotalPaginas; p++)
+        {
+          <a asp-action="Index" asp-route-buscar="@Model.Buscar" asp-route-tipo="@Model.Tipo"
+             asp-route-estado="@Model.Estado" asp-route-desde="@Model.Desde" asp-route-hasta="@Model.Hasta"
+             asp-route-pagina="@p" class="page-btn @(p == Model.Pagina ? "is-active" : "")">@p</a>
+        }
+        @if (Model.Pagina < Model.TotalPaginas)
+        {
+          <a asp-action="Index" asp-route-buscar="@Model.Buscar" asp-route-tipo="@Model.Tipo"
+             asp-route-estado="@Model.Estado" asp-route-desde="@Model.Desde" asp-route-hasta="@Model.Hasta"
+             asp-route-pagina="@(Model.Pagina + 1)" class="page-btn">&#8250;</a>
+        }
+      </div>
+    </div>
+  }
+}
+
+@functions {
+    string BadgeEstado(string estado) => estado.ToLower() switch
+    {
+        "activo"     => "<span class=\"badge badge--activo\"><span class=\"badge-dot\"></span>Activo</span>",
+        "finalizado" => "<span class=\"badge badge--finalizado\"><span class=\"badge-dot\"></span>Finalizado</span>",
+        "anulado"    => "<span class=\"badge badge--anulado\"><span class=\"badge-dot\"></span>Anulado</span>",
+        _            => $"<span class=\"badge\">{System.Net.WebUtility.HtmlEncode(estado)}</span>",
+    };
+    string BadgeTipo(string tipo) => tipo.ToLower() switch
+    {
+        "vacaciones"  => "<span class=\"badge badge--vacaciones\">Vacaciones</span>",
+        "incapacidad" => "<span class=\"badge badge--incapacidad\">Incapacidad</span>",
+        "permiso"     => "<span class=\"badge badge--permiso\">Permiso</span>",
+        _             => $"<span class=\"badge\">{System.Net.WebUtility.HtmlEncode(tipo)}</span>",
+    };
+}

@@ -1,0 +1,87 @@
+@model CrearPlantillaViewModel
+@{
+    ViewData["Title"] = "Nueva plantilla de turno";
+    var dias = new[] { "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo" };
+}
+
+<div class="page-header">
+  <div class="page-header-info">
+    <h1 class="page-title">Nueva plantilla de turno</h1>
+    <p class="page-desc">Define el nombre y el horario de cada día.</p>
+  </div>
+</div>
+
+<form asp-action="CrearPlantilla" method="post" novalidate style="max-width:44rem">
+  @Html.AntiForgeryToken()
+
+  <div asp-validation-summary="ModelOnly" class="alert alert--error" style="margin-bottom:var(--sp-4)"></div>
+
+  <div class="card" style="margin-bottom:var(--sp-5)">
+    <div class="card-body">
+      <div class="form-field" style="max-width:24rem">
+        <label asp-for="Dto.Nombre" class="form-label">Nombre de la plantilla *</label>
+        <input asp-for="Dto.Nombre" type="text" class="form-control"
+               placeholder="Ej.: Turno mañana, Turno noche…" />
+        <span asp-validation-for="Dto.Nombre" class="form-error"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Días de la semana -->
+  <div class="card" style="margin-bottom:var(--sp-5)">
+    <div class="card-header">
+      <h2 class="card-title">Horario por día</h2>
+      <p class="card-desc">Deja en blanco si el empleado no trabaja ese día.</p>
+    </div>
+    <div class="card-body" style="display:flex;flex-direction:column;gap:var(--sp-4)">
+
+      @for (int i = 0; i < 7; i++)
+      {
+        <div style="display:grid;grid-template-columns:8rem 1fr 1fr;align-items:center;gap:var(--sp-4)">
+
+          <!-- Checkbox + nombre día -->
+          <div style="display:flex;align-items:center;gap:var(--sp-2)">
+            <input type="checkbox" id="shift-check-@i" class="shift-check" data-idx="@i"
+                   @(i < 5 ? "checked" : "") />
+            <label for="shift-check-@i" style="font-weight:500">@dias[i]</label>
+          </div>
+
+          <!-- Hidden field DiaSemana (siempre presente) -->
+          <input asp-for="Dto.Detalles[i].DiaSemana" type="hidden" value="@(i + 1)" />
+
+          <!-- Horario (oculto si no labora) -->
+          <div id="s-times-@i" style="@(i >= 5 ? "display:none;" : "")display:contents">
+            <div class="form-field" style="margin:0">
+              <label class="form-label" style="font-size:.8125rem">Entrada</label>
+              <input asp-for="Dto.Detalles[i].HoraEntrada" type="time" class="form-control form-control--sm" />
+            </div>
+            <div class="form-field" style="margin:0">
+              <label class="form-label" style="font-size:.8125rem">Salida</label>
+              <input asp-for="Dto.Detalles[i].HoraSalida" type="time" class="form-control form-control--sm" />
+            </div>
+          </div>
+
+          @if (i >= 5)
+          {
+            <!-- Placeholder para mantener el grid cuando los campos están ocultos -->
+            <div id="s-times-@i" style="display:none">
+              <div class="form-field" style="margin:0">
+                <input asp-for="Dto.Detalles[i].HoraEntrada" type="time" class="form-control form-control--sm" />
+              </div>
+              <div class="form-field" style="margin:0">
+                <input asp-for="Dto.Detalles[i].HoraSalida" type="time" class="form-control form-control--sm" />
+              </div>
+            </div>
+          }
+
+        </div>
+      }
+    </div>
+  </div>
+
+  <div style="display:flex;gap:var(--sp-3)">
+    <button type="submit" class="btn btn-primary">Guardar plantilla</button>
+    <a asp-action="Index" class="btn btn-ghost">Cancelar</a>
+  </div>
+
+</form>

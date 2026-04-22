@@ -1,0 +1,59 @@
+@model CrearHoraExtraViewModel
+@{
+    ViewData["Title"] = "Nueva solicitud de hora extra";
+}
+
+<div class="page-header">
+  <div class="page-header-info">
+    <h1 class="page-title">Nueva solicitud de hora extra</h1>
+  </div>
+</div>
+
+<form asp-action="Registrar" method="post" novalidate style="max-width:36rem">
+  @Html.AntiForgeryToken()
+
+  <div asp-validation-summary="ModelOnly" class="alert alert--error" style="margin-bottom:var(--sp-4)"></div>
+
+  <div class="card">
+    <div class="card-body" style="display:flex;flex-direction:column;gap:var(--sp-4)">
+
+      <div class="form-field">
+        <label asp-for="Dto.EmpleadoId" class="form-label">Empleado *</label>
+        <select asp-for="Dto.EmpleadoId" class="form-control">
+          <option value="">Seleccionar empleado…</option>
+          @foreach (var emp in Model.Empleados)
+          {
+            <option value="@emp.Id">@emp.NombreCompleto — @emp.SedeNombre</option>
+          }
+        </select>
+        <span asp-validation-for="Dto.EmpleadoId" class="form-error"></span>
+      </div>
+
+      <div class="form-field">
+        <label asp-for="Dto.FechaTrabajada" class="form-label">Fecha trabajada *</label>
+        <input asp-for="Dto.FechaTrabajada" type="date" class="form-control" />
+        <span asp-validation-for="Dto.FechaTrabajada" class="form-error"></span>
+      </div>
+
+      <div class="form-field">
+        <label asp-for="Dto.CantidadHoras" class="form-label">Cantidad de horas *</label>
+        <input asp-for="Dto.CantidadHoras" type="number" step="0.5" min="1" max="24" class="form-control" />
+        <span asp-validation-for="Dto.CantidadHoras" class="form-error"></span>
+      </div>
+
+      <div class="form-field">
+        <label asp-for="Dto.Motivo" class="form-label">Motivo *</label>
+        <textarea asp-for="Dto.Motivo" class="form-control" rows="3"
+                  placeholder="Describe el motivo de las horas extras…"></textarea>
+        <span asp-validation-for="Dto.Motivo" class="form-error"></span>
+      </div>
+
+      <div style="display:flex;gap:var(--sp-3)">
+        <button type="submit" class="btn btn-primary">Registrar solicitud</button>
+        <a asp-action="Index" class="btn btn-ghost">Cancelar</a>
+      </div>
+
+    </div>
+  </div>
+
+</form>

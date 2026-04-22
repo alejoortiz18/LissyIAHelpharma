@@ -1,0 +1,358 @@
+﻿@model PerfilEmpleadoViewModel
+@{
+    ViewData["Title"] = "Perfil de empleado";
+    ViewData["BreadcrumbCurrent"] = Model.Empleado.NombreCompleto;
+    var e = Model.Empleado;
+    var iniciales = string.Join("", e.NombreCompleto.Split(' ', StringSplitOptions.RemoveEmptyEntries)
+                                    .Take(2).Select(w => char.ToUpper(w[0])));
+    var rol       = SesionHelper.GetRol(User);
+    bool puedeEditar      = rol == RolUsuario.Jefe || rol == RolUsuario.Regente || rol == RolUsuario.AuxiliarRegente;
+    bool puedeDesvincular = rol == RolUsuario.Jefe || rol == RolUsuario.Administrador;
+    bool esTemporal  = e.TipoVinculacion == "Temporal";
+    bool estaInactivo = e.Estado == "Inactivo";
+}
+
+@if (TempData["Exito"] != null)
+{
+  <div class="alert alert--success" role="alert" style="margin-bottom:var(--sp-4)">@TempData["Exito"]</div>
+}
+
+<!-- Perfil header -->
+<div class="profile-header">
+  <div class="profile-avatar" aria-hidden="true">@iniciales</div>
+  <div class="profile-info">
+    <h1 class="profile-name">@e.NombreCompleto</h1>
+    <p class="profile-cc">CC @e.Cedula</p>
+    <div class="profile-tags">
+      @if (estaInactivo)
+      { <span class="badge badge--inactivo"><span class="badge-dot"></span>Inactivo</span> }
+      else
+      { <span class="badge badge--activo"><span class="badge-dot"></span>Activo</span> }
+      <span class="badge">@e.Rol</span>
+      @if (esTemporal)
+      { <span class="badge badge--temporal">Temporal</span> }
+      else
+      { <span class="badge badge--directo">Directo</span> }
+      <span class="badge" style="background:var(--c-gray-100);color:var(--c-gray-600)">@e.SedeNombre</span>
+    </div>
+  </div>
+  <div class="profile-actions">
+    @if (puedeEditar && !estaInactivo)
+    {
+      <a asp-action="Editar" asp-route-id="@e.Id" class="btn btn-secondary">
+        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
+          <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+        </svg>
+        Editar
+      </a>
+    }
+    @if (puedeDesvincular && !estaInactivo)
+    {
+      <a asp-action="Desvincular" asp-route-id="@e.Id" class="btn btn-danger-outline">
+        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="8.5" cy="7" r="4"/>
+          <line x1="18" y1="8" x2="23" y2="13"/><line x1="23" y1="8" x2="18" y2="13"/>
+        </svg>
+        Desvincular
+      </a>
+    }
+  </div>
+</div>
+
+@if (estaInactivo)
+{
+  <div class="alert alert--error" style="margin-bottom:var(--sp-5)" role="alert">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+    </svg>
+    <div class="alert-body">
+      <p class="alert-title">Empleado desvinculado</p>
+      <p>El registro está en modo solo lectura.</p>
+    </div>
+  </div>
+}
+
+<!-- Tabs -->
+<div data-tabs-container>
+  <div class="tabs" role="tablist" aria-label="Secciones del perfil">
+    <a asp-action="Perfil" asp-route-id="@e.Id" asp-route-tab="datos"
+       class="tab-btn @(Model.Tab == "datos" ? "is-active" : "")"
+       role="tab" aria-selected="@(Model.Tab == "datos" ? "true" : "false")">Datos</a>
+    <a asp-action="Perfil" asp-route-id="@e.Id" asp-route-tab="historial"
+       class="tab-btn @(Model.Tab == "historial" ? "is-active" : "")"
+       role="tab" aria-selected="@(Model.Tab == "historial" ? "true" : "false")">Historial</a>
+    <a asp-action="Perfil" asp-route-id="@e.Id" asp-route-tab="horario"
+       class="tab-btn @(Model.Tab == "horario" ? "is-active" : "")"
+       role="tab" aria-selected="@(Model.Tab == "horario" ? "true" : "false")">Horario</a>
+  </div>
+
+  <!-- TAB: Datos -->
+  @if (Model.Tab == "datos")
+  {
+    <div class="tab-panel is-active" role="tabpanel" tabindex="0">
+
+      <div class="form-section">
+        <div class="form-section-header">
+          <div class="form-section-icon" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/>
+            </svg>
+          </div>
+          <h2 class="form-section-title">Datos personales</h2>
+        </div>
+        <div class="form-section-body">
+          <div class="dl-grid">
+            <div class="dl-item"><p class="dl-label">Nombre completo</p><p class="dl-value">@e.NombreCompleto</p></div>
+            <div class="dl-item"><p class="dl-label">Cédula de ciudadanía</p><p class="dl-value font-mono">@e.Cedula</p></div>
+            <div class="dl-item"><p class="dl-label">Fecha de nacimiento</p><p class="dl-value">@(e.FechaNacimiento ?? "—")</p></div>
+            <div class="dl-item"><p class="dl-label">Teléfono</p><p class="dl-value">@(e.Telefono ?? "—")</p></div>
+            <div class="dl-item"><p class="dl-label">Correo electrónico</p><p class="dl-value">@(e.CorreoElectronico ?? "—")</p></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <div class="form-section-header">
+          <div class="form-section-icon" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/>
+            </svg>
+          </div>
+          <h2 class="form-section-title">Residencia</h2>
+        </div>
+        <div class="form-section-body">
+          <div class="dl-grid dl-grid-3">
+            <div class="dl-item"><p class="dl-label">Dirección</p><p class="dl-value">@(e.Direccion ?? "—")</p></div>
+            <div class="dl-item"><p class="dl-label">Ciudad</p><p class="dl-value">@(e.Ciudad ?? "—")</p></div>
+            <div class="dl-item"><p class="dl-label">Departamento</p><p class="dl-value">@(e.Departamento ?? "—")</p></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <div class="form-section-header">
+          <div class="form-section-icon" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013 5.18 2 2 0 015 3h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L9.09 10.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 17v-.08z"/>
+            </svg>
+          </div>
+          <h2 class="form-section-title">Contacto de emergencia</h2>
+        </div>
+        <div class="form-section-body">
+          <div class="dl-grid">
+            <div class="dl-item"><p class="dl-label">Nombre</p><p class="dl-value">@(e.ContactoEmergenciaNombre ?? "—")</p></div>
+            <div class="dl-item"><p class="dl-label">Teléfono</p><p class="dl-value">@(e.ContactoEmergenciaTelefono ?? "—")</p></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <div class="form-section-header">
+          <div class="form-section-icon" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            </svg>
+          </div>
+          <h2 class="form-section-title">Seguridad social y formación</h2>
+        </div>
+        <div class="form-section-body">
+          <div class="dl-grid" style="grid-template-columns:repeat(3,1fr)">
+            <div class="dl-item"><p class="dl-label">EPS</p><p class="dl-value">@(e.Eps ?? "—")</p></div>
+            <div class="dl-item"><p class="dl-label">ARL</p><p class="dl-value">@(e.Arl ?? "—")</p></div>
+            <div class="dl-item"><p class="dl-label">Nivel de escolaridad</p><p class="dl-value">@(e.NivelEscolaridad ?? "—")</p></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <div class="form-section-header">
+          <div class="form-section-icon" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/>
+            </svg>
+          </div>
+          <h2 class="form-section-title">Vinculación laboral</h2>
+        </div>
+        <div class="form-section-body">
+          <div class="dl-grid">
+            <div class="dl-item"><p class="dl-label">Sede</p><p class="dl-value">@e.SedeNombre</p></div>
+            <div class="dl-item"><p class="dl-label">Cargo</p><p class="dl-value">@e.CargoNombre</p></div>
+            <div class="dl-item"><p class="dl-label">Rol en el sistema</p><p class="dl-value">@e.Rol</p></div>
+            <div class="dl-item"><p class="dl-label">Tipo de vinculación</p><p class="dl-value">@e.TipoVinculacion</p></div>
+            <div class="dl-item"><p class="dl-label">Jefe inmediato</p><p class="dl-value">@(e.JefeInmediatoNombre ?? "—")</p></div>
+            <div class="dl-item"><p class="dl-label">Fecha de ingreso</p><p class="dl-value">@e.FechaIngreso</p></div>
+            <div class="dl-item"><p class="dl-label">Días de vacaciones previos</p><p class="dl-value">@e.DiasVacacionesPrevios</p></div>
+          </div>
+
+          @if (esTemporal)
+          {
+            <div style="margin-top:var(--sp-5);padding-top:var(--sp-4);border-top:1px solid var(--c-gray-100)">
+              <p style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--c-warning-600);margin-bottom:var(--sp-3)">Contrato temporal</p>
+              <div class="dl-grid dl-grid-3">
+                <div class="dl-item"><p class="dl-label">Empresa temporal</p><p class="dl-value">@(e.EmpresaTemporalNombre ?? "—")</p></div>
+                <div class="dl-item"><p class="dl-label">Inicio de contrato</p><p class="dl-value">@(e.FechaInicioContrato ?? "—")</p></div>
+                <div class="dl-item"><p class="dl-label">Fin de contrato</p><p class="dl-value">@(e.FechaFinContrato ?? "—")</p></div>
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+
+    </div>
+  }
+
+  <!-- TAB: Historial -->
+  @if (Model.Tab == "historial")
+  {
+    <div class="tab-panel is-active" role="tabpanel" tabindex="0">
+
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--sp-5)">
+        <h2 style="font-size:.9375rem;font-weight:600;color:var(--c-gray-800)">Eventos laborales</h2>
+      </div>
+      @if (!Model.Eventos.Any())
+      {
+        <div class="empty-state">
+          <div class="empty-icon" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/>
+            </svg>
+          </div>
+          <p class="empty-title">Sin eventos registrados</p>
+          <p class="empty-desc">Este empleado no tiene eventos laborales registrados aún.</p>
+        </div>
+      }
+      else
+      {
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>Tipo</th>
+                <th>Período</th>
+                <th>Autorizado por</th>
+                <th>Estado</th>
+              </tr>
+            </thead>
+            <tbody>
+              @foreach (var ev in Model.Eventos)
+              {
+                <tr>
+                  <td>@ev.TipoEvento</td>
+                  <td class="tabular-nums" style="font-size:.8125rem">@ev.FechaInicio — @ev.FechaFin</td>
+                  <td>@ev.AutorizadoPor</td>
+                  <td><span class="badge">@ev.Estado</span></td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+
+      <div style="margin-top:var(--sp-6);display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--sp-5)">
+        <h2 style="font-size:.9375rem;font-weight:600;color:var(--c-gray-800)">Horas extras</h2>
+      </div>
+      @if (!Model.HorasExtras.Any())
+      {
+        <div class="empty-state">
+          <div class="empty-icon" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+            </svg>
+          </div>
+          <p class="empty-title">Sin horas extras registradas</p>
+          <p class="empty-desc">No hay registros de horas extras para este empleado.</p>
+        </div>
+      }
+      else
+      {
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Horas</th>
+                <th>Motivo</th>
+                <th>Estado</th>
+              </tr>
+            </thead>
+            <tbody>
+              @foreach (var h in Model.HorasExtras)
+              {
+                <tr>
+                  <td class="tabular-nums" style="font-size:.8125rem">@h.FechaTrabajada</td>
+                  <td class="tabular-nums">@h.CantidadHoras h</td>
+                  <td style="font-size:.8125rem;max-width:16rem;white-space:normal">@h.Motivo</td>
+                  <td><span class="badge">@h.Estado</span></td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+
+    </div>
+  }
+
+  <!-- TAB: Horario -->
+  @if (Model.Tab == "horario")
+  {
+    <div class="tab-panel is-active" role="tabpanel" tabindex="0">
+
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--sp-5)">
+        <h2 style="font-size:.9375rem;font-weight:600;color:var(--c-gray-800)">Turno asignado</h2>
+        @if (!estaInactivo && puedeEditar)
+        {
+          <a asp-controller="Turno" asp-action="AsignarTurno" asp-route-empleadoId="@e.Id"
+             class="btn btn-secondary btn-sm">
+            Asignar / cambiar turno
+          </a>
+        }
+      </div>
+
+      @if (Model.TurnoActual is null)
+      {
+        <div class="empty-state">
+          <div class="empty-icon" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/>
+              <line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+            </svg>
+          </div>
+          <p class="empty-title">Sin turno asignado</p>
+          <p class="empty-desc">Este empleado no tiene una plantilla de turno vigente.</p>
+        </div>
+      }
+      else
+      {
+        var t = Model.TurnoActual;
+        var dias = new[] { "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo" };
+        <p style="font-weight:600;margin-bottom:var(--sp-4)">@t.Nombre</p>
+        <div class="shift-days-grid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:var(--sp-3)">
+          @{
+            var detalles = t.Detalles?.ToList() ?? new();
+          }
+          @for (int idx = 1; idx <= 7; idx++)
+          {
+            var det = detalles.FirstOrDefault(d => d.DiaSemana == idx);
+            bool laboral = det is { HoraEntrada: not null };
+            <div class="shift-day @(laboral ? "shift-day--activo" : "shift-day--inactivo")"
+                 style="text-align:center;padding:var(--sp-3);border:1px solid var(--c-border);border-radius:var(--radius-md)">
+              <div style="font-size:.75rem;font-weight:600;margin-bottom:var(--sp-1)">@dias[idx - 1].Substring(0,2)</div>
+              @if (laboral)
+              {
+                <div style="font-size:.6875rem;color:var(--c-gray-600)">@det!.HoraEntrada — @det.HoraSalida</div>
+              }
+              else
+              {
+                <div style="font-size:.6875rem;color:var(--c-gray-400)">Descanso</div>
+              }
+            </div>
+          }
+        </div>
+      }
+
+    </div>
+  }
+
+</div><!-- /data-tabs-container -->

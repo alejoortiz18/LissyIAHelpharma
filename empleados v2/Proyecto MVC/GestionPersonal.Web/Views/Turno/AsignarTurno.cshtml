@@ -1,0 +1,58 @@
+@model AsignarTurnoViewModel
+@{
+    ViewData["Title"] = "Asignar turno";
+}
+
+<div class="page-header">
+  <div class="page-header-info">
+    <h1 class="page-title">Asignar turno</h1>
+    @if (Model.Empleado is not null)
+    {
+      <p class="page-desc">@Model.Empleado.NombreCompleto · @Model.Empleado.SedeNombre</p>
+    }
+  </div>
+</div>
+
+<form asp-action="AsignarTurno" method="post" novalidate style="max-width:32rem">
+  @Html.AntiForgeryToken()
+  <input asp-for="Dto.EmpleadoId" type="hidden" />
+
+  <div asp-validation-summary="ModelOnly" class="alert alert--error" style="margin-bottom:var(--sp-4)"></div>
+
+  <div class="card">
+    <div class="card-body" style="display:flex;flex-direction:column;gap:var(--sp-4)">
+
+      <div class="form-field">
+        <label asp-for="Dto.PlantillaTurnoId" class="form-label">Plantilla de turno *</label>
+        <select asp-for="Dto.PlantillaTurnoId" class="form-control">
+          <option value="">Seleccionar plantilla…</option>
+          @foreach (var p in Model.Plantillas)
+          {
+            <option value="@p.Id">@p.Nombre</option>
+          }
+        </select>
+        <span asp-validation-for="Dto.PlantillaTurnoId" class="form-error"></span>
+      </div>
+
+      <div class="form-field">
+        <label asp-for="Dto.FechaVigencia" class="form-label">Fecha de vigencia *</label>
+        <input asp-for="Dto.FechaVigencia" type="date" class="form-control" />
+        <span asp-validation-for="Dto.FechaVigencia" class="form-error"></span>
+      </div>
+
+      <div style="display:flex;gap:var(--sp-3);margin-top:var(--sp-2)">
+        <button type="submit" class="btn btn-primary">Asignar turno</button>
+        @if (Model.Empleado is not null)
+        {
+          <a asp-controller="Empleado" asp-action="Perfil" asp-route-id="@Model.Dto.EmpleadoId" asp-route-tab="horario"
+             class="btn btn-ghost">Cancelar</a>
+        }
+        else
+        {
+          <a asp-controller="Empleado" asp-action="Index" class="btn btn-ghost">Cancelar</a>
+        }
+      </div>
+
+    </div>
+  </div>
+</form>

@@ -1,0 +1,407 @@
+@model NuevoEmpleadoViewModel
+@{
+    ViewData["Title"] = "Nuevo empleado";
+    ViewData["BreadcrumbCurrent"] = "Nuevo empleado";
+    var rolOptions = new[] { "Jefe", "Regente", "AuxiliarRegente", "Operario", "Administrador" };
+    var nivelOptions = new[] { "Primaria", "Bachillerato", "Tecnico", "Tecnologico", "Profesional", "Posgrado" };
+}
+
+<div class="page-header">
+  <div class="page-header-info">
+    <h1 class="page-title">Registrar empleado</h1>
+    <p class="page-desc">Completa todos los campos obligatorios para registrar un nuevo empleado.</p>
+  </div>
+</div>
+
+<form asp-action="Crear" method="post" novalidate>
+  @Html.AntiForgeryToken()
+  <div asp-validation-summary="ModelOnly" class="alert alert--error" style="margin-bottom:var(--sp-4)"></div>
+
+  <!-- 1. Datos personales -->
+  <div class="form-section">
+    <div class="form-section-header">
+      <div class="form-section-icon" aria-hidden="true">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/>
+        </svg>
+      </div>
+      <h2 class="form-section-title">Datos personales</h2>
+    </div>
+    <div class="form-section-body">
+      <div class="form-grid form-grid-2">
+
+        <div class="form-group">
+          <label asp-for="Dto.NombreCompleto" class="form-label">
+            Nombre completo <span class="required" aria-hidden="true">*</span>
+          </label>
+          <input asp-for="Dto.NombreCompleto" type="text" class="form-input"
+                 autocomplete="name" placeholder="Nombre y apellidos completos…" />
+          <span asp-validation-for="Dto.NombreCompleto" class="form-error"></span>
+        </div>
+
+        <div class="form-group">
+          <label asp-for="Dto.Cedula" class="form-label">
+            Cédula de ciudadanía <span class="required" aria-hidden="true">*</span>
+          </label>
+          <input asp-for="Dto.Cedula" type="text" class="form-input"
+                 inputmode="numeric" autocomplete="off" spellcheck="false" placeholder="Número de CC…" />
+          <span class="form-hint">Única en el sistema — no acepta duplicados.</span>
+          <span asp-validation-for="Dto.Cedula" class="form-error"></span>
+        </div>
+
+        <div class="form-group">
+          <label asp-for="Dto.FechaNacimiento" class="form-label">
+            Fecha de nacimiento <span class="required" aria-hidden="true">*</span>
+          </label>
+          <input asp-for="Dto.FechaNacimiento" type="date" class="form-input" autocomplete="bday" />
+          <span asp-validation-for="Dto.FechaNacimiento" class="form-error"></span>
+        </div>
+
+        <div class="form-group">
+          <label asp-for="Dto.Telefono" class="form-label">
+            Teléfono <span class="required" aria-hidden="true">*</span>
+          </label>
+          <input asp-for="Dto.Telefono" type="tel" class="form-input"
+                 inputmode="tel" autocomplete="tel" placeholder="Ej. 3104567890…" />
+          <span asp-validation-for="Dto.Telefono" class="form-error"></span>
+        </div>
+
+        <div class="form-group" style="grid-column:1/-1">
+          <label asp-for="Dto.CorreoElectronico" class="form-label">
+            Correo electrónico <span class="required" aria-hidden="true">*</span>
+          </label>
+          <input asp-for="Dto.CorreoElectronico" type="email" class="form-input"
+                 autocomplete="email" spellcheck="false" placeholder="nombre@correo.com…" />
+          <span asp-validation-for="Dto.CorreoElectronico" class="form-error"></span>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. Residencia -->
+  <div class="form-section">
+    <div class="form-section-header">
+      <div class="form-section-icon" aria-hidden="true">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/>
+        </svg>
+      </div>
+      <h2 class="form-section-title">Residencia</h2>
+    </div>
+    <div class="form-section-body">
+      <div class="form-grid form-grid-2">
+
+        <div class="form-group" style="grid-column:1/-1">
+          <label asp-for="Dto.Direccion" class="form-label">
+            Dirección <span class="required" aria-hidden="true">*</span>
+          </label>
+          <input asp-for="Dto.Direccion" type="text" class="form-input"
+                 autocomplete="street-address" placeholder="Cra / Cll / Av + número…" />
+          <span asp-validation-for="Dto.Direccion" class="form-error"></span>
+        </div>
+
+        <div class="form-group">
+          <label asp-for="Dto.Ciudad" class="form-label">
+            Ciudad <span class="required" aria-hidden="true">*</span>
+          </label>
+          <input asp-for="Dto.Ciudad" type="text" class="form-input"
+                 autocomplete="address-level2" placeholder="Ciudad…" />
+          <span asp-validation-for="Dto.Ciudad" class="form-error"></span>
+        </div>
+
+        <div class="form-group">
+          <label asp-for="Dto.Departamento" class="form-label">
+            Departamento <span class="required" aria-hidden="true">*</span>
+          </label>
+          <input asp-for="Dto.Departamento" type="text" class="form-input"
+                 autocomplete="address-level1" placeholder="Departamento…" />
+          <span asp-validation-for="Dto.Departamento" class="form-error"></span>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. Contacto de emergencia -->
+  <div class="form-section">
+    <div class="form-section-header">
+      <div class="form-section-icon" aria-hidden="true">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013 5.18 2 2 0 015 3h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L9.09 10.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 17v-.08z"/>
+        </svg>
+      </div>
+      <h2 class="form-section-title">Contacto de emergencia</h2>
+    </div>
+    <div class="form-section-body">
+      <div class="form-grid form-grid-2">
+
+        <div class="form-group">
+          <label asp-for="Dto.ContactoEmergenciaNombre" class="form-label">
+            Nombre del contacto <span class="required" aria-hidden="true">*</span>
+          </label>
+          <input asp-for="Dto.ContactoEmergenciaNombre" type="text" class="form-input"
+                 autocomplete="off" placeholder="Nombre completo del contacto…" />
+          <span asp-validation-for="Dto.ContactoEmergenciaNombre" class="form-error"></span>
+        </div>
+
+        <div class="form-group">
+          <label asp-for="Dto.ContactoEmergenciaTelefono" class="form-label">
+            Teléfono del contacto <span class="required" aria-hidden="true">*</span>
+          </label>
+          <input asp-for="Dto.ContactoEmergenciaTelefono" type="tel" class="form-input"
+                 inputmode="tel" autocomplete="off" placeholder="Número de contacto…" />
+          <span asp-validation-for="Dto.ContactoEmergenciaTelefono" class="form-error"></span>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. Formación -->
+  <div class="form-section">
+    <div class="form-section-header">
+      <div class="form-section-icon" aria-hidden="true">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/>
+        </svg>
+      </div>
+      <h2 class="form-section-title">Formación</h2>
+    </div>
+    <div class="form-section-body">
+      <div class="form-group" style="max-width:20rem">
+        <label asp-for="Dto.NivelEscolaridad" class="form-label">
+          Nivel de escolaridad <span class="required" aria-hidden="true">*</span>
+        </label>
+        <select asp-for="Dto.NivelEscolaridad" class="form-select">
+          <option value="">Selecciona nivel…</option>
+          @foreach (var n in nivelOptions)
+          {
+            <option value="@n">@n</option>
+          }
+        </select>
+        <span asp-validation-for="Dto.NivelEscolaridad" class="form-error"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. Seguridad social -->
+  <div class="form-section">
+    <div class="form-section-header">
+      <div class="form-section-icon" aria-hidden="true">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+        </svg>
+      </div>
+      <h2 class="form-section-title">Seguridad social</h2>
+    </div>
+    <div class="form-section-body">
+      <div class="form-grid form-grid-2" style="max-width:32rem">
+
+        <div class="form-group">
+          <label asp-for="Dto.Eps" class="form-label">
+            EPS <span class="required" aria-hidden="true">*</span>
+          </label>
+          <input asp-for="Dto.Eps" type="text" class="form-input"
+                 autocomplete="off" placeholder="Nombre de la EPS…" />
+          <span asp-validation-for="Dto.Eps" class="form-error"></span>
+        </div>
+
+        <div class="form-group">
+          <label asp-for="Dto.Arl" class="form-label">
+            ARL <span class="required" aria-hidden="true">*</span>
+          </label>
+          <input asp-for="Dto.Arl" type="text" class="form-input"
+                 autocomplete="off" placeholder="Nombre de la ARL…" />
+          <span asp-validation-for="Dto.Arl" class="form-error"></span>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- 6. Vinculación laboral -->
+  <div class="form-section">
+    <div class="form-section-header">
+      <div class="form-section-icon" aria-hidden="true">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/>
+        </svg>
+      </div>
+      <h2 class="form-section-title">Vinculación laboral</h2>
+    </div>
+    <div class="form-section-body">
+      <div class="form-grid form-grid-2">
+
+        <div class="form-group">
+          <label asp-for="Dto.SedeId" class="form-label">
+            Sede <span class="required" aria-hidden="true">*</span>
+          </label>
+          <select asp-for="Dto.SedeId" class="form-select">
+            <option value="">Selecciona sede…</option>
+            @foreach (var s in Model.Sedes)
+            {
+              <option value="@s.Id">@s.Nombre — @s.Ciudad</option>
+            }
+          </select>
+          <span asp-validation-for="Dto.SedeId" class="form-error"></span>
+        </div>
+
+        <div class="form-group">
+          <label asp-for="Dto.CargoId" class="form-label">
+            Cargo <span class="required" aria-hidden="true">*</span>
+          </label>
+          <select asp-for="Dto.CargoId" class="form-select">
+            <option value="">Selecciona cargo…</option>
+            @foreach (var c in Model.Cargos)
+            {
+              <option value="@c.Id">@c.Nombre</option>
+            }
+          </select>
+          <span asp-validation-for="Dto.CargoId" class="form-error"></span>
+        </div>
+
+        <div class="form-group">
+          <label asp-for="Dto.Rol" class="form-label">
+            Rol en el sistema <span class="required" aria-hidden="true">*</span>
+          </label>
+          <select asp-for="Dto.Rol" class="form-select">
+            <option value="">Selecciona rol…</option>
+            @foreach (var r in rolOptions)
+            {
+              <option value="@r">@r</option>
+            }
+          </select>
+          <span asp-validation-for="Dto.Rol" class="form-error"></span>
+        </div>
+
+        <div class="form-group">
+          <label asp-for="Dto.TipoVinculacion" class="form-label">
+            Tipo de vinculación <span class="required" aria-hidden="true">*</span>
+          </label>
+          <select asp-for="Dto.TipoVinculacion" id="TipoVinculacion" class="form-select">
+            <option value="">Selecciona tipo…</option>
+            <option value="Directo">Contrato directo</option>
+            <option value="Temporal">Empresa temporal</option>
+          </select>
+          <span asp-validation-for="Dto.TipoVinculacion" class="form-error"></span>
+        </div>
+
+        <div class="form-group">
+          <label asp-for="Dto.JefeInmediatoId" class="form-label">Jefe inmediato</label>
+          <select asp-for="Dto.JefeInmediatoId" class="form-select">
+            <option value="">Sin jefe inmediato</option>
+            @foreach (var j in Model.Jefes)
+            {
+              <option value="@j.Id">@j.NombreCompleto</option>
+            }
+          </select>
+          <span class="form-hint">Solo empleados con rol Jefe activos en el sistema.</span>
+        </div>
+
+        <div class="form-group">
+          <label asp-for="Dto.FechaIngreso" class="form-label">
+            Fecha de ingreso <span class="required" aria-hidden="true">*</span>
+          </label>
+          <input asp-for="Dto.FechaIngreso" type="date" class="form-input" />
+          <span asp-validation-for="Dto.FechaIngreso" class="form-error"></span>
+        </div>
+
+        <div class="form-group" style="grid-column:1/-1">
+          <label asp-for="Dto.DiasVacacionesPrevios" class="form-label">Días de vacaciones ya tomados antes del sistema</label>
+          <input asp-for="Dto.DiasVacacionesPrevios" type="number" step="0.5" min="0"
+                 class="form-input" placeholder="0" style="max-width:10rem" />
+          <span class="form-hint">Saldo inicial para empleados que ya existían antes de implementar el sistema.</span>
+          <span asp-validation-for="Dto.DiasVacacionesPrevios" class="form-error"></span>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- 7. Contrato temporal (condicional) -->
+  <div id="seccion-temporal" class="form-section" hidden>
+    <div class="form-section-header">
+      <div class="form-section-icon" aria-hidden="true" style="background:var(--c-warning-100)">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="var(--c-warning-600)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+          <polyline points="14 2 14 8 20 8"/>
+          <line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
+          <polyline points="10 9 9 9 8 9"/>
+        </svg>
+      </div>
+      <h2 class="form-section-title">Contrato temporal</h2>
+    </div>
+    <div class="form-section-body">
+      <div class="form-grid form-grid-3">
+
+        <div class="form-group">
+          <label asp-for="Dto.EmpresaTemporalId" class="form-label">
+            Empresa temporal <span class="required" aria-hidden="true">*</span>
+          </label>
+          <select asp-for="Dto.EmpresaTemporalId" class="form-select">
+            <option value="">Selecciona empresa…</option>
+            @foreach (var emp in Model.EmpresasTemporales)
+            {
+              <option value="@emp.Id">@emp.Nombre</option>
+            }
+          </select>
+          <span asp-validation-for="Dto.EmpresaTemporalId" class="form-error"></span>
+        </div>
+
+        <div class="form-group">
+          <label asp-for="Dto.FechaInicioContrato" class="form-label">
+            Inicio de contrato <span class="required" aria-hidden="true">*</span>
+          </label>
+          <input asp-for="Dto.FechaInicioContrato" type="date" class="form-input" />
+          <span asp-validation-for="Dto.FechaInicioContrato" class="form-error"></span>
+        </div>
+
+        <div class="form-group">
+          <label asp-for="Dto.FechaFinContrato" class="form-label">
+            Fin de contrato <span class="required" aria-hidden="true">*</span>
+          </label>
+          <input asp-for="Dto.FechaFinContrato" type="date" class="form-input" />
+          <span asp-validation-for="Dto.FechaFinContrato" class="form-error"></span>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- 8. Acceso al sistema -->
+  <div class="form-section">
+    <div class="form-section-header">
+      <div class="form-section-icon" aria-hidden="true">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+          <path d="M7 11V7a5 5 0 0110 0v4"/>
+        </svg>
+      </div>
+      <h2 class="form-section-title">Acceso al sistema</h2>
+    </div>
+    <div class="form-section-body">
+      <div class="alert alert--info" style="margin-bottom:var(--sp-5)" role="note">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
+        </svg>
+        <div class="alert-body">
+          <p>El correo electrónico ingresado se usará como usuario de acceso. Se generará una <strong>contraseña temporal</strong> de un solo uso. El empleado deberá cambiarla en su primer inicio de sesión.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Botones -->
+  <div class="card-footer" style="background:transparent;border:none;padding:var(--sp-2) 0 var(--sp-8);justify-content:flex-start;gap:var(--sp-3)">
+    <button type="submit" class="btn btn-primary btn-lg">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/>
+        <polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/>
+      </svg>
+      Guardar empleado
+    </button>
+    <a asp-action="Index" class="btn btn-secondary btn-lg">Cancelar</a>
+  </div>
+
+</form>

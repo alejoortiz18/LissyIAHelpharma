@@ -1,0 +1,50 @@
+@model DesvincularEmpleadoViewModel
+@{
+    ViewData["Title"] = "Desvincular empleado";
+    var e = Model.Empleado;
+}
+
+<div class="page-header">
+  <div class="page-header-info">
+    <h1 class="page-title">Desvincular empleado</h1>
+    <p class="page-desc">Registra la salida definitiva del empleado.</p>
+  </div>
+</div>
+
+<div class="card" style="max-width:40rem">
+  <div class="card-header">
+    <h2 class="card-title">@e.NombreCompleto</h2>
+    <p class="card-desc">CC @e.Cedula · @e.CargoNombre · @e.SedeNombre</p>
+  </div>
+  <div class="card-body">
+    <div class="alert alert--warning" role="alert" style="margin-bottom:var(--sp-5)">
+      Esta acción cambiará el estado del empleado a <strong>Inactivo</strong>. El empleado ya no podrá iniciar sesión en el sistema.
+    </div>
+
+    <form asp-action="Desvincular" method="post" novalidate>
+      @Html.AntiForgeryToken()
+      <input asp-for="Dto.EmpleadoId" type="hidden" />
+
+      <div asp-validation-summary="ModelOnly" class="alert alert--error" style="margin-bottom:var(--sp-4)"></div>
+
+      <div class="form-field" style="margin-bottom:var(--sp-4)">
+        <label asp-for="Dto.FechaDesvinculacion" class="form-label">Fecha de desvinculación *</label>
+        <input asp-for="Dto.FechaDesvinculacion" type="date" class="form-control" />
+        <span asp-validation-for="Dto.FechaDesvinculacion" class="form-error"></span>
+      </div>
+
+      <div class="form-field" style="margin-bottom:var(--sp-5)">
+        <label asp-for="Dto.MotivoRetiro" class="form-label">Motivo de retiro *</label>
+        <textarea asp-for="Dto.MotivoRetiro" class="form-control" rows="4"
+                  placeholder="Describe el motivo de la desvinculación…"></textarea>
+        <span asp-validation-for="Dto.MotivoRetiro" class="form-error"></span>
+      </div>
+
+      <div style="display:flex;gap:var(--sp-3)">
+        <button type="submit" class="btn btn-danger">Confirmar desvinculación</button>
+        <a asp-action="Perfil" asp-route-id="@e.Id" class="btn btn-ghost">Cancelar</a>
+      </div>
+
+    </form>
+  </div>
+</div>

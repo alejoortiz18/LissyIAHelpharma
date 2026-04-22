@@ -1,0 +1,25 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "GestionPersonal.Web (http)",
+      "type": "dotnet",
+      "request": "launch",
+      "projectPath": "${workspaceFolder}/GestionPersonal.Web/GestionPersonal.Web.csproj",
+      "launchProfileName": "http",
+      "env": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      }
+    },
+    {
+      "name": "GestionPersonal.Web (https)",
+      "type": "dotnet",
+      "request": "launch",
+      "projectPath": "${workspaceFolder}/GestionPersonal.Web/GestionPersonal.Web.csproj",
+      "launchProfileName": "https",
+      "env": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      }
+    }
+  ]
+}

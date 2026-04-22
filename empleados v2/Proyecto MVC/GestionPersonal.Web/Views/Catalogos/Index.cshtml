@@ -1,0 +1,206 @@
+﻿@model CatalogosViewModel
+@{
+    ViewData["Title"] = "Catálogos";
+    ViewData["BreadcrumbCurrent"] = "Catálogos";
+}
+
+<div class="page-header">
+  <div class="page-header-info">
+    <h1 class="page-title">Catálogos</h1>
+    <p class="page-desc">Gestión de sedes, cargos y empresas temporales.</p>
+  </div>
+</div>
+
+<!-- Tabs -->
+<div data-tabs-container>
+  <div class="tabs" role="tablist" aria-label="Catálogos">
+    <a asp-action="Index" asp-route-tab="sedes"
+       class="tab-btn @(Model.Tab == "sedes" ? "is-active" : "")"
+       role="tab" aria-selected="@(Model.Tab == "sedes" ? "true" : "false")">Sedes</a>
+    <a asp-action="Index" asp-route-tab="cargos"
+       class="tab-btn @(Model.Tab == "cargos" ? "is-active" : "")"
+       role="tab" aria-selected="@(Model.Tab == "cargos" ? "true" : "false")">Cargos</a>
+    <a asp-action="Index" asp-route-tab="empresas"
+       class="tab-btn @(Model.Tab == "empresas" ? "is-active" : "")"
+       role="tab" aria-selected="@(Model.Tab == "empresas" ? "true" : "false")">Empresas temporales</a>
+  </div>
+
+  <!-- TAB: Sedes -->
+  @if (Model.Tab == "sedes")
+  {
+    <div class="tab-panel is-active" role="tabpanel" tabindex="0">
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <h2 class="card-title">Sedes</h2>
+            <p class="card-desc">Ubicaciones donde opera la empresa.</p>
+          </div>
+          <a asp-action="NuevaSede" class="btn btn-primary btn-sm">
+            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+            Nueva sede
+          </a>
+        </div>
+        @if (!Model.Sedes.Any())
+        {
+          <div class="card-body">
+            <div class="empty-state">
+              <p class="empty-title">Sin sedes registradas</p>
+            </div>
+          </div>
+        }
+        else
+        {
+          <div class="table-scroll">
+            <table aria-label="Sedes">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Nombre</th>
+                  <th>Ciudad</th>
+                  <th>Dirección</th>
+                  <th>Estado</th>
+                </tr>
+              </thead>
+              <tbody>
+                @foreach (var s in Model.Sedes)
+                {
+                  <tr>
+                    <td class="tabular-nums" style="font-size:.8125rem">@s.Id</td>
+                    <td>@s.Nombre</td>
+                    <td>@s.Ciudad</td>
+                    <td style="font-size:.8125rem">@(s.Direccion ?? "—")</td>
+                    <td>
+                      @if (s.Estado.ToString() == "Activo")
+                      { <span class="badge badge--activo"><span class="badge-dot"></span>Activo</span> }
+                      else
+                      { <span class="badge badge--inactivo"><span class="badge-dot"></span>Inactivo</span> }
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </div>
+    </div>
+  }
+
+  <!-- TAB: Cargos -->
+  @if (Model.Tab == "cargos")
+  {
+    <div class="tab-panel is-active" role="tabpanel" tabindex="0">
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <h2 class="card-title">Cargos</h2>
+            <p class="card-desc">Posiciones laborales disponibles.</p>
+          </div>
+          <a asp-action="NuevoCargo" class="btn btn-primary btn-sm">
+            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+            Nuevo cargo
+          </a>
+        </div>
+        @if (!Model.Cargos.Any())
+        {
+          <div class="card-body">
+            <div class="empty-state">
+              <p class="empty-title">Sin cargos registrados</p>
+            </div>
+          </div>
+        }
+        else
+        {
+          <div class="table-scroll">
+            <table aria-label="Cargos">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Nombre</th>
+                  <th>Estado</th>
+                </tr>
+              </thead>
+              <tbody>
+                @foreach (var c in Model.Cargos)
+                {
+                  <tr>
+                    <td class="tabular-nums" style="font-size:.8125rem">@c.Id</td>
+                    <td>@c.Nombre</td>
+                    <td>
+                      @if (c.Estado.ToString() == "Activo")
+                      { <span class="badge badge--activo"><span class="badge-dot"></span>Activo</span> }
+                      else
+                      { <span class="badge badge--inactivo"><span class="badge-dot"></span>Inactivo</span> }
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </div>
+    </div>
+  }
+
+  <!-- TAB: Empresas temporales -->
+  @if (Model.Tab == "empresas")
+  {
+    <div class="tab-panel is-active" role="tabpanel" tabindex="0">
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <h2 class="card-title">Empresas temporales</h2>
+            <p class="card-desc">Empresas de contratación temporal.</p>
+          </div>
+          <a asp-action="NuevaEmpresa" class="btn btn-primary btn-sm">
+            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+            Nueva empresa
+          </a>
+        </div>
+        @if (!Model.EmpresasTemporales.Any())
+        {
+          <div class="card-body">
+            <div class="empty-state">
+              <p class="empty-title">Sin empresas temporales registradas</p>
+            </div>
+          </div>
+        }
+        else
+        {
+          <div class="table-scroll">
+            <table aria-label="Empresas temporales">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Nombre</th>
+                  <th>Estado</th>
+                </tr>
+              </thead>
+              <tbody>
+                @foreach (var emp in Model.EmpresasTemporales)
+                {
+                  <tr>
+                    <td class="tabular-nums" style="font-size:.8125rem">@emp.Id</td>
+                    <td>@emp.Nombre</td>
+                    <td>
+                      @if (emp.Estado == "Activo")
+                      { <span class="badge badge--activo"><span class="badge-dot"></span>Activo</span> }
+                      else
+                      { <span class="badge badge--inactivo"><span class="badge-dot"></span>Inactivo</span> }
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </div>
+    </div>
+  }
+
+</div><!-- /data-tabs-container -->

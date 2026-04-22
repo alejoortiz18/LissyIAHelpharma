@@ -1,0 +1,93 @@
+@model CrearEventoViewModel
+@{
+    ViewData["Title"] = "Registrar evento laboral";
+}
+
+<div class="page-header">
+  <div class="page-header-info">
+    <h1 class="page-title">Registrar evento laboral</h1>
+  </div>
+</div>
+
+<form asp-action="Registrar" method="post" novalidate style="max-width:42rem">
+  @Html.AntiForgeryToken()
+
+  <div asp-validation-summary="ModelOnly" class="alert alert--error" style="margin-bottom:var(--sp-4)"></div>
+
+  <div class="card">
+    <div class="card-body" style="display:flex;flex-direction:column;gap:var(--sp-4)">
+
+      <div class="form-field">
+        <label asp-for="Dto.EmpleadoId" class="form-label">Empleado *</label>
+        <select asp-for="Dto.EmpleadoId" class="form-control">
+          <option value="">Seleccionar empleado…</option>
+          @foreach (var emp in Model.Empleados)
+          {
+            <option value="@emp.Id" selected="@(emp.Id == Model.EmpleadoPreSeleccionado)">
+              @emp.NombreCompleto — @emp.SedeNombre
+            </option>
+          }
+        </select>
+        <span asp-validation-for="Dto.EmpleadoId" class="form-error"></span>
+      </div>
+
+      <div class="form-field">
+        <label asp-for="Dto.TipoEvento" class="form-label">Tipo de evento *</label>
+        <select asp-for="Dto.TipoEvento" class="form-control">
+          <option value="">Seleccionar…</option>
+          <option value="Vacaciones">Vacaciones</option>
+          <option value="Incapacidad">Incapacidad</option>
+          <option value="Permiso">Permiso</option>
+        </select>
+        <span asp-validation-for="Dto.TipoEvento" class="form-error"></span>
+      </div>
+
+      <div class="form-grid form-grid--2">
+        <div class="form-field">
+          <label asp-for="Dto.FechaInicio" class="form-label">Fecha inicio *</label>
+          <input asp-for="Dto.FechaInicio" type="date" class="form-control" />
+          <span asp-validation-for="Dto.FechaInicio" class="form-error"></span>
+        </div>
+        <div class="form-field">
+          <label asp-for="Dto.FechaFin" class="form-label">Fecha fin *</label>
+          <input asp-for="Dto.FechaFin" type="date" class="form-control" />
+          <span asp-validation-for="Dto.FechaFin" class="form-error"></span>
+        </div>
+      </div>
+
+      <div class="form-field">
+        <label asp-for="Dto.AutorizadoPor" class="form-label">Autorizado por *</label>
+        <input asp-for="Dto.AutorizadoPor" type="text" class="form-control" />
+        <span asp-validation-for="Dto.AutorizadoPor" class="form-error"></span>
+      </div>
+
+      <div class="form-field">
+        <label asp-for="Dto.TipoIncapacidad" class="form-label">Tipo de incapacidad</label>
+        <select asp-for="Dto.TipoIncapacidad" class="form-control">
+          <option value="">No aplica</option>
+          <option value="EnfermedadGeneral">Enfermedad general</option>
+          <option value="AccidenteTrabajo">Accidente de trabajo</option>
+          <option value="EnfermedadLaboral">Enfermedad laboral</option>
+          <option value="MaternidadPaternidad">Maternidad / paternidad</option>
+        </select>
+      </div>
+
+      <div class="form-field">
+        <label asp-for="Dto.EntidadExpide" class="form-label">Entidad que expide</label>
+        <input asp-for="Dto.EntidadExpide" type="text" class="form-control" />
+      </div>
+
+      <div class="form-field">
+        <label asp-for="Dto.Descripcion" class="form-label">Descripción / motivo del permiso</label>
+        <textarea asp-for="Dto.Descripcion" class="form-control" rows="3"></textarea>
+      </div>
+
+      <div style="display:flex;gap:var(--sp-3);margin-top:var(--sp-2)">
+        <button type="submit" class="btn btn-primary">Registrar evento</button>
+        <a asp-action="Index" class="btn btn-ghost">Cancelar</a>
+      </div>
+
+    </div>
+  </div>
+
+</form>

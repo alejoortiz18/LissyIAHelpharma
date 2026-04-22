@@ -1,0 +1,90 @@
+using GestionPersonal.Application.Interfaces;
+using GestionPersonal.Constants.Messages;
+using GestionPersonal.Domain.Interfaces;
+using GestionPersonal.Models.DTOs.Turno;
+using GestionPersonal.Models.Entities.GestionPersonalEntities;
+using GestionPersonal.Models.Models;
+
+namespace GestionPersonal.Application.Services;
+
+public class TurnoService : ITurnoService
+{
+    private readonly ITurnoRepository _repo;
+
+    public TurnoService(ITurnoRepository repo) => _repo = repo;
+
+    public async Task<IReadOnlyList<PlantillaTurnoDto>> ObtenerPlantillasActivasAsync(CancellationToken ct = default)
+    {
+        var lista = await _repo.ObtenerActivasAsync(ct);
+        return lista.Select(MapToDto).ToList();
+    }
+
+    public async Task<ResultadoOperacion<PlantillaTurnoDto>> ObtenerPlantillaConDetallesAsync(int id, CancellationToken ct = default)
+    {
+        var plantilla = await _repo.ObtenerPorIdConDetallesAsync(id, ct);
+        if (plantilla is null)
+            return new ResultadoOperacion<PlantillaTurnoDto> { Exito = false, Mensaje = TurnoConstant.TurnoNoEncontrado };
+
+        return ResultadoOperacion<PlantillaTurnoDto>.Ok(MapToDto(plantilla));
+    }
+
+    public async Task<ResultadoOperacion> CrearPlantillaAsync(CrearPlantillaTurnoDto dto, CancellationToken ct = default)
+    {
+        if (await _repo.ExisteNombreAsync(dto.Nombre, ct: ct))
+            return ResultadoOperacion.Fail("Ya existe una plantilla con ese nombre.");
+
+        var plantilla = new PlantillaTurno
+        {
+            Nombre        = dto.Nombre,
+            Estado        = "Activa",
+            FechaCreacion = DateTime.UtcNow,
+            PlantillaTurnoDetalles = dto.Detalles.Select(d => new PlantillaTurnoDetalle
+            {
+                DiaSemana  = d.DiaSemana,
+                HoraEntrada = d.HoraEntrada,
+                HoraSalida  = d.HoraSalida
+            }).ToList()
+        };
+
+        _repo.AgregarPlantilla(plantilla);
+        await _repo.GuardarCambiosAsync(ct);
+
+        return ResultadoOperacion.Ok(TurnoConstant.TurnoCreado);
+    }
+
+    public async Task<ResultadoOperacion> AsignarTurnoAsync(AsignarTurnoDto dto, int programadoPorUsuarioId, CancellationToken ct = default)
+    {
+        var plantilla = await _repo.ObtenerPorIdAsync(dto.PlantillaTurnoId, ct);
+        if (plantilla is null)
+            return ResultadoOperacion.Fail(TurnoConstant.TurnoNoEncontrado);
+
+        var asignacion = new AsignacionTurno
+        {
+            EmpleadoId      = dto.EmpleadoId,
+            PlantillaTurnoId = dto.PlantillaTurnoId,
+            FechaVigencia   = dto.FechaVigencia,
+            ProgramadoPor   = programadoPorUsuarioId,
+            FechaCreacion   = DateTime.UtcNow
+        };
+
+        _repo.AgregarAsignacion(asignacion);
+        await _repo.GuardarCambiosAsync(ct);
+
+        return ResultadoOperacion.Ok("Turno asignado exitosamente.");
+    }
+
+    private static PlantillaTurnoDto MapToDto(PlantillaTurno p) => new()
+    {
+        Id     = p.Id,
+        Nombre = p.Nombre,
+        Estado = p.Estado,
+        Detalles = p.PlantillaTurnoDetalles
+            .OrderBy(d => d.DiaSemana)
+            .Select(d => new PlantillaTurnoDetalleDto
+            {
+                DiaSemana  = d.DiaSemana,
+                HoraEntrada = d.HoraEntrada?.ToString("HH:mm"),
+                HoraSalida  = d.HoraSalida?.ToString("HH:mm")
+            }).ToList()
+    };
+}

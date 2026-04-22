@@ -1,0 +1,202 @@
+@model EmpleadosViewModel
+@{
+    ViewData["Title"] = "Empleados";
+    ViewData["BreadcrumbCurrent"] = "Empleados";
+    var rol = SesionHelper.GetRol(User);
+    bool puedeCrear = rol == RolUsuario.Jefe || rol == RolUsuario.Regente || rol == RolUsuario.AuxiliarRegente;
+}
+
+<div class="page-header">
+  <div class="page-header-info">
+    <h1 class="page-title">Empleados</h1>
+    <p class="page-desc">@Model.TotalRegistros empleado@(Model.TotalRegistros != 1 ? "s" : "") encontrado@(Model.TotalRegistros != 1 ? "s" : "").</p>
+  </div>
+  @if (puedeCrear)
+  {
+    <div class="page-actions">
+      <a asp-action="Nuevo" class="btn btn-primary" aria-label="Registrar nuevo empleado">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+             fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+        Nuevo empleado
+      </a>
+    </div>
+  }
+</div>
+
+@if (TempData["Exito"] != null)
+{
+  <div class="alert alert--success alert-dismissible" role="alert">@TempData["Exito"]</div>
+}
+@if (TempData["Error"] != null)
+{
+  <div class="alert alert--error alert-dismissible" role="alert">@TempData["Error"]</div>
+}
+
+<!-- Filtros -->
+<form method="get" class="filter-bar" role="search" aria-label="Filtros de empleados">
+  <input name="buscar" type="search" class="form-input filter-search"
+         placeholder="Buscar por nombre o cédula…" autocomplete="off"
+         aria-label="Buscar empleado" value="@Model.Buscar" />
+
+  <select name="estado" class="form-select" aria-label="Filtrar por estado">
+    <option value="">Todos los estados</option>
+    <option value="Activo"   selected="@(Model.Estado == "Activo")">Activo</option>
+    <option value="Inactivo" selected="@(Model.Estado == "Inactivo")">Inactivo</option>
+  </select>
+
+  <select name="tipoVinculacion" class="form-select" aria-label="Filtrar por tipo de vinculación">
+    <option value="">Tipo de vinculación</option>
+    <option value="Directo"  selected="@(Model.TipoVinculacion == "Directo")">Directo</option>
+    <option value="Temporal" selected="@(Model.TipoVinculacion == "Temporal")">Temporal</option>
+  </select>
+
+  <button type="submit" class="btn btn-secondary btn-sm">Filtrar</button>
+
+  @if (!string.IsNullOrEmpty(Model.Buscar) || !string.IsNullOrEmpty(Model.Estado) || !string.IsNullOrEmpty(Model.TipoVinculacion))
+  {
+    <a asp-action="Index" class="btn btn-ghost btn-sm">Limpiar filtros</a>
+  }
+</form>
+
+<!-- Tabla -->
+<div class="table-wrapper">
+  <div class="table-scroll">
+    <table aria-label="Lista de empleados">
+      <thead>
+        <tr>
+          <th scope="col">Empleado</th>
+          <th scope="col">Cédula</th>
+          <th scope="col">Cargo</th>
+          <th scope="col">Sede</th>
+          <th scope="col">Tipo</th>
+          <th scope="col">Rol</th>
+          <th scope="col">Estado</th>
+          <th scope="col">Ingreso</th>
+          <th scope="col"><span class="sr-only">Acciones</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        @if (Model.Empleados.Count == 0)
+        {
+          <tr><td colspan="9">
+            <div class="empty-state">
+              <div class="empty-icon" aria-hidden="true">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                     stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
+                  <circle cx="9" cy="7" r="4"/>
+                  <path d="M23 21v-2a4 4 0 00-3-3.87"/>
+                  <path d="M16 3.13a4 4 0 010 7.75"/>
+                </svg>
+              </div>
+              <p class="empty-title">Sin resultados</p>
+              <p class="empty-desc">No se encontraron empleados con los filtros aplicados.</p>
+            </div>
+          </td></tr>
+        }
+        else
+        {
+          @foreach (var e in Model.Empleados)
+          {
+            var iniciales = string.Join("", e.NombreCompleto.Split(' ', StringSplitOptions.RemoveEmptyEntries)
+                                            .Take(2).Select(w => char.ToUpper(w[0])));
+            <tr>
+              <td>
+                <div style="display:flex;align-items:center;gap:var(--sp-3)">
+                  <div class="avatar avatar--sm" aria-hidden="true">@iniciales</div>
+                  <a asp-action="Perfil" asp-route-id="@e.Id" class="table-link">@e.NombreCompleto</a>
+                </div>
+              </td>
+              <td class="tabular-nums" style="font-size:.8125rem">@e.Cedula</td>
+              <td>@e.CargoNombre</td>
+              <td>@e.SedeNombre</td>
+              <td>
+                @if (e.TipoVinculacion == "Temporal")
+                { <span class="badge badge--temporal">Temporal</span> }
+                else
+                { <span class="badge badge--directo">Directo</span> }
+              </td>
+              <td><span class="badge">@e.Rol</span></td>
+              <td>
+                @if (e.Estado == "Activo")
+                { <span class="badge badge--activo"><span class="badge-dot"></span>Activo</span> }
+                else
+                { <span class="badge badge--inactivo"><span class="badge-dot"></span>Inactivo</span> }
+              </td>
+              <td class="tabular-nums" style="font-size:.8125rem">@e.FechaIngreso</td>
+              <td>
+                <div class="table-actions">
+                  <a asp-action="Perfil" asp-route-id="@e.Id"
+                     class="btn btn-ghost btn-sm btn-icon" aria-label="Ver perfil de @e.NombreCompleto">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24"
+                         fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                      <circle cx="12" cy="12" r="3"/>
+                    </svg>
+                  </a>
+                  @if (puedeCrear)
+                  {
+                    <a asp-action="Editar" asp-route-id="@e.Id"
+                       class="btn btn-ghost btn-sm btn-icon" aria-label="Editar a @e.NombreCompleto">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24"
+                           fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
+                        <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                      </svg>
+                    </a>
+                  }
+                </div>
+              </td>
+            </tr>
+          }
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Paginación -->
+  @if (Model.TotalPaginas > 0)
+  {
+    <div class="pagination" aria-label="Paginación de empleados">
+      <span class="pagination-info">
+        Mostrando @(((Model.Pagina - 1) * 10) + 1)–@(Math.Min(Model.Pagina * 10, Model.TotalRegistros)) de @Model.TotalRegistros
+      </span>
+      <div class="pagination-controls" role="navigation" aria-label="Páginas">
+        @if (Model.Pagina > 1)
+        {
+          <a asp-action="Index"
+             asp-route-buscar="@Model.Buscar" asp-route-estado="@Model.Estado"
+             asp-route-tipoVinculacion="@Model.TipoVinculacion" asp-route-pagina="@(Model.Pagina - 1)"
+             class="page-btn" aria-label="Página anterior">&#8249;</a>
+        }
+        else
+        {
+          <button class="page-btn" disabled aria-label="Página anterior">&#8249;</button>
+        }
+
+        @for (int p = 1; p <= Model.TotalPaginas; p++)
+        {
+          <a asp-action="Index"
+             asp-route-buscar="@Model.Buscar" asp-route-estado="@Model.Estado"
+             asp-route-tipoVinculacion="@Model.TipoVinculacion" asp-route-pagina="@p"
+             class="page-btn @(p == Model.Pagina ? "is-active" : "")"
+             aria-label="Página @p" aria-current="@(p == Model.Pagina ? "page" : null)">@p</a>
+        }
+
+        @if (Model.Pagina < Model.TotalPaginas)
+        {
+          <a asp-action="Index"
+             asp-route-buscar="@Model.Buscar" asp-route-estado="@Model.Estado"
+             asp-route-tipoVinculacion="@Model.TipoVinculacion" asp-route-pagina="@(Model.Pagina + 1)"
+             class="page-btn" aria-label="Página siguiente">&#8250;</a>
+        }
+        else
+        {
+          <button class="page-btn" disabled aria-label="Página siguiente">&#8250;</button>
+        }
+      </div>
+    </div>
+  }
+</div>

@@ -1,0 +1,126 @@
+@model TurnosViewModel
+@{
+    ViewData["Title"] = "Horarios y turnos";
+    ViewData["BreadcrumbCurrent"] = "Horarios";
+    var rol = SesionHelper.GetRol(User);
+    bool puedeGestionar = rol == RolUsuario.Jefe || rol == RolUsuario.Regente || rol == RolUsuario.AuxiliarRegente;
+}
+
+<div class="page-header">
+  <div class="page-header-info">
+    <h1 class="page-title">Horarios y turnos</h1>
+    <p class="page-desc">Plantillas de turno disponibles.</p>
+  </div>
+  @if (puedeGestionar)
+  {
+    <div class="page-actions">
+      <a asp-action="CrearPlantilla" class="btn btn-primary">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+        Nueva plantilla
+      </a>
+    </div>
+  }
+</div>
+
+@if (TempData["Exito"] != null)
+{
+  <div class="alert alert--success alert-dismissible" role="alert">@TempData["Exito"]</div>
+}
+
+<!-- Plantillas -->
+@if (!Model.Plantillas.Any())
+{
+  <div class="empty-state">
+    <div class="empty-icon" aria-hidden="true">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/>
+        <line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+      </svg>
+    </div>
+    <p class="empty-title">Sin plantillas de turno</p>
+    <p class="empty-desc">Crea una nueva plantilla para empezar a asignar horarios.</p>
+  </div>
+}
+else
+{
+  <div class="stats-grid" style="--cols:3;gap:var(--sp-4)">
+    @{
+      var dias = new[] { "Lu", "Ma", "Mi", "Ju", "Vi", "Sá", "Do" };
+    }
+    @foreach (var p in Model.Plantillas)
+    {
+      <div class="stat-card">
+        <h3 style="font-size:1rem;font-weight:600;margin-bottom:var(--sp-3)">@p.Nombre</h3>
+
+        <!-- Indicadores de días -->
+        <div style="display:flex;gap:var(--sp-1);margin-bottom:var(--sp-3)">
+          @for (int d = 1; d <= 7; d++)
+          {
+            var det = p.Detalles.FirstOrDefault(x => x.DiaSemana == d);
+            bool laboral = det is { HoraEntrada: not null };
+            <span style="width:1.75rem;height:1.75rem;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.625rem;font-weight:700;background:@(laboral ? "var(--c-primary)" : "var(--c-gray-200)");color:@(laboral ? "#fff" : "var(--c-gray-500)")">
+              @dias[d - 1]
+            </span>
+          }
+        </div>
+
+        <p style="font-size:.8125rem;color:var(--c-gray-500)">
+          @p.Detalles.Count(x => x.HoraEntrada != null) días laborables
+        </p>
+        <span class="badge @(p.Estado == "Activo" ? "badge--activo" : "badge--inactivo")" style="margin-top:var(--sp-2)">
+          @p.Estado
+        </span>
+      </div>
+    }
+  </div>
+}
+
+<!-- Asignaciones activas -->
+<div class="card" style="margin-top:var(--sp-6)">
+  <div class="card-header">
+    <h2 class="card-title">Asignaciones activas</h2>
+    <p class="card-desc">Empleados con turnos asignados en este momento.</p>
+  </div>
+  @if (!Model.Asignaciones.Any())
+  {
+    <div class="card-body">
+      <div class="empty-state">
+        <p class="empty-title">Sin asignaciones</p>
+        <p class="empty-desc">Ningún empleado tiene turno asignado actualmente.</p>
+      </div>
+    </div>
+  }
+  else
+  {
+    <div class="table-scroll">
+      <table aria-label="Asignaciones de turno activas">
+        <thead>
+          <tr>
+            <th scope="col">Empleado</th>
+            <th scope="col">Sede</th>
+            <th scope="col">Plantilla</th>
+            <th scope="col">Vigencia</th>
+            <th scope="col">Asignado por</th>
+          </tr>
+        </thead>
+        <tbody>
+          @foreach (var a in Model.Asignaciones)
+          {
+            <tr>
+              <td>
+                <a asp-controller="Empleado" asp-action="Perfil" asp-route-id="@a.EmpleadoId"
+                   asp-route-tab="horario" class="table-link">@a.EmpleadoNombre</a>
+              </td>
+              <td>@a.SedeNombre</td>
+              <td>@a.PlantillaNombre</td>
+              <td class="tabular-nums" style="font-size:.8125rem">@a.FechaVigencia</td>
+              <td>@a.AsignadoPor</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>

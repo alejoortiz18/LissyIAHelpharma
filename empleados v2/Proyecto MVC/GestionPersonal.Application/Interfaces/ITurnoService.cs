@@ -1,0 +1,12 @@
+using GestionPersonal.Models.DTOs.Turno;
+using GestionPersonal.Models.Models;
+
+namespace GestionPersonal.Application.Interfaces;
+
+public interface ITurnoService
+{
+    Task<IReadOnlyList<PlantillaTurnoDto>> ObtenerPlantillasActivasAsync(CancellationToken ct = default);
+    Task<ResultadoOperacion<PlantillaTurnoDto>> ObtenerPlantillaConDetallesAsync(int id, CancellationToken ct = default);
+    Task<ResultadoOperacion> CrearPlantillaAsync(CrearPlantillaTurnoDto dto, CancellationToken ct = default);
+    Task<ResultadoOperacion> AsignarTurnoAsync(AsignarTurnoDto dto, int programadoPorUsuarioId, CancellationToken ct = default);
+}
