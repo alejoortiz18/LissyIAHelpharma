@@ -1,4 +1,4 @@
--- ============================================================
+﻿-- ============================================================
 -- SEEDING — Sistema GestionPersonal
 -- Base de datos: GestionPersonal (LocalDB)
 -- Contraseña temporal de todos los usuarios: Admin2026
@@ -109,43 +109,43 @@ DECLARE @PwdSalt VARBINARY(256) = 0xE9119DF914288643380C5EB9CD4404CD;
 
 -- 1. Jefe
 INSERT INTO dbo.Usuarios (CorreoAcceso, PasswordHash, PasswordSalt, Rol, SedeId, DebecambiarPassword, Estado, FechaCreacion)
-VALUES (N'carlos.rodriguez@helpharma.com', @PwdHash, @PwdSalt, N'Jefe', @SedeId, 1, N'Activo', GETUTCDATE());
+VALUES (N'carlos.rodriguez@yopmail.com', @PwdHash, @PwdSalt, N'Jefe', @SedeId, 1, N'Activo', GETUTCDATE());
 DECLARE @UsuJefe INT = SCOPE_IDENTITY();
 
 -- 2. Regente 1
 INSERT INTO dbo.Usuarios (CorreoAcceso, PasswordHash, PasswordSalt, Rol, SedeId, DebecambiarPassword, Estado, FechaCreacion)
-VALUES (N'laura.sanchez@helpharma.com', @PwdHash, @PwdSalt, N'Regente', @SedeId, 1, N'Activo', GETUTCDATE());
+VALUES (N'laura.sanchez@yopmail.com', @PwdHash, @PwdSalt, N'Regente', @SedeId, 1, N'Activo', GETUTCDATE());
 DECLARE @UsuRegente1 INT = SCOPE_IDENTITY();
 
 -- 3. Regente 2
 INSERT INTO dbo.Usuarios (CorreoAcceso, PasswordHash, PasswordSalt, Rol, SedeId, DebecambiarPassword, Estado, FechaCreacion)
-VALUES (N'hernan.castillo@helpharma.com', @PwdHash, @PwdSalt, N'Regente', @SedeId, 1, N'Activo', GETUTCDATE());
+VALUES (N'hernan.castillo@yopmail.com', @PwdHash, @PwdSalt, N'Regente', @SedeId, 1, N'Activo', GETUTCDATE());
 DECLARE @UsuRegente2 INT = SCOPE_IDENTITY();
 
 -- 4. AuxiliarRegente
 INSERT INTO dbo.Usuarios (CorreoAcceso, PasswordHash, PasswordSalt, Rol, SedeId, DebecambiarPassword, Estado, FechaCreacion)
-VALUES (N'andres.torres@helpharma.com', @PwdHash, @PwdSalt, N'AuxiliarRegente', @SedeId, 1, N'Activo', GETUTCDATE());
+VALUES (N'andres.torres@yopmail.com', @PwdHash, @PwdSalt, N'AuxiliarRegente', @SedeId, 1, N'Activo', GETUTCDATE());
 DECLARE @UsuAuxiliar INT = SCOPE_IDENTITY();
 
 -- 5-9. Operarios
 INSERT INTO dbo.Usuarios (CorreoAcceso, PasswordHash, PasswordSalt, Rol, SedeId, DebecambiarPassword, Estado, FechaCreacion)
-VALUES (N'diana.vargas@helpharma.com',     @PwdHash, @PwdSalt, N'Operario', @SedeId, 1, N'Activo', GETUTCDATE());
+VALUES (N'diana.vargas@yopmail.com',     @PwdHash, @PwdSalt, N'Operario', @SedeId, 1, N'Activo', GETUTCDATE());
 DECLARE @UsuOp1 INT = SCOPE_IDENTITY();
 
 INSERT INTO dbo.Usuarios (CorreoAcceso, PasswordHash, PasswordSalt, Rol, SedeId, DebecambiarPassword, Estado, FechaCreacion)
-VALUES (N'valentina.ospina@helpharma.com', @PwdHash, @PwdSalt, N'Operario', @SedeId, 1, N'Activo', GETUTCDATE());
+VALUES (N'valentina.ospina@yopmail.com', @PwdHash, @PwdSalt, N'Operario', @SedeId, 1, N'Activo', GETUTCDATE());
 DECLARE @UsuOp2 INT = SCOPE_IDENTITY();
 
 INSERT INTO dbo.Usuarios (CorreoAcceso, PasswordHash, PasswordSalt, Rol, SedeId, DebecambiarPassword, Estado, FechaCreacion)
-VALUES (N'sebastian.moreno@helpharma.com', @PwdHash, @PwdSalt, N'Operario', @SedeId, 1, N'Activo', GETUTCDATE());
+VALUES (N'sebastian.moreno@yopmail.com', @PwdHash, @PwdSalt, N'Operario', @SedeId, 1, N'Activo', GETUTCDATE());
 DECLARE @UsuOp3 INT = SCOPE_IDENTITY();
 
 INSERT INTO dbo.Usuarios (CorreoAcceso, PasswordHash, PasswordSalt, Rol, SedeId, DebecambiarPassword, Estado, FechaCreacion)
-VALUES (N'natalia.bermudez@helpharma.com', @PwdHash, @PwdSalt, N'Operario', @SedeId, 1, N'Activo', GETUTCDATE());
+VALUES (N'natalia.bermudez@yopmail.com', @PwdHash, @PwdSalt, N'Operario', @SedeId, 1, N'Activo', GETUTCDATE());
 DECLARE @UsuOp4 INT = SCOPE_IDENTITY();
 
 INSERT INTO dbo.Usuarios (CorreoAcceso, PasswordHash, PasswordSalt, Rol, SedeId, DebecambiarPassword, Estado, FechaCreacion)
-VALUES (N'paula.quintero@helpharma.com',   @PwdHash, @PwdSalt, N'Operario', @SedeId, 1, N'Activo', GETUTCDATE());
+VALUES (N'paula.quintero@yopmail.com',   @PwdHash, @PwdSalt, N'Operario', @SedeId, 1, N'Activo', GETUTCDATE());
 DECLARE @UsuOp5 INT = SCOPE_IDENTITY();
 
 -- ============================================================
@@ -161,7 +161,7 @@ INSERT INTO dbo.Empleados (
     TipoVinculacion, FechaIngreso, EmpresaTemporalId, FechaInicioContrato, FechaFinContrato,
     Estado, DiasVacacionesPrevios, FechaCreacion, CreadoPor)
 VALUES (
-    N'Carlos Alberto Rodríguez Mora', N'10234567', '1985-03-14', N'3104567890', N'carlos.rodriguez@helpharma.com',
+    N'Carlos Alberto Rodríguez Mora', N'10234567', '1985-03-14', N'3104567890', N'carlos.rodriguez@yopmail.com',
     N'Cra 15 #45-32', N'Medellín', N'Antioquia', N'Profesional', N'Sura EPS', N'Sura ARL',
     @SedeId, @CargoJefe, @UsuJefe, NULL,
     N'Directo', '2019-01-15', NULL, NULL, NULL,
@@ -180,7 +180,7 @@ INSERT INTO dbo.Empleados (
     TipoVinculacion, FechaIngreso, EmpresaTemporalId, FechaInicioContrato, FechaFinContrato,
     Estado, DiasVacacionesPrevios, FechaCreacion, CreadoPor)
 VALUES (
-    N'Laura Patricia Sánchez Gómez', N'20345678', '1990-07-22', N'3123456789', N'laura.sanchez@helpharma.com',
+    N'Laura Patricia Sánchez Gómez', N'20345678', '1990-07-22', N'3123456789', N'laura.sanchez@yopmail.com',
     N'Cll 100 #18-50', N'Medellín', N'Antioquia', N'Profesional', N'Nueva EPS', N'Bolívar ARL',
     @SedeId, @CargoRegente, @UsuRegente1, @EmpJefe,
     N'Directo', '2020-03-01', NULL, NULL, NULL,
@@ -198,7 +198,7 @@ INSERT INTO dbo.Empleados (
     TipoVinculacion, FechaIngreso, EmpresaTemporalId, FechaInicioContrato, FechaFinContrato,
     Estado, DiasVacacionesPrevios, FechaCreacion, CreadoPor)
 VALUES (
-    N'Hernán David Castillo Mejía', N'30456789', '1988-09-30', N'3156789012', N'hernan.castillo@helpharma.com',
+    N'Hernán David Castillo Mejía', N'30456789', '1988-09-30', N'3156789012', N'hernan.castillo@yopmail.com',
     N'Av Caracas #32-10', N'Medellín', N'Antioquia', N'Profesional', N'Compensar', N'Sura ARL',
     @SedeId, @CargoRegente, @UsuRegente2, @EmpJefe,
     N'Directo', '2018-06-15', NULL, NULL, NULL,
@@ -216,7 +216,7 @@ INSERT INTO dbo.Empleados (
     TipoVinculacion, FechaIngreso, EmpresaTemporalId, FechaInicioContrato, FechaFinContrato,
     Estado, DiasVacacionesPrevios, FechaCreacion, CreadoPor)
 VALUES (
-    N'Andrés Felipe Torres Ruiz', N'40567890', '1995-11-05', N'3178901234', N'andres.torres@helpharma.com',
+    N'Andrés Felipe Torres Ruiz', N'40567890', '1995-11-05', N'3178901234', N'andres.torres@yopmail.com',
     N'Cll 50 Sur #43-25', N'Medellín', N'Antioquia', N'Técnico', N'Sura EPS', N'Sura ARL',
     @SedeId, @CargoAuxiliar, @UsuAuxiliar, @EmpRegente1,
     N'Directo', '2022-04-01', NULL, NULL, NULL,
@@ -234,7 +234,7 @@ INSERT INTO dbo.Empleados (
     TipoVinculacion, FechaIngreso, EmpresaTemporalId, FechaInicioContrato, FechaFinContrato,
     Estado, DiasVacacionesPrevios, FechaCreacion, CreadoPor)
 VALUES (
-    N'Diana Marcela Vargas López', N'50678901', '1992-06-18', N'3190123456', N'diana.vargas@helpharma.com',
+    N'Diana Marcela Vargas López', N'50678901', '1992-06-18', N'3190123456', N'diana.vargas@yopmail.com',
     N'Cra 50 #80-25', N'Medellín', N'Antioquia', N'Bachillerato', N'Famisanar', N'Positiva',
     @SedeId, @CargoCajero, @UsuOp1, @EmpRegente1,
     N'Directo', '2021-07-01', NULL, NULL, NULL,
@@ -251,7 +251,7 @@ INSERT INTO dbo.Empleados (
     TipoVinculacion, FechaIngreso, EmpresaTemporalId, FechaInicioContrato, FechaFinContrato,
     Estado, DiasVacacionesPrevios, FechaCreacion, CreadoPor)
 VALUES (
-    N'Valentina Ospina Restrepo', N'60789012', '1993-04-12', N'3212345678', N'valentina.ospina@helpharma.com',
+    N'Valentina Ospina Restrepo', N'60789012', '1993-04-12', N'3212345678', N'valentina.ospina@yopmail.com',
     N'Cll 10 Sur #43-25', N'Medellín', N'Antioquia', N'Tecnológico', N'Comfama', N'AXA Colpatria',
     @SedeId, @CargoAsesor, @UsuOp2, @EmpRegente1,
     N'Temporal', '2025-01-01', @EmpAdecco, '2025-01-01', '2025-12-31',
@@ -268,7 +268,7 @@ INSERT INTO dbo.Empleados (
     TipoVinculacion, FechaIngreso, EmpresaTemporalId, FechaInicioContrato, FechaFinContrato,
     Estado, DiasVacacionesPrevios, FechaCreacion, CreadoPor)
 VALUES (
-    N'Sebastián Moreno Parra', N'70890123', '1998-12-03', N'3234567890', N'sebastian.moreno@helpharma.com',
+    N'Sebastián Moreno Parra', N'70890123', '1998-12-03', N'3234567890', N'sebastian.moreno@yopmail.com',
     N'Cra 28 #12-60', N'Medellín', N'Antioquia', N'Bachillerato', N'Sura EPS', N'Positiva',
     @SedeId, @CargoMensajero, @UsuOp3, @EmpRegente2,
     N'Directo', '2023-03-01', NULL, NULL, NULL,
@@ -285,7 +285,7 @@ INSERT INTO dbo.Empleados (
     TipoVinculacion, FechaIngreso, EmpresaTemporalId, FechaInicioContrato, FechaFinContrato,
     Estado, DiasVacacionesPrevios, FechaCreacion, CreadoPor)
 VALUES (
-    N'Natalia Bermúdez Salazar', N'80901234', '1994-08-07', N'3256789012', N'natalia.bermudez@helpharma.com',
+    N'Natalia Bermúdez Salazar', N'80901234', '1994-08-07', N'3256789012', N'natalia.bermudez@yopmail.com',
     N'Cll 9 #43B-10', N'Medellín', N'Antioquia', N'Profesional', N'Coomeva', N'Bolívar ARL',
     @SedeId, @CargoAdministrativo, @UsuOp4, @EmpRegente2,
     N'Directo', '2021-02-15', NULL, NULL, NULL,
@@ -302,7 +302,7 @@ INSERT INTO dbo.Empleados (
     TipoVinculacion, FechaIngreso, EmpresaTemporalId, FechaInicioContrato, FechaFinContrato,
     Estado, DiasVacacionesPrevios, FechaCreacion, CreadoPor)
 VALUES (
-    N'Paula Andrea Quintero Ríos', N'91012345', '1997-05-20', N'3278901234', N'paula.quintero@helpharma.com',
+    N'Paula Andrea Quintero Ríos', N'91012345', '1997-05-20', N'3278901234', N'paula.quintero@yopmail.com',
     N'Cra 70 #34-15', N'Medellín', N'Antioquia', N'Técnico', N'Comfama', N'Sura ARL',
     @SedeId, @CargoCajero, @UsuOp5, @EmpRegente2,
     N'Temporal', '2025-03-01', @EmpManpower, '2025-03-01', '2025-12-31',

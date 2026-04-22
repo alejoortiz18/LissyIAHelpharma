@@ -1,4 +1,4 @@
--- ============================================================
+﻿-- ============================================================
 -- SEEDING DATOS — Completa todas las tablas faltantes
 -- Tablas objetivo:
 --   · PlantillasTurno / PlantillasTurnoDetalle  → 2ª plantilla (turno rotativo)
@@ -14,9 +14,9 @@ SET QUOTED_IDENTIFIER ON;
 GO
 
 -- ── Referencias de IDs ya existentes ────────────────────────
-DECLARE @UsuJefe    INT = (SELECT Id FROM dbo.Usuarios WHERE CorreoAcceso = N'carlos.rodriguez@helpharma.com');
-DECLARE @UsuReg1    INT = (SELECT Id FROM dbo.Usuarios WHERE CorreoAcceso = N'laura.sanchez@helpharma.com');
-DECLARE @UsuReg2    INT = (SELECT Id FROM dbo.Usuarios WHERE CorreoAcceso = N'hernan.castillo@helpharma.com');
+DECLARE @UsuJefe    INT = (SELECT Id FROM dbo.Usuarios WHERE CorreoAcceso = N'carlos.rodriguez@yopmail.com');
+DECLARE @UsuReg1    INT = (SELECT Id FROM dbo.Usuarios WHERE CorreoAcceso = N'laura.sanchez@yopmail.com');
+DECLARE @UsuReg2    INT = (SELECT Id FROM dbo.Usuarios WHERE CorreoAcceso = N'hernan.castillo@yopmail.com');
 
 -- Empleados (por cédula para evitar depender del Id autonumérico)
 DECLARE @EmpJefe    INT = (SELECT Id FROM dbo.Empleados WHERE Cedula = N'10234567'); -- Carlos

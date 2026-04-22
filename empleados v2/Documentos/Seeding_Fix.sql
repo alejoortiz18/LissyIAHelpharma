@@ -1,4 +1,4 @@
--- ============================================================
+﻿-- ============================================================
 -- FIX SEEDING — Corrige los 3 empleados que fallaron por
 -- acentos en NivelEscolaridad (Técnico → Tecnico,
 -- Tecnológico → Tecnologico) y limpia contactos huérfanos.
@@ -12,10 +12,10 @@ GO
 DECLARE @SedeId         INT = (SELECT Id FROM dbo.Sedes    WHERE Nombre = N'Sede Medellín');
 DECLARE @EmpRegente1    INT = (SELECT Id FROM dbo.Empleados WHERE Cedula = N'20345678'); -- Laura
 DECLARE @EmpRegente2    INT = (SELECT Id FROM dbo.Empleados WHERE Cedula = N'30456789'); -- Hernán
-DECLARE @UsuJefe        INT = (SELECT Id FROM dbo.Usuarios  WHERE CorreoAcceso = N'carlos.rodriguez@helpharma.com');
-DECLARE @UsuAuxiliar    INT = (SELECT Id FROM dbo.Usuarios  WHERE CorreoAcceso = N'andres.torres@helpharma.com');
-DECLARE @UsuOp2         INT = (SELECT Id FROM dbo.Usuarios  WHERE CorreoAcceso = N'valentina.ospina@helpharma.com');
-DECLARE @UsuOp5         INT = (SELECT Id FROM dbo.Usuarios  WHERE CorreoAcceso = N'paula.quintero@helpharma.com');
+DECLARE @UsuJefe        INT = (SELECT Id FROM dbo.Usuarios  WHERE CorreoAcceso = N'carlos.rodriguez@yopmail.com');
+DECLARE @UsuAuxiliar    INT = (SELECT Id FROM dbo.Usuarios  WHERE CorreoAcceso = N'andres.torres@yopmail.com');
+DECLARE @UsuOp2         INT = (SELECT Id FROM dbo.Usuarios  WHERE CorreoAcceso = N'valentina.ospina@yopmail.com');
+DECLARE @UsuOp5         INT = (SELECT Id FROM dbo.Usuarios  WHERE CorreoAcceso = N'paula.quintero@yopmail.com');
 DECLARE @PlantillaId    INT = (SELECT TOP 1 Id FROM dbo.PlantillasTurno WHERE Nombre = N'Turno Estándar Lunes-Viernes');
 DECLARE @EmpAdecco      INT = (SELECT Id FROM dbo.EmpresasTemporales WHERE Nombre = N'Adecco Colombia S.A.');
 DECLARE @EmpManpower    INT = (SELECT Id FROM dbo.EmpresasTemporales WHERE Nombre = N'ManpowerGroup Colombia');
@@ -50,7 +50,7 @@ BEGIN
         TipoVinculacion, FechaIngreso, EmpresaTemporalId, FechaInicioContrato, FechaFinContrato,
         Estado, DiasVacacionesPrevios, FechaCreacion, CreadoPor)
     VALUES (
-        N'Andrés Felipe Torres Ruiz', N'40567890', '1995-11-05', N'3178901234', N'andres.torres@helpharma.com',
+        N'Andrés Felipe Torres Ruiz', N'40567890', '1995-11-05', N'3178901234', N'andres.torres@yopmail.com',
         N'Cll 50 Sur #43-25', N'Medellín', N'Antioquia', N'Tecnico', N'Sura EPS', N'Sura ARL',
         @SedeId, @CargoAuxiliar, @UsuAuxiliar, @EmpRegente1,
         N'Directo', '2022-04-01', NULL, NULL, NULL,
@@ -73,7 +73,7 @@ BEGIN
         TipoVinculacion, FechaIngreso, EmpresaTemporalId, FechaInicioContrato, FechaFinContrato,
         Estado, DiasVacacionesPrevios, FechaCreacion, CreadoPor)
     VALUES (
-        N'Valentina Ospina Restrepo', N'60789012', '1993-04-12', N'3212345678', N'valentina.ospina@helpharma.com',
+        N'Valentina Ospina Restrepo', N'60789012', '1993-04-12', N'3212345678', N'valentina.ospina@yopmail.com',
         N'Cll 10 Sur #43-25', N'Medellín', N'Antioquia', N'Tecnologico', N'Comfama', N'AXA Colpatria',
         @SedeId, @CargoAsesor, @UsuOp2, @EmpRegente1,
         N'Temporal', '2025-01-01', @EmpAdecco, '2025-01-01', '2025-12-31',
@@ -96,7 +96,7 @@ BEGIN
         TipoVinculacion, FechaIngreso, EmpresaTemporalId, FechaInicioContrato, FechaFinContrato,
         Estado, DiasVacacionesPrevios, FechaCreacion, CreadoPor)
     VALUES (
-        N'Paula Andrea Quintero Ríos', N'91012345', '1997-05-20', N'3278901234', N'paula.quintero@helpharma.com',
+        N'Paula Andrea Quintero Ríos', N'91012345', '1997-05-20', N'3278901234', N'paula.quintero@yopmail.com',
         N'Cra 70 #34-15', N'Medellín', N'Antioquia', N'Tecnico', N'Comfama', N'Sura ARL',
         @SedeId, @CargoCajero, @UsuOp5, @EmpRegente2,
         N'Temporal', '2025-03-01', @EmpManpower, '2025-03-01', '2025-12-31',
