@@ -1,190 +1,511 @@
-@model HorasExtrasViewModel
+﻿@model HorasExtrasViewModel
+@using GestionPersonal.Models.Enums
+@using GestionPersonal.Web.Helpers
 @{
     ViewData["Title"] = "Horas extras";
     ViewData["BreadcrumbCurrent"] = "Horas extras";
-    var rol    = SesionHelper.GetRol(User);
-    var empId  = SesionHelper.GetEmpleadoId(User);
+    var rol          = SesionHelper.GetRol(User);
+    var empId        = SesionHelper.GetEmpleadoId(User);
     bool puedeAprobar = rol == RolUsuario.Jefe || rol == RolUsuario.Regente || rol == RolUsuario.AuxiliarRegente;
+    var antiforgery  = ViewContext.HttpContext.RequestServices
+        .GetRequiredService<Microsoft.AspNetCore.Antiforgery.IAntiforgery>()
+        .GetAndStoreTokens(ViewContext.HttpContext).RequestToken;
 }
 
 <div class="page-header">
   <div class="page-header-info">
-    <h1 class="page-title">Horas extras</h1>
-    <p class="page-desc">@Model.TotalRegistros registros encontrados.</p>
+    <h1 class="page-title">Horas Extras</h1>
+    <p class="page-desc">Registro y aprobación de horas extras de los empleados.</p>
   </div>
-  <div class="page-actions">
-    <a asp-action="Crear" class="btn btn-primary">
-      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-      </svg>
-      Nueva solicitud
-    </a>
-  </div>
-</div>
-
-@if (TempData["Exito"] != null)
-{
-  <div class="alert alert--success alert-dismissible" role="alert">@TempData["Exito"]</div>
-}
-@if (TempData["Error"] != null)
-{
-  <div class="alert alert--error alert-dismissible" role="alert">@TempData["Error"]</div>
-}
-
-<!-- Stats -->
-<div class="stats-grid" style="--cols:3;gap:var(--sp-4);margin-bottom:var(--sp-5)">
-  <div class="stat-card">
-    <span class="stat-label">Pendientes</span>
-    <span class="stat-value">@Model.Pendientes</span>
-  </div>
-  <div class="stat-card">
-    <span class="stat-label">Aprobadas este mes</span>
-    <span class="stat-value">@Model.AprobadasEsteMes</span>
-  </div>
-  <div class="stat-card">
-    <span class="stat-label">Total horas aprobadas</span>
-    <span class="stat-value">@Model.TotalHorasAprobadas h</span>
-  </div>
-</div>
-
-<!-- Filtros -->
-<form method="get" class="filter-bar" role="search" aria-label="Filtros de horas extras">
   @if (puedeAprobar)
   {
-    <input name="buscar" type="search" class="form-input filter-search"
-           placeholder="Buscar empleado…" value="@Model.Buscar" autocomplete="off" aria-label="Buscar por empleado" />
-  }
-  <input name="fecha" type="month" class="form-input" value="@Model.Fecha" aria-label="Mes" />
-  <select name="estado" class="form-select" aria-label="Estado">
-    <option value="">Todos los estados</option>
-    <option value="Pendiente"  selected="@(Model.Estado == "Pendiente")">Pendiente</option>
-    <option value="Aprobado"   selected="@(Model.Estado == "Aprobado")">Aprobado</option>
-    <option value="Rechazado"  selected="@(Model.Estado == "Rechazado")">Rechazado</option>
-    <option value="Anulado"    selected="@(Model.Estado == "Anulado")">Anulado</option>
-  </select>
-  <button type="submit" class="btn btn-secondary btn-sm">Filtrar</button>
-  @if (!string.IsNullOrEmpty(Model.Buscar) || !string.IsNullOrEmpty(Model.Fecha) || !string.IsNullOrEmpty(Model.Estado))
-  {
-    <a asp-action="Index" class="btn btn-ghost btn-sm">Limpiar</a>
-  }
-</form>
-
-<!-- Tabla -->
-@if (!Model.HorasExtras.Any())
-{
-<div class="empty-state">
-  <div class="empty-icon" aria-hidden="true">
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-      <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
-    </svg>
-  </div>
-  <p class="empty-title">Sin registros</p>
-  <p class="empty-desc">No hay solicitudes con los filtros seleccionados.</p>
-</div>
-}
-else
-{
-  <div class="table-scroll">
-        <table aria-label="Horas extras">
-          <thead>
-            <tr>
-              @if (puedeAprobar) { <th>Empleado</th> <th>Sede</th> }
-              <th>Fecha</th>
-              <th>Horas</th>
-              <th>Motivo</th>
-              <th>Estado</th>
-              <th><span class="sr-only">Acciones</span></th>
-            </tr>
-          </thead>
-          <tbody>
-            @foreach (var h in Model.HorasExtras)
-            {
-              bool esPropia = empId.HasValue && h.EmpleadoId == empId.Value;
-              <tr>
-                @if (puedeAprobar)
-                {
-                  <td>
-                    <a asp-controller="Empleado" asp-action="Perfil" asp-route-id="@h.EmpleadoId"
-                       asp-route-tab="historial" class="table-link">@h.EmpleadoNombre</a>
-                  </td>
-                  <td>@h.SedeNombre</td>
-                }
-                <td class="tabular-nums" style="font-size:.8125rem">@h.FechaTrabajada</td>
-                <td class="tabular-nums">@h.CantidadHoras h</td>
-                <td style="font-size:.8125rem;max-width:14rem;white-space:normal">@h.Motivo</td>
-                <td>@Html.Raw(BadgeEstado(h.Estado))</td>
-                <td>
-                  <div style="display:flex;gap:var(--sp-2);align-items:center">
-                    @if (h.Estado == "Pendiente" && puedeAprobar && !esPropia)
-                    {
-                      <form asp-action="Aprobar" method="post" style="display:inline">
-                        @Html.AntiForgeryToken()
-                        <input type="hidden" name="id" value="@h.Id" />
-                        <button type="submit" class="btn btn-primary btn-sm">Aprobar</button>
-                      </form>
-                      <form asp-action="Rechazar" method="post" style="display:inline">
-                        @Html.AntiForgeryToken()
-                        <input type="hidden" name="id" value="@h.Id" />
-                        <input type="hidden" name="motivoRechazo" value="Rechazado por supervisor" />
-                        <button type="submit" class="btn btn-ghost btn-sm"
-                                onclick="return confirm('¿Rechazar esta solicitud?')">Rechazar</button>
-                      </form>
-                    }
-                    else if (h.Estado == "Pendiente" && esPropia)
-                    {
-                      <span style="font-size:.8125rem;color:var(--c-gray-500)">Pendiente de revisión</span>
-                    }
-                    @if (h.Estado == "Aprobado" && puedeAprobar)
-                    {
-                      <form asp-action="Anular" method="post" style="display:inline">
-                        @Html.AntiForgeryToken()
-                        <input type="hidden" name="id" value="@h.Id" />
-                        <input type="hidden" name="motivoAnulacion" value="Anulado por supervisor" />
-                        <button type="submit" class="btn btn-ghost btn-sm"
-                                onclick="return confirm('¿Anular esta hora extra aprobada?')">Anular</button>
-                      </form>
-                    }
-                  </div>
-                </td>
-              </tr>
-            }
-          </tbody>
-        </table>
-  </div>
-
-  @if (Model.TotalPaginas > 1)
-  {
-    <div class="pagination">
-      <span class="pagination-info">Página @Model.Pagina de @Model.TotalPaginas</span>
-      <div class="pagination-controls">
-        @if (Model.Pagina > 1)
-        {
-          <a asp-action="Index" asp-route-buscar="@Model.Buscar" asp-route-fecha="@Model.Fecha"
-             asp-route-estado="@Model.Estado" asp-route-pagina="@(Model.Pagina - 1)" class="page-btn">&#8249;</a>
-        }
-        @for (int p = 1; p <= Model.TotalPaginas; p++)
-        {
-          <a asp-action="Index" asp-route-buscar="@Model.Buscar" asp-route-fecha="@Model.Fecha"
-             asp-route-estado="@Model.Estado" asp-route-pagina="@p"
-             class="page-btn @(p == Model.Pagina ? "is-active" : "")">@p</a>
-        }
-        @if (Model.Pagina < Model.TotalPaginas)
-        {
-          <a asp-action="Index" asp-route-buscar="@Model.Buscar" asp-route-fecha="@Model.Fecha"
-             asp-route-estado="@Model.Estado" asp-route-pagina="@(Model.Pagina + 1)" class="page-btn">&#8250;</a>
-        }
-      </div>
+    <div class="page-actions">
+      <button class="btn btn-primary" data-modal-open="modal-nueva-he" id="btn-nueva-he">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+        Nueva solicitud
+      </button>
     </div>
   }
+</div>
+
+<!-- Stats -->
+@if (puedeAprobar)
+{
+  <div class="stats-grid" style="--cols:3;gap:var(--sp-4);margin-bottom:var(--sp-6)">
+    <div class="stat-card">
+      <span class="stat-label">Pendientes de aprobación</span>
+      <span class="stat-value">@Model.Pendientes</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-label">Aprobadas este mes</span>
+      <span class="stat-value">@Model.AprobadasEsteMes</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-label">Horas totales aprobadas</span>
+      <span class="stat-value">@Model.TotalHorasAprobadas h</span>
+    </div>
+  </div>
 }
 
-@functions {
-    string BadgeEstado(string estado) => estado.ToLower() switch
-    {
-        "pendiente"  => "<span class=\"badge badge--pendiente\">Pendiente</span>",
-        "aprobado"   => "<span class=\"badge badge--activo\"><span class=\"badge-dot\"></span>Aprobado</span>",
-        "rechazado"  => "<span class=\"badge badge--inactivo\"><span class=\"badge-dot\"></span>Rechazado</span>",
-        "anulado"    => "<span class=\"badge badge--anulado\"><span class=\"badge-dot\"></span>Anulado</span>",
-        _            => $"<span class=\"badge\">{System.Net.WebUtility.HtmlEncode(estado)}</span>",
-    };
+<!-- Filtros (client-side) -->
+<div class="filter-bar" role="search" aria-label="Filtros de horas extras">
+  @if (puedeAprobar)
+  {
+    <input class="form-input filter-search" type="search" id="f-empleado"
+           placeholder="Buscar empleado" autocomplete="off" aria-label="Buscar por empleado">
+  }
+  <input class="form-input" type="date" id="f-fecha" aria-label="Fecha del registro">
+  <select class="form-select" id="f-estado" aria-label="Estado">
+    <option value="">Todos los estados</option>
+    <option value="Pendiente">Pendiente</option>
+    <option value="Aprobado">Aprobado</option>
+    <option value="Rechazado">Rechazado</option>
+    <option value="Anulado">Anulado</option>
+  </select>
+  <button class="btn btn-ghost btn-sm" id="btn-clear" type="button">Limpiar</button>
+</div>
+
+<!-- Tabla -->
+<div class="table-wrapper">
+  <div class="table-scroll">
+    <table aria-label="Solicitudes de horas extras">
+      <thead>
+        <tr>
+          @if (puedeAprobar) { <th scope="col">Empleado</th> <th scope="col">Sede</th> }
+          <th scope="col">Fecha</th>
+          <th scope="col">Horas</th>
+          <th scope="col">Motivo</th>
+          <th scope="col">Estado</th>
+          <th scope="col"><span class="sr-only">Acciones</span></th>
+        </tr>
+      </thead>
+      <tbody id="tbody-he">
+        @if (!Model.HorasExtras.Any())
+        {
+          <tr><td colspan="@(puedeAprobar ? 7 : 5)" id="empty-row">
+            <div class="empty-state">
+              <div class="empty-icon" aria-hidden="true">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                </svg>
+              </div>
+              <p class="empty-title">Sin solicitudes</p>
+              <p class="empty-desc">No hay solicitudes registradas todavÃ­a.</p>
+            </div>
+          </td></tr>
+        }
+        else
+        {
+          @foreach (var h in Model.HorasExtras)
+          {
+            bool esPropia = empId.HasValue && h.EmpleadoId == empId.Value;
+            string estadoLower = h.Estado.ToLowerInvariant();
+            string badgeClass = estadoLower switch {
+              "pendiente" => "badge--pendiente",
+              "aprobado"  => "badge--activo",
+              "rechazado" => "badge--inactivo",
+              "anulado"   => "badge--anulado",
+              _           => ""
+            };
+            string motivoExtra = estadoLower switch {
+              "rechazado" when h.MotivoRechazo != null
+                => $"<span class=\"he-meta\">Motivo: {System.Net.WebUtility.HtmlEncode(h.MotivoRechazo.Length > 30 ? h.MotivoRechazo[..30] + "â€¦" : h.MotivoRechazo)}</span>",
+              "aprobado" when h.FechaAprobacion != null
+                => $"<span class=\"he-meta\">{System.Net.WebUtility.HtmlEncode(h.FechaAprobacion)}</span>",
+              "anulado" when h.MotivoAnulacion != null
+                => $"<span class=\"he-meta\">Motivo: {System.Net.WebUtility.HtmlEncode(h.MotivoAnulacion.Length > 30 ? h.MotivoAnulacion[..30] + "â€¦" : h.MotivoAnulacion)}</span>",
+              _ => ""
+            };
+            <tr data-empleado="@h.EmpleadoNombre.ToLowerInvariant()"
+                data-fecha="@h.FechaTrabajada"
+                data-estado="@h.Estado.ToLowerInvariant()">
+              @if (puedeAprobar)
+              {
+                <td>
+                  <a asp-controller="Empleado" asp-action="Perfil" asp-route-id="@h.EmpleadoId"
+                     asp-route-tab="historial" class="table-link">@h.EmpleadoNombre</a>
+                </td>
+                <td>@h.SedeNombre</td>
+              }
+              <td class="tabular-nums" style="font-size:.8125rem">@h.FechaTrabajada</td>
+              <td class="tabular-nums" style="font-weight:600">@h.CantidadHoras h</td>
+              <td style="font-size:.8125rem;max-width:12rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"
+                  title="@h.Motivo">@h.Motivo</td>
+              <td>
+                <span class="badge @badgeClass">@h.Estado</span>
+                @Html.Raw(motivoExtra)
+              </td>
+              <td>
+                @if (h.Estado == "Pendiente" && puedeAprobar && esPropia)
+                {
+                  <span class="badge badge--pendiente" title="Las propias horas extras requieren aprobaciÃ³n de otro supervisor.">Requiere otro supervisor</span>
+                }
+                else if (h.Estado == "Pendiente" && puedeAprobar && !esPropia)
+                {
+                  <div style="display:flex;gap:var(--sp-1)">
+                    <button class="btn btn-success btn-sm" onclick="aprobarHE(@h.Id)"
+                            aria-label="Aprobar solicitud de @h.EmpleadoNombre">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <polyline points="20 6 9 17 4 12"/>
+                      </svg>
+                      Aprobar
+                    </button>
+                    <button class="btn btn-danger-outline btn-sm" onclick="iniciarRechazo(@h.Id)"
+                            aria-label="Rechazar solicitud de @h.EmpleadoNombre">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true">
+                        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                      </svg>
+                      Rechazar
+                    </button>
+                  </div>
+                }
+                else if (h.Estado == "Aprobado" && puedeAprobar)
+                {
+                  <button class="btn btn-danger-outline btn-sm" onclick="iniciarAnulacion(@h.Id)"
+                          aria-label="Anular horas aprobadas de @h.EmpleadoNombre"
+                          title="Anular: corregir una aprobaciÃ³n realizada por error">
+                    Anular
+                  </button>
+                }
+              </td>
+            </tr>
+          }
+        }
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+     Modal: Nueva solicitud
+     â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+@if (puedeAprobar)
+{
+<div class="modal-overlay" id="modal-nueva-he" hidden aria-modal="true"
+     aria-labelledby="he-title" role="dialog">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 class="modal-title" id="he-title">Nueva solicitud de hora extra</h2>
+      <button class="modal-close btn" data-modal-close aria-label="Cerrar">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <form id="form-he" novalidate>
+        <div class="form-group">
+          <label class="form-label" for="he-empleado">Empleado <span class="required" aria-hidden="true">*</span></label>
+          <select class="form-select" id="he-empleado" name="EmpleadoId" required>
+            <option value="">Selecciona empleado</option>
+            @foreach (var emp in Model.Empleados.Where(e => e.Estado == "Activo"))
+            {
+              <option value="@emp.Id">@emp.NombreCompleto</option>
+            }
+          </select>
+        </div>
+        <div class="form-grid form-grid-2">
+          <div class="form-group">
+            <label class="form-label" for="he-fecha">Fecha <span class="required" aria-hidden="true">*</span></label>
+            <input class="form-input" type="date" id="he-fecha" name="FechaTrabajada" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="he-horas">Horas extras <span class="required" aria-hidden="true">*</span></label>
+            <input class="form-input" type="number" id="he-horas" name="CantidadHoras"
+                   min="1" max="24" step="0.5" inputmode="decimal" placeholder="Ej. 2" required>
+            <span class="form-hint">Entre 1 y 24 horas por solicitud.</span>
+          </div>
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+          <label class="form-label" for="he-motivo">Motivo <span class="required" aria-hidden="true">*</span></label>
+          <textarea class="form-textarea" id="he-motivo" name="Motivo"
+                    placeholder="Describe el motivo de las horas extras" style="min-height:3.5rem" required></textarea>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" data-modal-close>Cancelar</button>
+      <button class="btn btn-primary" id="btn-guardar-he">Registrar solicitud</button>
+    </div>
+  </div>
+</div>
+}
+
+<!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+     Modal: Rechazar solicitud
+     â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+@if (puedeAprobar)
+{
+<div class="modal-overlay" id="modal-rechazar" hidden aria-modal="true"
+     aria-labelledby="rechazar-title" role="dialog">
+  <div class="modal modal--sm">
+    <div class="modal-header">
+      <h2 class="modal-title" id="rechazar-title">Rechazar solicitud</h2>
+      <button class="modal-close btn" data-modal-close aria-label="Cerrar">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label" for="motivo-rechazo">Motivo del rechazo <span class="required" aria-hidden="true">*</span></label>
+        <textarea class="form-textarea" id="motivo-rechazo"
+                  placeholder="Explica el motivo del rechazoâ€¦" style="min-height:3.5rem"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" data-modal-close>Cancelar</button>
+      <button class="btn btn-danger" id="btn-confirmar-rechazo">Confirmar rechazo</button>
+    </div>
+  </div>
+</div>
+}
+
+<!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+     Modal: Anular horas aprobadas
+     â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+@if (puedeAprobar)
+{
+<div class="modal-overlay" id="modal-anular-he" hidden aria-modal="true"
+     aria-labelledby="anular-he-title" role="dialog">
+  <div class="modal modal--sm">
+    <div class="modal-header">
+      <h2 class="modal-title" id="anular-he-title">Anular horas aprobadas</h2>
+      <button class="modal-close btn" data-modal-close aria-label="Cerrar">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="alert alert--warning" role="alert" style="margin-bottom:var(--sp-4)">
+        <strong>Esta acciÃ³n anula horas ya aprobadas.</strong> Es diferente a un rechazo: se usa para corregir un registro aprobado por error. El historial queda guardado.
+      </div>
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label" for="motivo-anulacion-he">Motivo de anulaciÃ³n <span class="required" aria-hidden="true">*</span></label>
+        <textarea class="form-textarea" id="motivo-anulacion-he"
+                  placeholder="Describe el motivo de la anulaciÃ³nâ€¦" style="min-height:5rem"></textarea>
+        <span class="form-error" id="err-anulacion" role="alert" hidden>El motivo es obligatorio.</span>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" data-modal-close>Cancelar</button>
+      <button class="btn btn-danger" id="btn-confirmar-anulacion-he">Confirmar anulaciÃ³n</button>
+    </div>
+  </div>
+</div>
+}
+
+@section Scripts {
+<style>
+  .he-meta { display:block; font-size:.7rem; color:var(--c-gray-400); margin-top:2px; }
+</style>
+<script>
+(function () {
+  'use strict';
+
+  const TOKEN = '@antiforgery';
+  let rechazarHeId = null;
+  let anularHeId   = null;
+
+  /* â”€â”€ Client-side filtering â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  function filtrar() {
+    const buscar = (document.getElementById('f-empleado')?.value ?? '').trim().toLowerCase();
+    const fecha  = document.getElementById('f-fecha').value;   /* YYYY-MM-DD */
+    const estado = document.getElementById('f-estado').value.toLowerCase();
+    const rows   = document.querySelectorAll('#tbody-he tr[data-estado]');
+    let visible  = 0;
+
+    rows.forEach(tr => {
+      const emp    = (tr.dataset.empleado || '');
+      const trFec  = (tr.dataset.fecha    || '');   /* dd/MM/yyyy */
+      const trEst  = (tr.dataset.estado   || '');
+
+      /* Convert server dd/MM/yyyy to YYYY-MM-DD for comparison */
+      let fechaISO = '';
+      if (trFec) {
+        const parts = trFec.split('/');
+        if (parts.length === 3) fechaISO = `${parts[2]}-${parts[1]}-${parts[0]}`;
+      }
+
+      const matchEmp    = !buscar || emp.includes(buscar);
+      const matchFecha  = !fecha  || fechaISO === fecha;
+      const matchEstado = !estado || trEst === estado;
+
+      const show = matchEmp && matchFecha && matchEstado;
+      tr.hidden = !show;
+      if (show) visible++;
+    });
+
+    /* Empty state row */
+    let emptyRow = document.getElementById('no-results-row');
+    if (visible === 0 && rows.length > 0) {
+      if (!emptyRow) {
+        emptyRow = document.createElement('tr');
+        emptyRow.id = 'no-results-row';
+        const colspan = @(puedeAprobar ? 7 : 5);
+        emptyRow.innerHTML = `<td colspan="${colspan}">
+          <div class="empty-state">
+            <div class="empty-icon" aria-hidden="true">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+              </svg>
+            </div>
+            <p class="empty-title">Sin solicitudes</p>
+            <p class="empty-desc">No se encontraron solicitudes con los filtros aplicados.</p>
+          </div>
+        </td>`;
+        document.getElementById('tbody-he').appendChild(emptyRow);
+      }
+    } else if (emptyRow) {
+      emptyRow.remove();
+    }
+  }
+
+  /* â”€â”€ AJAX helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  function postAjax(url, body, btn) {
+    if (btn) { btn.disabled = true; btn.classList.add('btn-loading'); }
+    const fd = new FormData();
+    fd.append('__RequestVerificationToken', TOKEN);
+    for (const [k, v] of Object.entries(body)) fd.append(k, v);
+    return fetch(url, { method: 'POST', body: fd })
+      .then(r => r.json())
+      .finally(() => {
+        if (btn) { btn.disabled = false; btn.classList.remove('btn-loading'); }
+      });
+  }
+
+  /* â”€â”€ Aprobar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  window.aprobarHE = function (id) {
+    postAjax('@Url.Action("AprobarAjax", "HoraExtra")', { id })
+      .then(data => {
+        if (data.exito) { showToast(data.mensaje || 'Hora extra aprobada.', 'success'); setTimeout(() => location.reload(), 800); }
+        else showToast(data.mensaje || 'Error al aprobar.', 'error');
+      })
+      .catch(() => showToast('Error de red.', 'error'));
+  };
+
+  /* â”€â”€ Rechazar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  window.iniciarRechazo = function (id) {
+    rechazarHeId = id;
+    document.getElementById('motivo-rechazo').value = '';
+    openModal('modal-rechazar');
+  };
+
+  /* â”€â”€ Anular â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  window.iniciarAnulacion = function (id) {
+    anularHeId = id;
+    document.getElementById('motivo-anulacion-he').value = '';
+    document.getElementById('err-anulacion').hidden = true;
+    openModal('modal-anular-he');
+  };
+
+  /* â”€â”€ Init â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  document.addEventListener('DOMContentLoaded', function () {
+
+    /* Filters */
+    const fEmp    = document.getElementById('f-empleado');
+    const fFecha  = document.getElementById('f-fecha');
+    const fEstado = document.getElementById('f-estado');
+    if (fEmp)    fEmp.addEventListener('input', filtrar);
+    if (fFecha)  fFecha.addEventListener('change', filtrar);
+    if (fEstado) fEstado.addEventListener('change', filtrar);
+    document.getElementById('btn-clear').addEventListener('click', function () {
+      if (fEmp)    fEmp.value    = '';
+      if (fFecha)  fFecha.value  = '';
+      if (fEstado) fEstado.value = '';
+      filtrar();
+    });
+
+    /* Modal: Registrar */
+    const btnGuardar = document.getElementById('btn-guardar-he');
+    if (btnGuardar) {
+      btnGuardar.addEventListener('click', function () {
+        const empId  = document.getElementById('he-empleado').value;
+        const fecha  = document.getElementById('he-fecha').value;
+        const horas  = document.getElementById('he-horas').value;
+        const motivo = document.getElementById('he-motivo').value.trim();
+
+        if (!empId || !fecha || !horas || !motivo) {
+          showToast('Completa todos los campos obligatorios.', 'error'); return;
+        }
+        const h = parseFloat(horas);
+        if (h < 1 || h > 24) {
+          showToast('Las horas deben estar entre 1 y 24.', 'error'); return;
+        }
+
+        postAjax('@Url.Action("RegistrarAjax", "HoraExtra")', {
+          EmpleadoId: empId,
+          FechaTrabajada: fecha,
+          CantidadHoras: horas,
+          Motivo: motivo
+        }, this)
+        .then(data => {
+          if (data.exito) {
+            showToast(data.mensaje || 'Solicitud registrada.', 'success');
+            closeModal('modal-nueva-he');
+            document.getElementById('form-he').reset();
+            setTimeout(() => location.reload(), 800);
+          } else {
+            showToast(data.mensaje || 'Error al registrar.', 'error');
+          }
+        })
+        .catch(() => showToast('Error de red.', 'error'));
+      });
+    }
+
+    /* Modal: Rechazar */
+    const btnRechazo = document.getElementById('btn-confirmar-rechazo');
+    if (btnRechazo) {
+      btnRechazo.addEventListener('click', function () {
+        const motivo = document.getElementById('motivo-rechazo').value.trim();
+        if (!motivo) { showToast('El motivo es obligatorio.', 'error'); return; }
+
+        postAjax('@Url.Action("RechazarAjax", "HoraExtra")', {
+          id: rechazarHeId, motivoRechazo: motivo
+        }, this)
+        .then(data => {
+          if (data.exito) {
+            showToast(data.mensaje || 'Solicitud rechazada.', 'success');
+            closeModal('modal-rechazar');
+            document.getElementById('motivo-rechazo').value = '';
+            setTimeout(() => location.reload(), 800);
+          } else {
+            showToast(data.mensaje || 'Error al rechazar.', 'error');
+          }
+        })
+        .catch(() => showToast('Error de red.', 'error'));
+      });
+    }
+
+    /* Modal: Anular */
+    const btnAnular = document.getElementById('btn-confirmar-anulacion-he');
+    if (btnAnular) {
+      btnAnular.addEventListener('click', function () {
+        const motivo = document.getElementById('motivo-anulacion-he').value.trim();
+        const errEl  = document.getElementById('err-anulacion');
+        if (!motivo) { errEl.hidden = false; document.getElementById('motivo-anulacion-he').focus(); return; }
+        errEl.hidden = true;
+
+        postAjax('@Url.Action("AnularAjax", "HoraExtra")', {
+          id: anularHeId, motivoAnulacion: motivo
+        }, this)
+        .then(data => {
+          if (data.exito) {
+            showToast(data.mensaje || 'Horas extras anuladas.', 'success');
+            closeModal('modal-anular-he');
+            setTimeout(() => location.reload(), 800);
+          } else {
+            showToast(data.mensaje || 'Error al anular.', 'error');
+          }
+        })
+        .catch(() => showToast('Error de red.', 'error'));
+      });
+    }
+  });
+})();
+</script>
 }
