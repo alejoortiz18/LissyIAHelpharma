@@ -16,5 +16,10 @@ public interface ICatalogoRepository
     Task<IReadOnlyList<EmpresaTemporal>> ObtenerEmpresasTemporalesActivasAsync(CancellationToken ct = default);
     Task<EmpresaTemporal?> ObtenerEmpresaTemporalPorIdAsync(int id, CancellationToken ct = default);
 
+    // Creación
+    void AgregarSede(Sede sede);
+    void AgregarCargo(Cargo cargo);
+    void AgregarEmpresaTemporal(EmpresaTemporal empresa);
+
     Task<int> GuardarCambiosAsync(CancellationToken ct = default);
 }

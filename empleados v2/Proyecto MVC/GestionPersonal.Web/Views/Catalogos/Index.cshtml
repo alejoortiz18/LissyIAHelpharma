@@ -2,12 +2,15 @@
 @{
     ViewData["Title"] = "Catálogos";
     ViewData["BreadcrumbCurrent"] = "Catálogos";
+    var antiforgery = ViewContext.HttpContext.RequestServices
+        .GetRequiredService<Microsoft.AspNetCore.Antiforgery.IAntiforgery>()
+        .GetAndStoreTokens(ViewContext.HttpContext).RequestToken;
 }
 
 <div class="page-header">
   <div class="page-header-info">
-    <h1 class="page-title">Catálogos</h1>
-    <p class="page-desc">Gestión de sedes, cargos y empresas temporales.</p>
+    <h1 class="page-title">Catálogos del sistema</h1>
+    <p class="page-desc">Administra las sedes, cargos y empresas temporales disponibles.</p>
   </div>
 </div>
 
@@ -16,187 +19,225 @@
   <div class="tabs" role="tablist" aria-label="Catálogos">
     <a asp-action="Index" asp-route-tab="sedes"
        class="tab-btn @(Model.Tab == "sedes" ? "is-active" : "")"
-       role="tab" aria-selected="@(Model.Tab == "sedes" ? "true" : "false")">Sedes</a>
+       role="tab" aria-selected="@(Model.Tab == "sedes" ? "true" : "false")"
+       aria-controls="tab-sedes">Sedes</a>
     <a asp-action="Index" asp-route-tab="cargos"
        class="tab-btn @(Model.Tab == "cargos" ? "is-active" : "")"
-       role="tab" aria-selected="@(Model.Tab == "cargos" ? "true" : "false")">Cargos</a>
+       role="tab" aria-selected="@(Model.Tab == "cargos" ? "true" : "false")"
+       aria-controls="tab-cargos">Cargos</a>
     <a asp-action="Index" asp-route-tab="empresas"
        class="tab-btn @(Model.Tab == "empresas" ? "is-active" : "")"
-       role="tab" aria-selected="@(Model.Tab == "empresas" ? "true" : "false")">Empresas temporales</a>
+       role="tab" aria-selected="@(Model.Tab == "empresas" ? "true" : "false")"
+       aria-controls="tab-empresas">Empresas temporales</a>
   </div>
 
-  <!-- TAB: Sedes -->
+  <!-- ──────────── TAB: Sedes ──────────── -->
   @if (Model.Tab == "sedes")
   {
-    <div class="tab-panel is-active" role="tabpanel" tabindex="0">
+    <div class="tab-panel is-active" role="tabpanel" id="tab-sedes" tabindex="0">
       <div class="card">
         <div class="card-header">
           <div>
             <h2 class="card-title">Sedes</h2>
             <p class="card-desc">Ubicaciones donde opera la empresa.</p>
           </div>
-          <a asp-action="NuevaSede" class="btn btn-primary btn-sm">
+          <button class="btn btn-primary btn-sm" onclick="abrirCrearSede()" id="btn-nueva-sede">
             <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
             </svg>
             Nueva sede
-          </a>
+          </button>
         </div>
         @if (!Model.Sedes.Any())
         {
           <div class="card-body">
             <div class="empty-state">
               <p class="empty-title">Sin sedes registradas</p>
+              <p class="empty-desc">Crea la primera sede usando el botón "Nueva sede".</p>
             </div>
           </div>
         }
         else
         {
-          <div class="table-scroll">
-            <table aria-label="Sedes">
-              <thead>
-                <tr>
-                  <th>#</th>
-                  <th>Nombre</th>
-                  <th>Ciudad</th>
-                  <th>Dirección</th>
-                  <th>Estado</th>
-                </tr>
-              </thead>
-              <tbody>
-                @foreach (var s in Model.Sedes)
-                {
+          <div class="table-wrapper">
+            <div class="table-scroll">
+              <table aria-label="Sedes">
+                <thead>
                   <tr>
-                    <td class="tabular-nums" style="font-size:.8125rem">@s.Id</td>
-                    <td>@s.Nombre</td>
-                    <td>@s.Ciudad</td>
-                    <td style="font-size:.8125rem">@(s.Direccion ?? "—")</td>
-                    <td>
-                      @if (s.Estado.ToString() == "Activo")
-                      { <span class="badge badge--activo"><span class="badge-dot"></span>Activo</span> }
-                      else
-                      { <span class="badge badge--inactivo"><span class="badge-dot"></span>Inactivo</span> }
-                    </td>
+                    <th scope="col">Nombre</th>
+                    <th scope="col">Ciudad</th>
+                    <th scope="col">Dirección</th>
+                    <th scope="col">Estado</th>
+                    <th scope="col"><span class="sr-only">Acciones</span></th>
                   </tr>
-                }
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  @foreach (var s in Model.Sedes)
+                  {
+                    <tr>
+                      <td style="font-weight:600">@s.Nombre</td>
+                      <td>@s.Ciudad</td>
+                      <td style="font-size:.8125rem">@(s.Direccion ?? "—")</td>
+                      <td>
+                        @if (s.Estado == "Activa")
+                        { <span class="badge badge--activo"><span class="badge-dot"></span>Activa</span> }
+                        else
+                        { <span class="badge badge--inactivo"><span class="badge-dot"></span>Inactiva</span> }
+                      </td>
+                      <td>
+                        <button class="btn btn-ghost btn-sm"
+                                onclick="abrirEditarSede(this)"
+                                data-id="@s.Id"
+                                data-nombre="@s.Nombre"
+                                data-ciudad="@s.Ciudad"
+                                data-direccion="@(s.Direccion ?? "")"
+                                aria-label="Editar sede @s.Nombre">
+                          Editar
+                        </button>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
           </div>
         }
       </div>
     </div>
   }
 
-  <!-- TAB: Cargos -->
+  <!-- ──────────── TAB: Cargos ──────────── -->
   @if (Model.Tab == "cargos")
   {
-    <div class="tab-panel is-active" role="tabpanel" tabindex="0">
+    <div class="tab-panel is-active" role="tabpanel" id="tab-cargos" tabindex="0">
       <div class="card">
         <div class="card-header">
           <div>
             <h2 class="card-title">Cargos</h2>
-            <p class="card-desc">Posiciones laborales disponibles.</p>
+            <p class="card-desc">Posiciones laborales disponibles para los empleados.</p>
           </div>
-          <a asp-action="NuevoCargo" class="btn btn-primary btn-sm">
+          <button class="btn btn-primary btn-sm" onclick="abrirCrearCargo()" id="btn-nuevo-cargo">
             <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
             </svg>
             Nuevo cargo
-          </a>
+          </button>
         </div>
         @if (!Model.Cargos.Any())
         {
           <div class="card-body">
             <div class="empty-state">
               <p class="empty-title">Sin cargos registrados</p>
+              <p class="empty-desc">Crea el primer cargo usando el botón "Nuevo cargo".</p>
             </div>
           </div>
         }
         else
         {
-          <div class="table-scroll">
-            <table aria-label="Cargos">
-              <thead>
-                <tr>
-                  <th>#</th>
-                  <th>Nombre</th>
-                  <th>Estado</th>
-                </tr>
-              </thead>
-              <tbody>
-                @foreach (var c in Model.Cargos)
-                {
+          <div class="table-wrapper">
+            <div class="table-scroll">
+              <table aria-label="Cargos">
+                <thead>
                   <tr>
-                    <td class="tabular-nums" style="font-size:.8125rem">@c.Id</td>
-                    <td>@c.Nombre</td>
-                    <td>
-                      @if (c.Estado.ToString() == "Activo")
-                      { <span class="badge badge--activo"><span class="badge-dot"></span>Activo</span> }
-                      else
-                      { <span class="badge badge--inactivo"><span class="badge-dot"></span>Inactivo</span> }
-                    </td>
+                    <th scope="col">Nombre del cargo</th>
+                    <th scope="col">Estado</th>
+                    <th scope="col"><span class="sr-only">Acciones</span></th>
                   </tr>
-                }
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  @foreach (var c in Model.Cargos)
+                  {
+                    <tr>
+                      <td style="font-weight:600">@c.Nombre</td>
+                      <td>
+                        @if (c.Estado == "Activo")
+                        { <span class="badge badge--activo"><span class="badge-dot"></span>Activo</span> }
+                        else
+                        { <span class="badge badge--inactivo"><span class="badge-dot"></span>Inactivo</span> }
+                      </td>
+                      <td>
+                        <button class="btn btn-ghost btn-sm"
+                                onclick="abrirEditarCargo(this)"
+                                data-id="@c.Id"
+                                data-nombre="@c.Nombre"
+                                aria-label="Editar cargo @c.Nombre">
+                          Editar
+                        </button>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
           </div>
         }
       </div>
     </div>
   }
 
-  <!-- TAB: Empresas temporales -->
+  <!-- ──────────── TAB: Empresas temporales ──────────── -->
   @if (Model.Tab == "empresas")
   {
-    <div class="tab-panel is-active" role="tabpanel" tabindex="0">
+    <div class="tab-panel is-active" role="tabpanel" id="tab-empresas" tabindex="0">
       <div class="card">
         <div class="card-header">
           <div>
             <h2 class="card-title">Empresas temporales</h2>
-            <p class="card-desc">Empresas de contratación temporal.</p>
+            <p class="card-desc">Agencias que proveen empleados con contratación temporal.</p>
           </div>
-          <a asp-action="NuevaEmpresa" class="btn btn-primary btn-sm">
+          <button class="btn btn-primary btn-sm" onclick="abrirCrearEmpresa()" id="btn-nueva-empresa">
             <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
             </svg>
             Nueva empresa
-          </a>
+          </button>
         </div>
         @if (!Model.EmpresasTemporales.Any())
         {
           <div class="card-body">
             <div class="empty-state">
               <p class="empty-title">Sin empresas temporales registradas</p>
+              <p class="empty-desc">Crea la primera empresa usando el botón "Nueva empresa".</p>
             </div>
           </div>
         }
         else
         {
-          <div class="table-scroll">
-            <table aria-label="Empresas temporales">
-              <thead>
-                <tr>
-                  <th>#</th>
-                  <th>Nombre</th>
-                  <th>Estado</th>
-                </tr>
-              </thead>
-              <tbody>
-                @foreach (var emp in Model.EmpresasTemporales)
-                {
+          <div class="table-wrapper">
+            <div class="table-scroll">
+              <table aria-label="Empresas temporales">
+                <thead>
                   <tr>
-                    <td class="tabular-nums" style="font-size:.8125rem">@emp.Id</td>
-                    <td>@emp.Nombre</td>
-                    <td>
-                      @if (emp.Estado == "Activo")
-                      { <span class="badge badge--activo"><span class="badge-dot"></span>Activo</span> }
-                      else
-                      { <span class="badge badge--inactivo"><span class="badge-dot"></span>Inactivo</span> }
-                    </td>
+                    <th scope="col">Nombre</th>
+                    <th scope="col">Estado</th>
+                    <th scope="col"><span class="sr-only">Acciones</span></th>
                   </tr>
-                }
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  @foreach (var emp in Model.EmpresasTemporales)
+                  {
+                    <tr>
+                      <td style="font-weight:600">@emp.Nombre</td>
+                      <td>
+                        @if (emp.Estado == "Activa")
+                        { <span class="badge badge--activo"><span class="badge-dot"></span>Activa</span> }
+                        else
+                        { <span class="badge badge--inactivo"><span class="badge-dot"></span>Inactiva</span> }
+                      </td>
+                      <td>
+                        <button class="btn btn-ghost btn-sm"
+                                onclick="abrirEditarEmpresa(this)"
+                                data-id="@emp.Id"
+                                data-nombre="@emp.Nombre"
+                                aria-label="Editar empresa @emp.Nombre">
+                          Editar
+                        </button>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
           </div>
         }
       </div>
@@ -204,3 +245,292 @@
   }
 
 </div><!-- /data-tabs-container -->
+
+<!-- ═══════════════════════════════════════════════════════════
+     Modal: Sede (crear / editar)
+     ═══════════════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="modal-sede" hidden aria-modal="true"
+     aria-labelledby="sede-title" role="dialog">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 class="modal-title" id="sede-title">Nueva sede</h2>
+      <button class="modal-close btn" data-modal-close aria-label="Cerrar">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <form id="form-sede" novalidate>
+        <div class="form-group">
+          <label class="form-label" for="sede-nombre">
+            Nombre de la sede <span class="required" aria-hidden="true">*</span>
+          </label>
+          <input class="form-input" type="text" id="sede-nombre" maxlength="200"
+                 placeholder="Ej. Sede Norte" autocomplete="off" required>
+        </div>
+        <div class="form-grid form-grid-2">
+          <div class="form-group">
+            <label class="form-label" for="sede-ciudad">
+              Ciudad <span class="required" aria-hidden="true">*</span>
+            </label>
+            <input class="form-input" type="text" id="sede-ciudad" maxlength="100"
+                   placeholder="Ej. Bogotá" autocomplete="off" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="sede-direccion">
+              Dirección <span class="required" aria-hidden="true">*</span>
+            </label>
+            <input class="form-input" type="text" id="sede-direccion" maxlength="300"
+                   placeholder="Ej. Cra 15 # 90-12" autocomplete="off" required>
+          </div>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" data-modal-close>Cancelar</button>
+      <button class="btn btn-primary" id="btn-guardar-sede">Crear sede</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     Modal: Cargo (crear / editar)
+     ═══════════════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="modal-cargo" hidden aria-modal="true"
+     aria-labelledby="cargo-title" role="dialog">
+  <div class="modal modal--sm">
+    <div class="modal-header">
+      <h2 class="modal-title" id="cargo-title">Nuevo cargo</h2>
+      <button class="modal-close btn" data-modal-close aria-label="Cerrar">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <form id="form-cargo" novalidate>
+        <div class="form-group" style="margin-bottom:0">
+          <label class="form-label" for="cargo-nombre">
+            Nombre del cargo <span class="required" aria-hidden="true">*</span>
+          </label>
+          <input class="form-input" type="text" id="cargo-nombre" maxlength="200"
+                 placeholder="Ej. Regente de Farmacia" autocomplete="off" required>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" data-modal-close>Cancelar</button>
+      <button class="btn btn-primary" id="btn-guardar-cargo">Crear cargo</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     Modal: Empresa temporal (crear / editar)
+     ═══════════════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="modal-empresa" hidden aria-modal="true"
+     aria-labelledby="empresa-title" role="dialog">
+  <div class="modal modal--sm">
+    <div class="modal-header">
+      <h2 class="modal-title" id="empresa-title">Nueva empresa temporal</h2>
+      <button class="modal-close btn" data-modal-close aria-label="Cerrar">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <form id="form-empresa" novalidate>
+        <div class="form-group" style="margin-bottom:0">
+          <label class="form-label" for="empresa-nombre">
+            Nombre de la empresa <span class="required" aria-hidden="true">*</span>
+          </label>
+          <input class="form-input" type="text" id="empresa-nombre" maxlength="200"
+                 placeholder="Ej. Temporales S.A." autocomplete="off" required>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" data-modal-close>Cancelar</button>
+      <button class="btn btn-primary" id="btn-guardar-empresa">Crear empresa</button>
+    </div>
+  </div>
+</div>
+
+@section Scripts {
+<script>
+(function () {
+  'use strict';
+
+  const TOKEN = '@antiforgery';
+
+  /* ── Estado de edición (null = modo crear) ─────────── */
+  let sedeEditId    = null;
+  let cargoEditId   = null;
+  let empresaEditId = null;
+
+  /* ── Helper AJAX ────────────────────────────────────── */
+  function postAjax(url, body, btn) {
+    if (btn) { btn.disabled = true; btn.classList.add('btn-loading'); }
+    const fd = new FormData();
+    fd.append('__RequestVerificationToken', TOKEN);
+    for (const [k, v] of Object.entries(body)) fd.append(k, v);
+    return fetch(url, { method: 'POST', body: fd })
+      .then(r => r.json())
+      .finally(() => {
+        if (btn) { btn.disabled = false; btn.classList.remove('btn-loading'); }
+      });
+  }
+
+  function recargar(tab) {
+    window.location.href = '@Url.Action("Index", "Catalogos")?tab=' + tab;
+  }
+
+  /* ════════════════════════════════════════
+     SEDES
+     ════════════════════════════════════════ */
+  window.abrirCrearSede = function () {
+    sedeEditId = null;
+    document.getElementById('form-sede').reset();
+    document.getElementById('sede-title').textContent     = 'Nueva sede';
+    document.getElementById('btn-guardar-sede').textContent = 'Crear sede';
+    openModal('modal-sede');
+  };
+
+  window.abrirEditarSede = function (btn) {
+    sedeEditId = parseInt(btn.dataset.id, 10);
+    document.getElementById('sede-nombre').value    = btn.dataset.nombre    ?? '';
+    document.getElementById('sede-ciudad').value    = btn.dataset.ciudad    ?? '';
+    document.getElementById('sede-direccion').value = btn.dataset.direccion ?? '';
+    document.getElementById('sede-title').textContent     = 'Editar sede';
+    document.getElementById('btn-guardar-sede').textContent = 'Guardar cambios';
+    openModal('modal-sede');
+  };
+
+  /* ════════════════════════════════════════
+     CARGOS
+     ════════════════════════════════════════ */
+  window.abrirCrearCargo = function () {
+    cargoEditId = null;
+    document.getElementById('form-cargo').reset();
+    document.getElementById('cargo-title').textContent     = 'Nuevo cargo';
+    document.getElementById('btn-guardar-cargo').textContent = 'Crear cargo';
+    openModal('modal-cargo');
+  };
+
+  window.abrirEditarCargo = function (btn) {
+    cargoEditId = parseInt(btn.dataset.id, 10);
+    document.getElementById('cargo-nombre').value = btn.dataset.nombre ?? '';
+    document.getElementById('cargo-title').textContent     = 'Editar cargo';
+    document.getElementById('btn-guardar-cargo').textContent = 'Guardar cambios';
+    openModal('modal-cargo');
+  };
+
+  /* ════════════════════════════════════════
+     EMPRESAS
+     ════════════════════════════════════════ */
+  window.abrirCrearEmpresa = function () {
+    empresaEditId = null;
+    document.getElementById('form-empresa').reset();
+    document.getElementById('empresa-title').textContent     = 'Nueva empresa temporal';
+    document.getElementById('btn-guardar-empresa').textContent = 'Crear empresa';
+    openModal('modal-empresa');
+  };
+
+  window.abrirEditarEmpresa = function (btn) {
+    empresaEditId = parseInt(btn.dataset.id, 10);
+    document.getElementById('empresa-nombre').value = btn.dataset.nombre ?? '';
+    document.getElementById('empresa-title').textContent     = 'Editar empresa temporal';
+    document.getElementById('btn-guardar-empresa').textContent = 'Guardar cambios';
+    openModal('modal-empresa');
+  };
+
+  /* ════════════════════════════════════════
+     GUARDAR — se decide crear o editar por el estado del id
+     ════════════════════════════════════════ */
+  document.addEventListener('DOMContentLoaded', function () {
+
+    /* — Sede — */
+    document.getElementById('btn-guardar-sede')?.addEventListener('click', function () {
+      const nombre    = (document.getElementById('sede-nombre')?.value    ?? '').trim();
+      const ciudad    = (document.getElementById('sede-ciudad')?.value    ?? '').trim();
+      const direccion = (document.getElementById('sede-direccion')?.value ?? '').trim();
+
+      if (!nombre || !ciudad || !direccion) {
+        showToast('Completa todos los campos obligatorios.', 'error'); return;
+      }
+
+      const esEditar = sedeEditId !== null;
+      const url = esEditar
+        ? '@Url.Action("EditarSedeAjax", "Catalogos")'
+        : '@Url.Action("CrearSedeAjax", "Catalogos")';
+      const body = esEditar
+        ? { Id: sedeEditId, Nombre: nombre, Ciudad: ciudad, Direccion: direccion }
+        : { Nombre: nombre, Ciudad: ciudad, Direccion: direccion };
+
+      postAjax(url, body, this)
+        .then(data => {
+          if (data.exito) {
+            showToast(data.mensaje || (esEditar ? 'Sede actualizada.' : 'Sede creada.'), 'success');
+            closeModal('modal-sede');
+            setTimeout(() => recargar('sedes'), 700);
+          } else {
+            showToast(data.mensaje || 'Error al guardar.', 'error');
+          }
+        })
+        .catch(() => showToast('Error de red.', 'error'));
+    });
+
+    /* — Cargo — */
+    document.getElementById('btn-guardar-cargo')?.addEventListener('click', function () {
+      const nombre = (document.getElementById('cargo-nombre')?.value ?? '').trim();
+      if (!nombre) { showToast('El nombre del cargo es obligatorio.', 'error'); return; }
+
+      const esEditar = cargoEditId !== null;
+      const url = esEditar
+        ? '@Url.Action("EditarCargoAjax", "Catalogos")'
+        : '@Url.Action("CrearCargoAjax", "Catalogos")';
+      const body = esEditar ? { Id: cargoEditId, Nombre: nombre } : { Nombre: nombre };
+
+      postAjax(url, body, this)
+        .then(data => {
+          if (data.exito) {
+            showToast(data.mensaje || (esEditar ? 'Cargo actualizado.' : 'Cargo creado.'), 'success');
+            closeModal('modal-cargo');
+            setTimeout(() => recargar('cargos'), 700);
+          } else {
+            showToast(data.mensaje || 'Error al guardar.', 'error');
+          }
+        })
+        .catch(() => showToast('Error de red.', 'error'));
+    });
+
+    /* — Empresa — */
+    document.getElementById('btn-guardar-empresa')?.addEventListener('click', function () {
+      const nombre = (document.getElementById('empresa-nombre')?.value ?? '').trim();
+      if (!nombre) { showToast('El nombre de la empresa es obligatorio.', 'error'); return; }
+
+      const esEditar = empresaEditId !== null;
+      const url = esEditar
+        ? '@Url.Action("EditarEmpresaAjax", "Catalogos")'
+        : '@Url.Action("CrearEmpresaAjax", "Catalogos")';
+      const body = esEditar ? { Id: empresaEditId, Nombre: nombre } : { Nombre: nombre };
+
+      postAjax(url, body, this)
+        .then(data => {
+          if (data.exito) {
+            showToast(data.mensaje || (esEditar ? 'Empresa actualizada.' : 'Empresa creada.'), 'success');
+            closeModal('modal-empresa');
+            setTimeout(() => recargar('empresas'), 700);
+          } else {
+            showToast(data.mensaje || 'Error al guardar.', 'error');
+          }
+        })
+        .catch(() => showToast('Error de red.', 'error'));
+    });
+  });
+})();
+</script>
+}
+

@@ -48,4 +48,14 @@ public class CatalogoRepository : ICatalogoRepository
 
     public Task<int> GuardarCambiosAsync(CancellationToken ct = default)
         => _context.SaveChangesAsync(ct);
+
+    // ── Creación ───────────────────────────────────────────────
+    public void AgregarSede(Sede sede)
+        => _context.Sedes.Add(sede);
+
+    public void AgregarCargo(Cargo cargo)
+        => _context.Cargos.Add(cargo);
+
+    public void AgregarEmpresaTemporal(EmpresaTemporal empresa)
+        => _context.EmpresasTemporales.Add(empresa);
 }
