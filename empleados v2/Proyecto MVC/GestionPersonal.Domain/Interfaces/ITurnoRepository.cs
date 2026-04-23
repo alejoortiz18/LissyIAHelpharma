@@ -15,6 +15,7 @@ public interface ITurnoRepository
     Task<IReadOnlyList<AsignacionTurno>> ObtenerAsignacionesActivasPorSedeAsync(int sedeId, CancellationToken ct = default);
 
     void AgregarPlantilla(PlantillaTurno plantilla);
+    void EliminarDetalles(IEnumerable<PlantillaTurnoDetalle> detalles);
     void AgregarAsignacion(AsignacionTurno asignacion);
 
     Task<int> GuardarCambiosAsync(CancellationToken ct = default);

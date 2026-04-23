@@ -59,6 +59,9 @@ public class TurnoRepository : ITurnoRepository
 
     public void AgregarPlantilla(PlantillaTurno plantilla) => _context.PlantillasTurno.Add(plantilla);
 
+    public void EliminarDetalles(IEnumerable<PlantillaTurnoDetalle> detalles)
+        => _context.PlantillasTurnoDetalle.RemoveRange(detalles);
+
     public void AgregarAsignacion(AsignacionTurno asignacion) => _context.AsignacionesTurno.Add(asignacion);
 
     public Task<int> GuardarCambiosAsync(CancellationToken ct = default)

@@ -1,99 +1,46 @@
 @model TurnosViewModel
+@using GestionPersonal.Models.Enums
+@using GestionPersonal.Web.Helpers
+@using System.Text.Json
 @{
     ViewData["Title"] = "Horarios y turnos";
     ViewData["BreadcrumbCurrent"] = "Horarios";
     var rol = SesionHelper.GetRol(User);
     bool puedeGestionar = rol == RolUsuario.Jefe || rol == RolUsuario.Regente || rol == RolUsuario.AuxiliarRegente;
+    var antiforgery = ViewContext.HttpContext.RequestServices
+        .GetRequiredService<Microsoft.AspNetCore.Antiforgery.IAntiforgery>()
+        .GetAndStoreTokens(ViewContext.HttpContext).RequestToken;
+    var plantillasJson = JsonSerializer.Serialize(Model.Plantillas);
 }
 
 <div class="page-header">
   <div class="page-header-info">
-    <h1 class="page-title">Horarios y turnos</h1>
-    <p class="page-desc">Plantillas de turno disponibles.</p>
+    <h1 class="page-title">Plantillas de Turno</h1>
+    <p class="page-desc">Define y gestiona los horarios de trabajo que se pueden asignar a los empleados.</p>
   </div>
   @if (puedeGestionar)
   {
     <div class="page-actions">
-      <a asp-action="CrearPlantilla" class="btn btn-primary">
+      <button class="btn btn-primary" data-modal-open="modal-turno" id="btn-nueva-plantilla">
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
         </svg>
         Nueva plantilla
-      </a>
+      </button>
     </div>
   }
 </div>
 
-@if (TempData["Exito"] != null)
-{
-  <div class="alert alert--success alert-dismissible" role="alert">@TempData["Exito"]</div>
-}
-
-<!-- Plantillas -->
-@if (!Model.Plantillas.Any())
-{
-  <div class="empty-state">
-    <div class="empty-icon" aria-hidden="true">
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-        <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/>
-        <line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
-      </svg>
-    </div>
-    <p class="empty-title">Sin plantillas de turno</p>
-    <p class="empty-desc">Crea una nueva plantilla para empezar a asignar horarios.</p>
-  </div>
-}
-else
-{
-  <div class="stats-grid" style="--cols:3;gap:var(--sp-4)">
-    @{
-      var dias = new[] { "Lu", "Ma", "Mi", "Ju", "Vi", "Sá", "Do" };
-    }
-    @foreach (var p in Model.Plantillas)
-    {
-      <div class="stat-card">
-        <h3 style="font-size:1rem;font-weight:600;margin-bottom:var(--sp-3)">@p.Nombre</h3>
-
-        <!-- Indicadores de días -->
-        <div style="display:flex;gap:var(--sp-1);margin-bottom:var(--sp-3)">
-          @for (int d = 1; d <= 7; d++)
-          {
-            var det = p.Detalles.FirstOrDefault(x => x.DiaSemana == d);
-            bool laboral = det is { HoraEntrada: not null };
-            <span style="width:1.75rem;height:1.75rem;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.625rem;font-weight:700;background:@(laboral ? "var(--c-primary)" : "var(--c-gray-200)");color:@(laboral ? "#fff" : "var(--c-gray-500)")">
-              @dias[d - 1]
-            </span>
-          }
-        </div>
-
-        <p style="font-size:.8125rem;color:var(--c-gray-500)">
-          @p.Detalles.Count(x => x.HoraEntrada != null) días laborables
-        </p>
-        <span class="badge @(p.Estado == "Activo" ? "badge--activo" : "badge--inactivo")" style="margin-top:var(--sp-2)">
-          @p.Estado
-        </span>
-      </div>
-    }
-  </div>
-}
+<!-- Plantillas grid -->
+<div id="plantillas-grid" class="stats-grid" style="--cols:3;gap:var(--sp-4);margin-bottom:var(--sp-6)"></div>
 
 <!-- Asignaciones activas -->
-<div class="card" style="margin-top:var(--sp-6)">
+<div class="card">
   <div class="card-header">
     <h2 class="card-title">Asignaciones activas</h2>
     <p class="card-desc">Empleados con turnos asignados en este momento.</p>
   </div>
-  @if (!Model.Asignaciones.Any())
-  {
-    <div class="card-body">
-      <div class="empty-state">
-        <p class="empty-title">Sin asignaciones</p>
-        <p class="empty-desc">Ningún empleado tiene turno asignado actualmente.</p>
-      </div>
-    </div>
-  }
-  else
-  {
+  <div class="table-wrapper">
     <div class="table-scroll">
       <table aria-label="Asignaciones de turno activas">
         <thead>
@@ -103,24 +50,375 @@ else
             <th scope="col">Plantilla</th>
             <th scope="col">Vigencia</th>
             <th scope="col">Asignado por</th>
+            <th scope="col"><span class="sr-only">Acciones</span></th>
           </tr>
         </thead>
-        <tbody>
-          @foreach (var a in Model.Asignaciones)
+        <tbody id="tbody-asignaciones">
+          @if (!Model.Asignaciones.Any())
           {
-            <tr>
-              <td>
-                <a asp-controller="Empleado" asp-action="Perfil" asp-route-id="@a.EmpleadoId"
-                   asp-route-tab="horario" class="table-link">@a.EmpleadoNombre</a>
-              </td>
-              <td>@a.SedeNombre</td>
-              <td>@a.PlantillaNombre</td>
-              <td class="tabular-nums" style="font-size:.8125rem">@a.FechaVigencia</td>
-              <td>@a.AsignadoPor</td>
-            </tr>
+            <tr><td colspan="6">
+              <div class="empty-state">
+                <div class="empty-icon" aria-hidden="true">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                  </svg>
+                </div>
+                <p class="empty-title">Sin asignaciones</p>
+                <p class="empty-desc">Asigna turnos desde el perfil de cada empleado.</p>
+              </div>
+            </td></tr>
+          }
+          else
+          {
+            @foreach (var a in Model.Asignaciones)
+            {
+              <tr>
+                <td>
+                  <a asp-controller="Empleado" asp-action="Perfil" asp-route-id="@a.EmpleadoId"
+                     asp-route-tab="horario" class="table-link">@a.EmpleadoNombre</a>
+                </td>
+                <td>@a.SedeNombre</td>
+                <td>
+                  <button class="btn btn-ghost btn-sm" onclick="verTurno(@a.PlantillaTurnoId)"
+                          style="font-weight:500;text-decoration:underline;text-decoration-color:transparent">
+                    @a.PlantillaNombre
+                  </button>
+                </td>
+                <td class="tabular-nums" style="font-size:.8125rem">@a.FechaVigencia</td>
+                <td style="font-size:.8125rem">@a.AsignadoPor</td>
+                <td>
+                  <a asp-controller="Empleado" asp-action="Perfil" asp-route-id="@a.EmpleadoId"
+                     asp-route-tab="horario" class="btn btn-ghost btn-sm"
+                     aria-label="Ver perfil de @a.EmpleadoNombre">Ver perfil</a>
+                </td>
+              </tr>
+            }
           }
         </tbody>
       </table>
     </div>
-  }
+  </div>
 </div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     Modal: Crear / Editar plantilla de turno
+     ═══════════════════════════════════════════════════════════ -->
+@if (puedeGestionar)
+{
+<div class="modal-overlay" id="modal-turno" hidden aria-modal="true"
+     aria-labelledby="modal-turno-title" role="dialog">
+  <div class="modal modal--lg">
+    <div class="modal-header">
+      <h2 class="modal-title" id="modal-turno-title">Nueva plantilla de turno</h2>
+      <button class="modal-close btn" data-modal-close aria-label="Cerrar">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <form id="form-turno" novalidate>
+        <div class="form-group" style="max-width:24rem;margin-bottom:var(--sp-5)">
+          <label class="form-label" for="t-nombre">Nombre de la plantilla <span class="required" aria-hidden="true">*</span></label>
+          <input class="form-input" type="text" id="t-nombre" name="Nombre" placeholder="Ej. Turno mañana, Turno tarde…" required>
+        </div>
+        <div class="alert alert--info" style="margin-bottom:var(--sp-4)" role="note">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
+          </svg>
+          <div class="alert-body"><p>Configura cada día con sus horas de entrada y salida. Si el empleado no labora ese día, deja el toggle apagado. Al menos un día debe tener horario.</p></div>
+        </div>
+        <div class="shift-grid" id="shift-form-grid"></div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" data-modal-close>Cancelar</button>
+      <button class="btn btn-primary" id="btn-guardar-turno">Guardar plantilla</button>
+    </div>
+  </div>
+</div>
+}
+
+<!-- ═══════════════════════════════════════════════════════════
+     Modal: Ver plantilla (solo lectura)
+     ═══════════════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="modal-ver-turno" hidden aria-modal="true"
+     aria-labelledby="ver-turno-title" role="dialog">
+  <div class="modal modal--lg">
+    <div class="modal-header">
+      <h2 class="modal-title" id="ver-turno-title">Plantilla de turno</h2>
+      <button class="modal-close btn" data-modal-close aria-label="Cerrar">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+    <div class="modal-body" id="ver-turno-body"></div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" data-modal-close>Cerrar</button>
+    </div>
+  </div>
+</div>
+
+@section Scripts {
+<script>
+(function () {
+  'use strict';
+
+  const DIAS      = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
+  const DIAS_ABREV = ['Lu','Ma','Mi','Ju','Vi','Sá','Do'];
+  const PUEDE_GESTIONAR = @(puedeGestionar ? "true" : "false");
+  const TOKEN = '@antiforgery';
+
+  /* ── In-memory store (server-rendered data) ───────────────── */
+  let plantillas = @Html.Raw(plantillasJson);
+
+  /* ── Build shift-grid form rows ───────────────────────────── */
+  function buildShiftFormGrid() {
+    const grid = document.getElementById('shift-form-grid');
+    if (!grid) return;
+    grid.innerHTML = DIAS.map((dia, i) => `
+      <div class="shift-row">
+        <span class="shift-day">${dia}</span>
+        <label class="shift-toggle">
+          <input type="checkbox" class="shift-check" id="s-check-${i}" data-idx="${i}" aria-label="¿Labora ${dia}?">
+          <span class="shift-toggle-track">
+            <span class="shift-toggle-thumb"></span>
+          </span>
+          <span class="shift-toggle-label" id="s-label-${i}">No labora</span>
+        </label>
+        <div class="shift-times" id="s-times-${i}" hidden>
+          <div class="shift-time-group">
+            <label class="form-label" for="s-in-${i}" style="font-size:.75rem;margin-bottom:.125rem">Entrada</label>
+            <input class="form-input shift-time-input" type="time" id="s-in-${i}" value="08:00" aria-label="Hora entrada ${dia}">
+          </div>
+          <span class="shift-separator" aria-hidden="true">→</span>
+          <div class="shift-time-group">
+            <label class="form-label" for="s-out-${i}" style="font-size:.75rem;margin-bottom:.125rem">Salida</label>
+            <input class="form-input shift-time-input" type="time" id="s-out-${i}" value="17:00" aria-label="Hora salida ${dia}">
+          </div>
+        </div>
+      </div>
+    `).join('');
+
+    DIAS.forEach((_, i) => {
+      document.getElementById(`s-check-${i}`).addEventListener('change', function () {
+        document.getElementById(`s-times-${i}`).hidden = !this.checked;
+        document.getElementById(`s-label-${i}`).textContent = this.checked ? 'Labora' : 'No labora';
+      });
+    });
+  }
+
+  /* ── Render plantillas grid ───────────────────────────────── */
+  function renderPlantillas() {
+    const grid = document.getElementById('plantillas-grid');
+    if (!grid) return;
+
+    if (!plantillas.length) {
+      grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1">
+        <div class="empty-icon" aria-hidden="true">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/>
+            <line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+          </svg>
+        </div>
+        <p class="empty-title">Sin plantillas de turno</p>
+        <p class="empty-desc">Crea una nueva plantilla para empezar a asignar horarios.</p>
+      </div>`;
+      return;
+    }
+
+    grid.innerHTML = plantillas.map(p => {
+      const diasLaborales = (p.detalles || []).filter(d => d.horaEntrada);
+      const horasUniq = [...new Set(diasLaborales.map(d => `${d.horaEntrada}–${d.horaSalida}`))];
+
+      const pills = DIAS.map((dia, i) => {
+        const det = (p.detalles || []).find(d => d.diaSemana === (i + 1));
+        const labora = det && det.horaEntrada;
+        return `<span title="${dia}: ${labora ? det.horaEntrada + '–' + det.horaSalida : 'No labora'}"
+          style="display:inline-block;width:1.75rem;height:1.75rem;line-height:1.75rem;text-align:center;
+                 border-radius:var(--r-full);font-size:.6875rem;font-weight:600;
+                 background:${labora ? 'var(--c-brand-100)' : 'var(--c-gray-100)'};
+                 color:${labora ? 'var(--c-brand-700)' : 'var(--c-gray-400)'}"
+          aria-label="${dia}">${DIAS_ABREV[i]}</span>`;
+      }).join('');
+
+      const editBtn = PUEDE_GESTIONAR ? `
+        <div class="card-footer">
+          <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();editarTurno(${p.id})"
+                  aria-label="Editar plantilla ${p.nombre}">
+            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
+              <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+            </svg>
+            Editar
+          </button>
+        </div>` : '';
+
+      return `<div class="card" style="cursor:pointer" onclick="verTurno(${p.id})">
+        <div class="card-header" style="padding-bottom:var(--sp-2)">
+          <h3 class="card-title" style="font-size:1rem">${p.nombre}</h3>
+        </div>
+        <div class="card-body" style="padding-top:0">
+          <p style="font-size:.8125rem;color:var(--c-gray-500);margin-bottom:var(--sp-2)">
+            ${diasLaborales.length} días laborales${horasUniq.length ? ' · ' + horasUniq.join(', ') : ''}
+          </p>
+          <div style="display:flex;flex-wrap:wrap;gap:var(--sp-1)">${pills}</div>
+        </div>
+        ${editBtn}
+      </div>`;
+    }).join('');
+  }
+
+  /* ── Ver turno (detail modal) ─────────────────────────────── */
+  window.verTurno = function (id) {
+    const p = plantillas.find(x => x.id === id);
+    if (!p) return;
+
+    document.getElementById('ver-turno-title').textContent = p.nombre;
+    document.getElementById('ver-turno-body').innerHTML = `
+      <p style="margin-bottom:var(--sp-4);font-size:.875rem;color:var(--c-gray-500)">
+        Configuración semanal de la plantilla <strong>${p.nombre}</strong>.
+      </p>
+      <div class="shift-grid">
+        ${DIAS.map((dia, i) => {
+          const det = (p.detalles || []).find(d => d.diaSemana === (i + 1));
+          const labora = det && det.horaEntrada;
+          return `<div class="shift-row">
+            <span class="shift-day">${dia}</span>
+            ${labora
+              ? `<span class="badge badge-activo">Labora</span>
+                 <div class="shift-times" style="display:flex">
+                   <div class="shift-time-group">
+                     <span class="form-label" style="font-size:.75rem">Entrada</span>
+                     <span style="font-size:.875rem;font-weight:600">${det.horaEntrada}</span>
+                   </div>
+                   <span class="shift-separator" aria-hidden="true">→</span>
+                   <div class="shift-time-group">
+                     <span class="form-label" style="font-size:.75rem">Salida</span>
+                     <span style="font-size:.875rem;font-weight:600">${det.horaSalida}</span>
+                   </div>
+                 </div>`
+              : `<span class="badge badge-inactivo">No labora</span>`}
+          </div>`;
+        }).join('')}
+      </div>`;
+
+    openModal('modal-ver-turno');
+  };
+
+  /* ── Editar turno (pre-fill create/edit modal) ────────────── */
+  window.editarTurno = function (id) {
+    const p = plantillas.find(x => x.id === id);
+    if (!p) return;
+
+    document.getElementById('modal-turno-title').textContent = 'Editar plantilla de turno';
+    document.getElementById('t-nombre').value = p.nombre;
+    buildShiftFormGrid();
+
+    DIAS.forEach((_, i) => {
+      const det = (p.detalles || []).find(d => d.diaSemana === (i + 1));
+      const labora = det && det.horaEntrada;
+      const check  = document.getElementById(`s-check-${i}`);
+      check.checked = !!labora;
+      document.getElementById(`s-times-${i}`).hidden   = !labora;
+      document.getElementById(`s-label-${i}`).textContent = labora ? 'Labora' : 'No labora';
+      if (labora) {
+        document.getElementById(`s-in-${i}`).value  = det.horaEntrada;
+        document.getElementById(`s-out-${i}`).value = det.horaSalida;
+      }
+    });
+
+    document.getElementById('btn-guardar-turno').dataset.editId = id;
+    openModal('modal-turno');
+  };
+
+  /* ── Guardar turno (AJAX) ─────────────────────────────────── */
+  function guardarTurno() {
+    const nombre = document.getElementById('t-nombre').value.trim();
+    if (!nombre) { showToast('El nombre es obligatorio.', 'error'); return; }
+
+    let algunoLabora = false;
+    for (let i = 0; i < 7; i++) {
+      const labora = document.getElementById(`s-check-${i}`).checked;
+      if (labora) {
+        const entrada = document.getElementById(`s-in-${i}`).value;
+        const salida  = document.getElementById(`s-out-${i}`).value;
+        if (!entrada || !salida) { showToast(`Completa las horas del ${DIAS[i]}.`, 'error'); return; }
+        if (salida <= entrada)   { showToast(`La salida del ${DIAS[i]} debe ser posterior a la entrada.`, 'error'); return; }
+        algunoLabora = true;
+      }
+    }
+    if (!algunoLabora) { showToast('Al menos un día debe tener horario asignado.', 'error'); return; }
+
+    const editId = document.getElementById('btn-guardar-turno').dataset.editId;
+    const btn = document.getElementById('btn-guardar-turno');
+    btn.disabled = true;
+    btn.classList.add('btn-loading');
+
+    /* Build FormData with flattened detalles array */
+    const fd = new FormData();
+    fd.append('__RequestVerificationToken', TOKEN);
+    fd.append('Nombre', nombre);
+    for (let i = 0; i < 7; i++) {
+      fd.append(`Detalles[${i}].DiaSemana`, String(i + 1));
+      const labora = document.getElementById(`s-check-${i}`).checked;
+      if (labora) {
+        fd.append(`Detalles[${i}].HoraEntrada`, document.getElementById(`s-in-${i}`).value);
+        fd.append(`Detalles[${i}].HoraSalida`,  document.getElementById(`s-out-${i}`).value);
+      }
+    }
+
+    let url;
+    if (editId) {
+      fd.append('id', editId);
+      url = '@Url.Action("EditarPlantillaAjax", "Turno")';
+    } else {
+      url = '@Url.Action("CrearPlantillaAjax", "Turno")';
+    }
+
+    fetch(url, { method: 'POST', body: fd })
+      .then(r => r.json())
+      .then(data => {
+        btn.disabled = false;
+        btn.classList.remove('btn-loading');
+        if (data.exito) {
+          showToast(data.mensaje || 'Operación exitosa.', 'success');
+          closeModal('modal-turno');
+          /* Refresh page to get updated data from server */
+          window.location.reload();
+        } else {
+          showToast(data.mensaje || 'Error al guardar la plantilla.', 'error');
+        }
+      })
+      .catch(() => {
+        btn.disabled = false;
+        btn.classList.remove('btn-loading');
+        showToast('Error de red. Intenta de nuevo.', 'error');
+      });
+  }
+
+  /* ── Init ──────────────────────────────────────────────────── */
+  document.addEventListener('DOMContentLoaded', function () {
+    renderPlantillas();
+    buildShiftFormGrid();
+
+    const btnNueva = document.getElementById('btn-nueva-plantilla');
+    if (btnNueva) {
+      btnNueva.addEventListener('click', function () {
+        document.getElementById('modal-turno-title').textContent = 'Nueva plantilla de turno';
+        document.getElementById('form-turno').reset();
+        buildShiftFormGrid();
+        delete document.getElementById('btn-guardar-turno').dataset.editId;
+      });
+    }
+
+    const btnGuardar = document.getElementById('btn-guardar-turno');
+    if (btnGuardar) {
+      btnGuardar.addEventListener('click', guardarTurno);
+    }
+  });
+})();
+</script>
+}

@@ -24,17 +24,53 @@ public class TurnoController : Controller
     [HttpGet]
     public async Task<IActionResult> Index()
     {
+        var sedeId     = SesionHelper.GetSedeId(User);
         var plantillas = await _turnoService.ObtenerPlantillasActivasAsync();
+        var asignaciones = await _turnoService.ObtenerAsignacionesPorSedeAsync(sedeId);
 
         var vm = new TurnosViewModel
         {
             Plantillas   = plantillas,
-            Asignaciones = [],   // se muestra en el perfil del empleado
+            Asignaciones = asignaciones,
         };
 
         ViewData["Title"] = "Horarios y turnos";
         ViewData["BreadcrumbCurrent"] = "Horarios";
         return View(vm);
+    }
+
+    // POST /Turno/CrearPlantillaAjax
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> CrearPlantillaAjax([FromForm] CrearPlantillaTurnoDto dto)
+    {
+        if (!ModelState.IsValid)
+            return Json(new { exito = false, mensaje = "Datos inválidos." });
+
+        var resultado = await _turnoService.CrearPlantillaAsync(dto);
+        return Json(new { exito = resultado.Exito, mensaje = resultado.Mensaje });
+    }
+
+    // POST /Turno/EditarPlantillaAjax
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> EditarPlantillaAjax([FromForm] int id, [FromForm] CrearPlantillaTurnoDto dto)
+    {
+        if (!ModelState.IsValid)
+            return Json(new { exito = false, mensaje = "Datos inválidos." });
+
+        var resultado = await _turnoService.EditarPlantillaAsync(id, dto);
+        return Json(new { exito = resultado.Exito, mensaje = resultado.Mensaje });
+    }
+
+    // GET /Turno/ObtenerPlantillaJson?id=
+    [HttpGet]
+    public async Task<IActionResult> ObtenerPlantillaJson(int id)
+    {
+        var resultado = await _turnoService.ObtenerPlantillaConDetallesAsync(id);
+        if (!resultado.Exito)
+            return NotFound();
+        return Json(resultado.Datos);
     }
 
     // GET /Turno/CrearPlantilla

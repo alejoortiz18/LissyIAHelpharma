@@ -8,5 +8,7 @@ public interface ITurnoService
     Task<IReadOnlyList<PlantillaTurnoDto>> ObtenerPlantillasActivasAsync(CancellationToken ct = default);
     Task<ResultadoOperacion<PlantillaTurnoDto>> ObtenerPlantillaConDetallesAsync(int id, CancellationToken ct = default);
     Task<ResultadoOperacion> CrearPlantillaAsync(CrearPlantillaTurnoDto dto, CancellationToken ct = default);
+    Task<ResultadoOperacion> EditarPlantillaAsync(int id, CrearPlantillaTurnoDto dto, CancellationToken ct = default);
+    Task<IReadOnlyList<AsignacionTurnoDto>> ObtenerAsignacionesPorSedeAsync(int sedeId, CancellationToken ct = default);
     Task<ResultadoOperacion> AsignarTurnoAsync(AsignarTurnoDto dto, int programadoPorUsuarioId, CancellationToken ct = default);
 }

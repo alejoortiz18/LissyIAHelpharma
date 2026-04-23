@@ -28,6 +28,50 @@ public class TurnoService : ITurnoService
         return ResultadoOperacion<PlantillaTurnoDto>.Ok(MapToDto(plantilla));
     }
 
+    public async Task<ResultadoOperacion> EditarPlantillaAsync(int id, CrearPlantillaTurnoDto dto, CancellationToken ct = default)
+    {
+        var plantilla = await _repo.ObtenerPorIdConDetallesAsync(id, ct);
+        if (plantilla is null)
+            return ResultadoOperacion.Fail(TurnoConstant.TurnoNoEncontrado);
+
+        if (await _repo.ExisteNombreAsync(dto.Nombre, excluirId: id, ct: ct))
+            return ResultadoOperacion.Fail("Ya existe una plantilla con ese nombre.");
+
+        plantilla.Nombre = dto.Nombre;
+        plantilla.FechaModificacion = DateTime.UtcNow;
+
+        _repo.EliminarDetalles(plantilla.PlantillaTurnoDetalles);
+        plantilla.PlantillaTurnoDetalles = dto.Detalles.Select(d => new PlantillaTurnoDetalle
+        {
+            DiaSemana   = d.DiaSemana,
+            HoraEntrada = d.HoraEntrada,
+            HoraSalida  = d.HoraSalida
+        }).ToList();
+
+        await _repo.GuardarCambiosAsync(ct);
+        return ResultadoOperacion.Ok("Plantilla actualizada correctamente.");
+    }
+
+    public async Task<IReadOnlyList<AsignacionTurnoDto>> ObtenerAsignacionesPorSedeAsync(int sedeId, CancellationToken ct = default)
+    {
+        var lista = await _repo.ObtenerAsignacionesActivasPorSedeAsync(sedeId, ct);
+        return lista
+            .GroupBy(a => a.EmpleadoId)
+            .Select(g => g.OrderByDescending(a => a.FechaVigencia).First())
+            .Select(a => new AsignacionTurnoDto
+            {
+                EmpleadoId      = a.EmpleadoId,
+                EmpleadoNombre  = a.Empleado.NombreCompleto,
+                SedeNombre      = a.Empleado.Sede.Nombre,
+                PlantillaTurnoId = a.PlantillaTurnoId,
+                PlantillaNombre = a.PlantillaTurno.Nombre,
+                FechaVigencia   = a.FechaVigencia.ToString("dd/MM/yyyy"),
+                AsignadoPor     = a.ProgramadoPorNavigation.CorreoAcceso,
+            })
+            .OrderBy(r => r.EmpleadoNombre)
+            .ToList();
+    }
+
     public async Task<ResultadoOperacion> CrearPlantillaAsync(CrearPlantillaTurnoDto dto, CancellationToken ct = default)
     {
         if (await _repo.ExisteNombreAsync(dto.Nombre, ct: ct))
