@@ -6,6 +6,7 @@ namespace GestionPersonal.Models.DTOs.Empleado;
 public class EmpleadoListaDto
 {
     public int Id { get; init; }
+    public int? JefeInmediatoId { get; init; }
     public string NombreCompleto { get; init; } = null!;
     public string Cedula { get; init; } = null!;
     public string CargoNombre { get; init; } = null!;

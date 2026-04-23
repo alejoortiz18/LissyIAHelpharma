@@ -61,6 +61,15 @@ public class EmpleadoController : Controller
 
         // Filtros en memoria
         var query = todos.AsEnumerable();
+
+        // Regente / AuxiliarRegente: solo ve a sí mismo + sus subordinados directos
+        if (rol == RolUsuario.Regente || rol == RolUsuario.AuxiliarRegente)
+        {
+            var miEmpleadoId = SesionHelper.GetEmpleadoId(User);
+            if (miEmpleadoId.HasValue)
+                query = query.Where(e => e.Id == miEmpleadoId.Value || e.JefeInmediatoId == miEmpleadoId.Value);
+        }
+
         if (!string.IsNullOrWhiteSpace(buscar))
         {
             var b = buscar.Trim().ToLower();

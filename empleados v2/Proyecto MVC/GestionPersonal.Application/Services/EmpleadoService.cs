@@ -185,6 +185,7 @@ public class EmpleadoService : IEmpleadoService
     private static EmpleadoListaDto MapToListaDto(Empleado e) => new()
     {
         Id              = e.Id,
+        JefeInmediatoId = e.JefeInmediatoId,
         NombreCompleto  = e.NombreCompleto,
         Cedula          = e.Cedula,
         CargoNombre     = e.Cargo?.Nombre ?? string.Empty,
