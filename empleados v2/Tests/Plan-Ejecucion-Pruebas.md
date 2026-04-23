@@ -196,3 +196,10 @@ Tests/
 |---|---|---|
 | Login | `Documentos/Pruebas/Playwright/Plan-Ejecucion-Playwright-Login.md` | TC-01 a TC-07 — autenticación y sesión |
 | Reset Password | `Documentos/Pruebas/Playwright/Plan-Ejecucion-Playwright-ResetPassword.md` | TC-12 a TC-15b — recuperación por token |
+
+```
+
+---
+
+## 10. Referencia de Planes por Módulo
+terminado todo el proceso de pruebas detener la aplicación

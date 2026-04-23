@@ -1,4 +1,6 @@
 using GestionPersonal.Application.Interfaces;
+using GestionPersonal.Models.DTOs.EventoLaboral;
+using GestionPersonal.Models.Enums;
 using GestionPersonal.Web.Helpers;
 using GestionPersonal.Web.ViewModels.EventoLaboral;
 using Microsoft.AspNetCore.Authorization;
@@ -30,7 +32,11 @@ public class EventoLaboralController : Controller
         var rol    = SesionHelper.GetRol(User);
         var sedeId = SesionHelper.GetSedeId(User);
 
+        // Sequential awaits — EF Core DbContext is not thread-safe; Task.WhenAll is not allowed
         var todos = await _eventoService.ObtenerPorSedeAsync(sedeId);
+        var empleadosList = rol == RolUsuario.Jefe || rol == RolUsuario.Administrador
+            ? await _empleadoService.ObtenerTodosAsync()
+            : await _empleadoService.ObtenerPorSedeAsync(sedeId);
 
         var q = todos.AsEnumerable();
         if (!string.IsNullOrWhiteSpace(buscar))
@@ -56,6 +62,7 @@ public class EventoLaboralController : Controller
         var vm = new EventosViewModel
         {
             Eventos        = paginado,
+            Empleados      = empleadosList.Where(e => e.Estado == "Activo").ToList(),
             Buscar         = buscar,
             Tipo           = tipo,
             Estado         = estado,
@@ -71,7 +78,50 @@ public class EventoLaboralController : Controller
         return View(vm);
     }
 
-    // GET /EventoLaboral/Crear?empleadoId=
+    // GET /EventoLaboral/SaldoVacaciones?empleadoId=
+    [HttpGet]
+    public async Task<IActionResult> SaldoVacaciones(int empleadoId)
+    {
+        var saldo = await _eventoService.ObtenerSaldoVacacionesAsync(empleadoId);
+        if (saldo is null) return NotFound();
+        return Json(saldo);
+    }
+
+    // POST /EventoLaboral/RegistrarAjax  (called by modal)
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> RegistrarAjax([FromForm] CrearEventoLaboralDto dto)
+    {
+        if (!ModelState.IsValid)
+        {
+            var errores = ModelState.Values
+                .SelectMany(v => v.Errors)
+                .Select(e => e.ErrorMessage)
+                .ToList();
+            return Json(new { exito = false, mensaje = string.Join(" ", errores) });
+        }
+
+        var usuarioId = SesionHelper.GetUsuarioId(User);
+        var resultado = await _eventoService.CrearAsync(dto, usuarioId);
+
+        return Json(new { exito = resultado.Exito, mensaje = resultado.Mensaje });
+    }
+
+    // POST /EventoLaboral/AnularAjax  (called by anular modal)
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AnularAjax([FromForm] int id, [FromForm] string motivoAnulacion)
+    {
+        if (string.IsNullOrWhiteSpace(motivoAnulacion))
+            return Json(new { exito = false, mensaje = "El motivo de anulación es obligatorio." });
+
+        var usuarioId = SesionHelper.GetUsuarioId(User);
+        var resultado = await _eventoService.AnularAsync(id, motivoAnulacion, usuarioId);
+
+        return Json(new { exito = resultado.Exito, mensaje = resultado.Mensaje });
+    }
+
+    // GET /EventoLaboral/Crear?empleadoId=   (kept for use from employee profile)
     [HttpGet]
     public async Task<IActionResult> Crear(int? empleadoId)
     {
@@ -89,7 +139,7 @@ public class EventoLaboralController : Controller
         return View(vm);
     }
 
-    // POST /EventoLaboral/Registrar
+    // POST /EventoLaboral/Registrar  (kept for Crear.cshtml form submit)
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Registrar(CrearEventoViewModel vm)

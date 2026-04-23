@@ -78,6 +78,40 @@ public class EventoLaboralService : IEventoLaboralService
         return ResultadoOperacion.Ok("El evento fue anulado exitosamente.");
     }
 
+    public async Task<SaldoVacacionesDto?> ObtenerSaldoVacacionesAsync(int empleadoId, CancellationToken ct = default)
+    {
+        var empleado = await _empleadoRepo.ObtenerPorIdAsync(empleadoId, ct);
+        if (empleado is null) return null;
+
+        var hoy = DateOnly.FromDateTime(DateTime.Today);
+        var diasAntiguedad = (hoy.DayNumber - empleado.FechaIngreso.DayNumber) / 365.0;
+        var acumulados = (int)(diasAntiguedad * 15) + (int)empleado.DiasVacacionesPrevios;
+
+        var vacaciones = await _repo.ObtenerPorEmpleadoYTipoAsync(empleadoId, TipoEvento.Vacaciones, ct);
+        var tomados = vacaciones
+            .Where(e => e.Estado != EstadoEvento.Anulado)
+            .Sum(e => ContarDiasHabiles(e.FechaInicio, e.FechaFin));
+
+        return new SaldoVacacionesDto
+        {
+            Acumulados  = acumulados,
+            Tomados     = tomados,
+            Disponibles = Math.Max(0, acumulados - tomados),
+        };
+    }
+
+    private static int ContarDiasHabiles(DateOnly inicio, DateOnly fin)
+    {
+        var count = 0;
+        var d = inicio;
+        while (d <= fin)
+        {
+            if (d.DayOfWeek != DayOfWeek.Sunday) count++;
+            d = d.AddDays(1);
+        }
+        return count;
+    }
+
     private static EventoLaboralDto MapToDto(EventoLaboral e) => new()
     {
         Id              = e.Id,

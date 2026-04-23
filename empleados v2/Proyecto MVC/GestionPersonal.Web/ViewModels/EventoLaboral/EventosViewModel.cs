@@ -6,6 +6,7 @@ namespace GestionPersonal.Web.ViewModels.EventoLaboral;
 public class EventosViewModel
 {
     public IReadOnlyList<EventoLaboralDto> Eventos { get; init; } = [];
+    public IReadOnlyList<EmpleadoListaDto> Empleados { get; init; } = [];
 
     // Filtros
     public string? Buscar { get; init; }
