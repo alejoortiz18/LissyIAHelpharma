@@ -10,10 +10,10 @@ public class AutoMapperURT : Profile
     {
         CreateMap<EmpleadoDto, EditarEmpleadoDto>()
             .ForMember(dest => dest.FechaNacimiento, opt => opt.MapFrom(src =>
-                string.IsNullOrEmpty(src.FechaNacimiento) ? DateOnly.MinValue : DateOnly.Parse(src.FechaNacimiento)))
+                string.IsNullOrEmpty(src.FechaNacimiento) ? (DateOnly?)null : DateOnly.Parse(src.FechaNacimiento)))
             .ForMember(dest => dest.NivelEscolaridad, opt => opt.MapFrom(src =>
                 string.IsNullOrEmpty(src.NivelEscolaridad)
-                    ? NivelEscolaridad.Bachillerato
+                    ? (NivelEscolaridad?)null
                     : Enum.Parse<NivelEscolaridad>(src.NivelEscolaridad)))
             .ForMember(dest => dest.FechaInicioContrato, opt => opt.MapFrom(src =>
                 string.IsNullOrEmpty(src.FechaInicioContrato) ? (DateOnly?)null : DateOnly.Parse(src.FechaInicioContrato)))

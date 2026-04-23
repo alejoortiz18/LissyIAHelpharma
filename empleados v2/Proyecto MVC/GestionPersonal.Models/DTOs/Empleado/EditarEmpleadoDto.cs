@@ -13,8 +13,7 @@ public class EditarEmpleadoDto
     [StringLength(200)]
     public string NombreCompleto { get; set; } = null!;
 
-    [Required(ErrorMessage = "La fecha de nacimiento es obligatoria.")]
-    public DateOnly FechaNacimiento { get; set; }
+    public DateOnly? FechaNacimiento { get; set; }
 
     [Required(ErrorMessage = "El teléfono es obligatorio.")]
     [StringLength(20)]
@@ -48,16 +47,14 @@ public class EditarEmpleadoDto
     public string ContactoEmergenciaTelefono { get; set; } = null!;
 
     // Formación y seguridad social
-    [Required(ErrorMessage = "El nivel de escolaridad es obligatorio.")]
-    public NivelEscolaridad NivelEscolaridad { get; set; }
+    public NivelEscolaridad? NivelEscolaridad { get; set; }
 
     [Required(ErrorMessage = "La EPS es obligatoria.")]
     [StringLength(200)]
     public string Eps { get; set; } = null!;
 
-    [Required(ErrorMessage = "La ARL es obligatoria.")]
     [StringLength(200)]
-    public string Arl { get; set; } = null!;
+    public string? Arl { get; set; }
 
     // Vinculación laboral (Jefe puede cambiar sede/cargo/rol)
     [Required(ErrorMessage = "La sede es obligatoria.")]

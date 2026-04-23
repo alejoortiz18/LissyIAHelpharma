@@ -15,8 +15,7 @@ public class CrearEmpleadoDto
     [StringLength(20)]
     public string Cedula { get; set; } = null!;
 
-    [Required(ErrorMessage = "La fecha de nacimiento es obligatoria.")]
-    public DateOnly FechaNacimiento { get; set; }
+    public DateOnly? FechaNacimiento { get; set; }
 
     [Required(ErrorMessage = "El teléfono es obligatorio.")]
     [StringLength(20)]
@@ -50,16 +49,14 @@ public class CrearEmpleadoDto
     public string ContactoEmergenciaTelefono { get; set; } = null!;
 
     // Formación y seguridad social
-    [Required(ErrorMessage = "El nivel de escolaridad es obligatorio.")]
-    public NivelEscolaridad NivelEscolaridad { get; set; }
+    public NivelEscolaridad? NivelEscolaridad { get; set; }
 
     [Required(ErrorMessage = "La EPS es obligatoria.")]
     [StringLength(200)]
     public string Eps { get; set; } = null!;
 
-    [Required(ErrorMessage = "La ARL es obligatoria.")]
     [StringLength(200)]
-    public string Arl { get; set; } = null!;
+    public string? Arl { get; set; }
 
     // Vinculación laboral
     [Required(ErrorMessage = "La sede es obligatoria.")]
