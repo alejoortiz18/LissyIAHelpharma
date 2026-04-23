@@ -117,6 +117,42 @@ public class TurnoService : ITurnoService
         return ResultadoOperacion.Ok("Turno asignado exitosamente.");
     }
 
+    public async Task<IReadOnlyList<AsignacionTurnoDto>> ObtenerHistorialPorEmpleadoAsync(
+        int empleadoId, CancellationToken ct = default)
+    {
+        var lista = await _repo.ObtenerHistorialPorEmpleadoAsync(empleadoId, ct);
+        return lista.Select(a => new AsignacionTurnoDto
+        {
+            Id               = a.Id,
+            EmpleadoId       = a.EmpleadoId,
+            EmpleadoNombre   = string.Empty,
+            SedeNombre       = string.Empty,
+            PlantillaTurnoId = a.PlantillaTurnoId,
+            PlantillaNombre  = a.PlantillaTurno.Nombre,
+            FechaVigencia    = a.FechaVigencia.ToString("dd/MM/yyyy"),
+            AsignadoPor      = a.ProgramadoPorNavigation.CorreoAcceso,
+        }).ToList();
+    }
+
+    public async Task<ResultadoOperacion> EditarAsignacionAsync(
+        EditarAsignacionDto dto, int usuarioId, CancellationToken ct = default)
+    {
+        var asignacion = await _repo.ObtenerAsignacionPorIdAsync(dto.Id, ct);
+        if (asignacion is null)
+            return ResultadoOperacion.Fail("Asignación no encontrada.");
+
+        var plantilla = await _repo.ObtenerPorIdAsync(dto.PlantillaTurnoId, ct);
+        if (plantilla is null)
+            return ResultadoOperacion.Fail(TurnoConstant.TurnoNoEncontrado);
+
+        asignacion.PlantillaTurnoId = dto.PlantillaTurnoId;
+        asignacion.FechaVigencia    = dto.FechaVigencia;
+        asignacion.ProgramadoPor    = usuarioId;
+
+        await _repo.GuardarCambiosAsync(ct);
+        return ResultadoOperacion.Ok("Asignación actualizada exitosamente.");
+    }
+
     private static PlantillaTurnoDto MapToDto(PlantillaTurno p) => new()
     {
         Id     = p.Id,

@@ -14,6 +14,11 @@ public interface ITurnoRepository
 
     Task<IReadOnlyList<AsignacionTurno>> ObtenerAsignacionesActivasPorSedeAsync(int sedeId, CancellationToken ct = default);
 
+    /// <summary>Historial completo de asignaciones de un empleado, orden descendente por fecha.</summary>
+    Task<IReadOnlyList<AsignacionTurno>> ObtenerHistorialPorEmpleadoAsync(int empleadoId, CancellationToken ct = default);
+
+    Task<AsignacionTurno?> ObtenerAsignacionPorIdAsync(int id, CancellationToken ct = default);
+
     void AgregarPlantilla(PlantillaTurno plantilla);
     void EliminarDetalles(IEnumerable<PlantillaTurnoDetalle> detalles);
     void AgregarAsignacion(AsignacionTurno asignacion);

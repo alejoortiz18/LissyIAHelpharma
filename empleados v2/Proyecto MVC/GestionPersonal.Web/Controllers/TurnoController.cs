@@ -114,6 +114,32 @@ public class TurnoController : Controller
         return RedirectToAction("Index");
     }
 
+    // POST /Turno/AsignarTurnoAjax
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AsignarTurnoAjax([FromForm] AsignarTurnoDto dto)
+    {
+        if (!ModelState.IsValid)
+            return Json(new { exito = false, mensaje = "Datos inválidos." });
+
+        var usuarioId = SesionHelper.GetUsuarioId(User);
+        var resultado = await _turnoService.AsignarTurnoAsync(dto, usuarioId);
+        return Json(new { exito = resultado.Exito, mensaje = resultado.Mensaje });
+    }
+
+    // POST /Turno/EditarAsignacionAjax
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> EditarAsignacionAjax([FromForm] EditarAsignacionDto dto)
+    {
+        if (!ModelState.IsValid)
+            return Json(new { exito = false, mensaje = "Datos inválidos." });
+
+        var usuarioId = SesionHelper.GetUsuarioId(User);
+        var resultado = await _turnoService.EditarAsignacionAsync(dto, usuarioId);
+        return Json(new { exito = resultado.Exito, mensaje = resultado.Mensaje });
+    }
+
     // GET /Turno/AsignarTurno?empleadoId=
     [HttpGet]
     public async Task<IActionResult> AsignarTurno(int empleadoId)

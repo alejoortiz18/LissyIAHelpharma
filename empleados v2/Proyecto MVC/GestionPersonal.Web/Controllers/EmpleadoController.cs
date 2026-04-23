@@ -226,11 +226,11 @@ public class EmpleadoController : Controller
 
         // El DTO del empleado incluye el nombre del turno actual si existe
         // Para el detalle del turno (detalles por día), buscamos en las plantillas activas
+        var todasPlantillas = await _turnoService.ObtenerPlantillasActivasAsync();
         PlantillaTurnoDto? turnoActual = null;
         if (!string.IsNullOrEmpty(empleado.PlantillaTurnoActualNombre))
         {
-            var plantillas = await _turnoService.ObtenerPlantillasActivasAsync();
-            var match = plantillas.FirstOrDefault(p =>
+            var match = todasPlantillas.FirstOrDefault(p =>
                 p.Nombre.Equals(empleado.PlantillaTurnoActualNombre, StringComparison.OrdinalIgnoreCase));
             if (match != null)
             {
@@ -242,14 +242,17 @@ public class EmpleadoController : Controller
 
         var eventos    = await ObtenerEventosAsync(id);
         var horasExtras = await ObtenerHorasExtrasAsync(id);
+        var historialTurnos = await _turnoService.ObtenerHistorialPorEmpleadoAsync(id);
 
         var vm = new PerfilEmpleadoViewModel
         {
-            Empleado     = empleado,
-            Eventos      = eventos,
-            HorasExtras  = horasExtras,
-            TurnoActual  = turnoActual,
-            Tab          = tab,
+            Empleado        = empleado,
+            Eventos         = eventos,
+            HorasExtras     = horasExtras,
+            TurnoActual     = turnoActual,
+            Plantillas      = todasPlantillas,
+            HistorialTurnos = historialTurnos,
+            Tab             = tab,
         };
 
         ViewData["Title"] = empleado.NombreCompleto;

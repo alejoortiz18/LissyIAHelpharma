@@ -64,6 +64,20 @@ public class TurnoRepository : ITurnoRepository
 
     public void AgregarAsignacion(AsignacionTurno asignacion) => _context.AsignacionesTurno.Add(asignacion);
 
+    public async Task<IReadOnlyList<AsignacionTurno>> ObtenerHistorialPorEmpleadoAsync(
+        int empleadoId, CancellationToken ct = default)
+        => await _context.AsignacionesTurno
+            .Include(a => a.PlantillaTurno)
+            .Include(a => a.ProgramadoPorNavigation)
+            .Where(a => a.EmpleadoId == empleadoId)
+            .AsNoTracking()
+            .OrderByDescending(a => a.FechaVigencia)
+            .ToListAsync(ct);
+
+    public async Task<AsignacionTurno?> ObtenerAsignacionPorIdAsync(int id, CancellationToken ct = default)
+        => await _context.AsignacionesTurno
+            .FirstOrDefaultAsync(a => a.Id == id, ct);
+
     public Task<int> GuardarCambiosAsync(CancellationToken ct = default)
         => _context.SaveChangesAsync(ct);
 }

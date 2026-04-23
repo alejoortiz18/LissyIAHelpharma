@@ -10,6 +10,9 @@
     bool puedeDesvincular = rol == RolUsuario.Jefe || rol == RolUsuario.Administrador;
     bool esTemporal  = e.TipoVinculacion == "Temporal";
     bool estaInactivo = e.Estado == "Inactivo";
+    var antiforgery = ViewContext.HttpContext.RequestServices
+        .GetRequiredService<Microsoft.AspNetCore.Antiforgery.IAntiforgery>()
+        .GetAndStoreTokens(ViewContext.HttpContext).RequestToken;
 }
 
 @if (TempData["Exito"] != null)
@@ -299,20 +302,24 @@
   {
     <div class="tab-panel is-active" role="tabpanel" tabindex="0">
 
+      <!-- ── Encabezado ── -->
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--sp-5)">
         <h2 style="font-size:.9375rem;font-weight:600;color:var(--c-gray-800)">Turno asignado</h2>
         @if (!estaInactivo && puedeEditar)
         {
-          <a asp-controller="Turno" asp-action="AsignarTurno" asp-route-empleadoId="@e.Id"
-             class="btn btn-secondary btn-sm">
+          <button type="button" class="btn btn-secondary btn-sm" onclick="abrirAsignarTurno()">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
             Asignar / cambiar turno
-          </a>
+          </button>
         }
       </div>
 
+      <!-- ── Vista días del turno vigente ── -->
       @if (Model.TurnoActual is null)
       {
-        <div class="empty-state">
+        <div class="empty-state" style="margin-bottom:var(--sp-6)">
           <div class="empty-icon" aria-hidden="true">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
               <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/>
@@ -328,7 +335,7 @@
         var t = Model.TurnoActual;
         var dias = new[] { "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo" };
         <p style="font-weight:600;margin-bottom:var(--sp-4)">@t.Nombre</p>
-        <div class="shift-days-grid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:var(--sp-3)">
+        <div class="shift-days-grid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:var(--sp-3);margin-bottom:var(--sp-6)">
           @{
             var detalles = t.Detalles?.ToList() ?? new();
           }
@@ -352,7 +359,181 @@
         </div>
       }
 
+      <!-- ── Historial de asignaciones ── -->
+      <h3 style="font-size:.875rem;font-weight:600;color:var(--c-gray-700);margin-bottom:var(--sp-3)">Historial de asignaciones</h3>
+      @if (!Model.HistorialTurnos.Any())
+      {
+        <p style="color:var(--c-gray-500);font-size:.875rem">Sin registros anteriores.</p>
+      }
+      else
+      {
+        <div class="table-wrapper">
+          <div class="table-scroll">
+            <table aria-label="Historial de turnos">
+              <thead>
+                <tr>
+                  <th scope="col">Plantilla</th>
+                  <th scope="col">Vigente desde</th>
+                  <th scope="col">Asignado por</th>
+                  @if (!estaInactivo && puedeEditar)
+                  {
+                    <th scope="col"><span class="sr-only">Acciones</span></th>
+                  }
+                </tr>
+              </thead>
+              <tbody>
+                @foreach (var h in Model.HistorialTurnos)
+                {
+                  <tr>
+                    <td style="font-weight:600">@h.PlantillaNombre</td>
+                    <td class="tabular-nums">@h.FechaVigencia</td>
+                    <td style="font-size:.8125rem;color:var(--c-gray-500)">@h.AsignadoPor</td>
+                    @if (!estaInactivo && puedeEditar)
+                    {
+                      <td>
+                        <button type="button" class="btn btn-ghost btn-sm"
+                                onclick="abrirEditarAsignacion(this)"
+                                data-id="@h.Id"
+                                data-plantilla-id="@h.PlantillaTurnoId"
+                                data-fecha="@h.FechaVigencia"
+                                aria-label="Editar asignación de @h.PlantillaNombre">
+                          Editar
+                        </button>
+                      </td>
+                    }
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+      }
+
     </div>
   }
 
 </div><!-- /data-tabs-container -->
+
+<!-- ═══════════════════════════════════════════════════════════
+     Modal: Asignar / Editar turno
+     ═══════════════════════════════════════════════════════════ -->
+@if (!estaInactivo && puedeEditar)
+{
+<div class="modal-overlay" id="modal-turno" hidden aria-modal="true"
+     aria-labelledby="turno-title" role="dialog">
+  <div class="modal modal--sm">
+    <div class="modal-header">
+      <h2 class="modal-title" id="turno-title">Asignar turno</h2>
+      <button class="modal-close btn" data-modal-close aria-label="Cerrar">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <form id="form-turno" novalidate>
+        <div class="form-group">
+          <label class="form-label" for="turno-plantilla">
+            Plantilla de turno <span class="required" aria-hidden="true">*</span>
+          </label>
+          <select class="form-select" id="turno-plantilla" required>
+            <option value="">— Selecciona una plantilla —</option>
+            @foreach (var p in Model.Plantillas)
+            {
+              <option value="@p.Id">@p.Nombre</option>
+            }
+          </select>
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+          <label class="form-label" for="turno-fecha">
+            Vigente desde <span class="required" aria-hidden="true">*</span>
+          </label>
+          <input class="form-input" type="date" id="turno-fecha" required>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" data-modal-close>Cancelar</button>
+      <button class="btn btn-primary" id="btn-guardar-turno">Asignar turno</button>
+    </div>
+  </div>
+</div>
+
+@section Scripts {
+<script>
+(function () {
+  'use strict';
+
+  const TOKEN      = '@antiforgery';
+  const EMPLEADO_ID = @e.Id;
+  let turnoEditId  = null;
+
+  function postAjax(url, body, btn) {
+    if (btn) { btn.disabled = true; btn.classList.add('btn-loading'); }
+    const fd = new FormData();
+    fd.append('__RequestVerificationToken', TOKEN);
+    for (const [k, v] of Object.entries(body)) fd.append(k, v);
+    return fetch(url, { method: 'POST', body: fd })
+      .then(r => r.json())
+      .finally(() => {
+        if (btn) { btn.disabled = false; btn.classList.remove('btn-loading'); }
+      });
+  }
+
+  window.abrirAsignarTurno = function () {
+    turnoEditId = null;
+    document.getElementById('form-turno').reset();
+    document.getElementById('turno-fecha').value       = new Date().toISOString().substring(0, 10);
+    document.getElementById('turno-title').textContent = 'Asignar turno';
+    document.getElementById('btn-guardar-turno').textContent = 'Asignar turno';
+    openModal('modal-turno');
+  };
+
+  window.abrirEditarAsignacion = function (btn) {
+    turnoEditId = parseInt(btn.dataset.id, 10);
+    // Convertir fecha "dd/MM/yyyy" → "yyyy-MM-dd" para el input[type=date]
+    const partes = (btn.dataset.fecha ?? '').split('/');
+    const fechaIso = partes.length === 3 ? `${partes[2]}-${partes[1]}-${partes[0]}` : '';
+    document.getElementById('turno-plantilla').value    = btn.dataset.plantillaId ?? '';
+    document.getElementById('turno-fecha').value        = fechaIso;
+    document.getElementById('turno-title').textContent  = 'Editar asignación';
+    document.getElementById('btn-guardar-turno').textContent = 'Guardar cambios';
+    openModal('modal-turno');
+  };
+
+  document.addEventListener('DOMContentLoaded', function () {
+    document.getElementById('btn-guardar-turno')?.addEventListener('click', function () {
+      const plantillaId = document.getElementById('turno-plantilla')?.value ?? '';
+      const fecha       = document.getElementById('turno-fecha')?.value ?? '';
+
+      if (!plantillaId || !fecha) {
+        showToast('Completa todos los campos obligatorios.', 'error'); return;
+      }
+
+      const esEditar = turnoEditId !== null;
+      const url  = esEditar
+        ? '@Url.Action("EditarAsignacionAjax", "Turno")'
+        : '@Url.Action("AsignarTurnoAjax", "Turno")';
+      const body = esEditar
+        ? { Id: turnoEditId, PlantillaTurnoId: plantillaId, FechaVigencia: fecha }
+        : { EmpleadoId: EMPLEADO_ID, PlantillaTurnoId: plantillaId, FechaVigencia: fecha };
+
+      postAjax(url, body, this)
+        .then(data => {
+          if (data.exito) {
+            showToast(data.mensaje || (esEditar ? 'Asignación actualizada.' : 'Turno asignado.'), 'success');
+            closeModal('modal-turno');
+            setTimeout(() => {
+              window.location.href = '@Url.Action("Perfil", "Empleado", new { id = e.Id, tab = "horario" })';
+            }, 700);
+          } else {
+            showToast(data.mensaje || 'Error al guardar.', 'error');
+          }
+        })
+        .catch(() => showToast('Error de red.', 'error'));
+    });
+  });
+})();
+</script>
+}
+}
