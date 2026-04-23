@@ -31,9 +31,19 @@ public class EventoLaboralController : Controller
         const int tam = 15;
         var rol    = SesionHelper.GetRol(User);
         var sedeId = SesionHelper.GetSedeId(User);
+        var empId  = SesionHelper.GetEmpleadoId(User);
+
+        // Operario no tiene acceso a eventos laborales
+        if (rol == RolUsuario.Operario)
+            return Forbid();
 
         // Sequential awaits — EF Core DbContext is not thread-safe; Task.WhenAll is not allowed
         var todos = await _eventoService.ObtenerPorSedeAsync(sedeId);
+
+        // Regente / AuxiliarRegente: solo eventos propios y de subordinados directos
+        if ((rol == RolUsuario.Regente || rol == RolUsuario.AuxiliarRegente) && empId.HasValue)
+            todos = todos.Where(e => e.EmpleadoId == empId.Value || e.JefeInmediatoId == empId.Value).ToList();
+
         var empleadosList = rol == RolUsuario.Jefe || rol == RolUsuario.Administrador
             ? await _empleadoService.ObtenerTodosAsync()
             : await _empleadoService.ObtenerPorSedeAsync(sedeId);
@@ -101,6 +111,24 @@ public class EventoLaboralController : Controller
             return Json(new { exito = false, mensaje = string.Join(" ", errores) });
         }
 
+        var rol   = SesionHelper.GetRol(User);
+        var empId = SesionHelper.GetEmpleadoId(User);
+
+        if (rol == RolUsuario.Operario)
+            return Json(new { exito = false, mensaje = "No tienes permisos para registrar eventos." });
+
+        if (rol == RolUsuario.Regente || rol == RolUsuario.AuxiliarRegente)
+        {
+            if (!empId.HasValue) return Json(new { exito = false, mensaje = "Sin permisos." });
+            var empObjetivo = await _empleadoService.ObtenerPerfilAsync(dto.EmpleadoId);
+            if (!empObjetivo.Exito || empObjetivo.Datos is null)
+                return Json(new { exito = false, mensaje = "Empleado no encontrado." });
+            var esPropio      = empObjetivo.Datos.Id == empId.Value;
+            var esSubordinado = empObjetivo.Datos.JefeInmediatoId == empId.Value;
+            if (!esPropio && !esSubordinado)
+                return Json(new { exito = false, mensaje = "No puedes registrar eventos para este empleado." });
+        }
+
         var usuarioId = SesionHelper.GetUsuarioId(User);
         var resultado = await _eventoService.CrearAsync(dto, usuarioId);
 
@@ -114,6 +142,22 @@ public class EventoLaboralController : Controller
     {
         if (string.IsNullOrWhiteSpace(motivoAnulacion))
             return Json(new { exito = false, mensaje = "El motivo de anulación es obligatorio." });
+
+        var rol   = SesionHelper.GetRol(User);
+        var empId = SesionHelper.GetEmpleadoId(User);
+
+        if (rol == RolUsuario.Operario)
+            return Json(new { exito = false, mensaje = "No tienes permisos para anular eventos." });
+
+        if (rol == RolUsuario.Regente || rol == RolUsuario.AuxiliarRegente)
+        {
+            if (!empId.HasValue) return Json(new { exito = false, mensaje = "Sin permisos." });
+            var sedeId = SesionHelper.GetSedeId(User);
+            var lista  = await _eventoService.ObtenerPorSedeAsync(sedeId);
+            var target = lista.FirstOrDefault(e => e.Id == id);
+            if (target is null || (target.EmpleadoId != empId.Value && target.JefeInmediatoId != empId.Value))
+                return Json(new { exito = false, mensaje = "No puedes anular este evento." });
+        }
 
         var usuarioId = SesionHelper.GetUsuarioId(User);
         var resultado = await _eventoService.AnularAsync(id, motivoAnulacion, usuarioId);

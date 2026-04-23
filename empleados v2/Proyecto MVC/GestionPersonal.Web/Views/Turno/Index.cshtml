@@ -10,7 +10,9 @@
     var antiforgery = ViewContext.HttpContext.RequestServices
         .GetRequiredService<Microsoft.AspNetCore.Antiforgery.IAntiforgery>()
         .GetAndStoreTokens(ViewContext.HttpContext).RequestToken;
-    var plantillasJson = JsonSerializer.Serialize(Model.Plantillas);
+    var plantillasJson = JsonSerializer.Serialize(
+        Model.Plantillas,
+        new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase });
 }
 
 <div class="page-header">

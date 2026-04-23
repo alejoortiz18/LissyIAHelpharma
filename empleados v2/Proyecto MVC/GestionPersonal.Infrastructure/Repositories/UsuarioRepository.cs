@@ -16,6 +16,7 @@ public class UsuarioRepository : IUsuarioRepository
             .FirstOrDefaultAsync(u => u.Id == id, ct);
 
     public async Task<Usuario?> ObtenerPorCorreoAsync(string correo, CancellationToken ct = default)
+        
         => await _context.Usuarios
             .Include(u => u.Sede)
             .Include(u => u.Empleado)

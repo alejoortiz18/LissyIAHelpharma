@@ -119,6 +119,8 @@ public class EmpleadoController : Controller
         var rol = SesionHelper.GetRol(User);
         if (rol == RolUsuario.Operario)
             return Forbid();
+        if (rol == RolUsuario.Regente || rol == RolUsuario.AuxiliarRegente)
+            return Forbid();
 
         var vm = await ConstruirNuevoVm(new CrearEmpleadoDto());
         ViewData["Title"] = "Nuevo empleado";
@@ -135,6 +137,8 @@ public class EmpleadoController : Controller
     {
         var rol = SesionHelper.GetRol(User);
         if (rol == RolUsuario.Operario)
+            return Forbid();
+        if (rol == RolUsuario.Regente || rol == RolUsuario.AuxiliarRegente)
             return Forbid();
 
         if (!ModelState.IsValid)
@@ -165,6 +169,18 @@ public class EmpleadoController : Controller
         if (rol == RolUsuario.Operario)
             return Forbid();
 
+        if (rol == RolUsuario.Regente || rol == RolUsuario.AuxiliarRegente)
+        {
+            var miEmpId = SesionHelper.GetEmpleadoId(User);
+            if (!miEmpId.HasValue) return Forbid();
+            var objetivo = await _empleadoService.ObtenerPerfilAsync(id);
+            if (!objetivo.Exito || objetivo.Datos is null) return NotFound();
+            var esPropio      = objetivo.Datos.Id == miEmpId.Value;
+            var esSubordinado = objetivo.Datos.JefeInmediatoId == miEmpId.Value;
+            if (!esPropio && !esSubordinado)
+                return Forbid();
+        }
+
         var resultadoEditar = await _empleadoService.ObtenerParaEditarAsync(id);
         if (!resultadoEditar.Exito || resultadoEditar.Datos is null)
             return NotFound();
@@ -186,6 +202,18 @@ public class EmpleadoController : Controller
         var rol = SesionHelper.GetRol(User);
         if (rol == RolUsuario.Operario)
             return Forbid();
+
+        if (rol == RolUsuario.Regente || rol == RolUsuario.AuxiliarRegente)
+        {
+            var miEmpId = SesionHelper.GetEmpleadoId(User);
+            if (!miEmpId.HasValue) return Forbid();
+            var objetivo = await _empleadoService.ObtenerPerfilAsync(vm.Dto.Id);
+            if (!objetivo.Exito || objetivo.Datos is null) return NotFound();
+            var esPropio      = objetivo.Datos.Id == miEmpId.Value;
+            var esSubordinado = objetivo.Datos.JefeInmediatoId == miEmpId.Value;
+            if (!esPropio && !esSubordinado)
+                return Forbid();
+        }
 
         if (!ModelState.IsValid)
         {
@@ -218,6 +246,18 @@ public class EmpleadoController : Controller
         // Operario solo puede ver su propio perfil
         if (rol == RolUsuario.Operario && empId.HasValue && empId.Value != id)
             return Forbid();
+
+        // Regente / AuxiliarRegente: solo puede ver su perfil o el de subordinados
+        if (rol == RolUsuario.Regente || rol == RolUsuario.AuxiliarRegente)
+        {
+            if (!empId.HasValue) return Forbid();
+            var objPerfil = await _empleadoService.ObtenerPerfilAsync(id);
+            if (!objPerfil.Exito || objPerfil.Datos is null) return NotFound();
+            var esPropio      = objPerfil.Datos.Id == empId.Value;
+            var esSubordinado = objPerfil.Datos.JefeInmediatoId == empId.Value;
+            if (!esPropio && !esSubordinado)
+                return Forbid();
+        }
 
         var empleadoResult = await _empleadoService.ObtenerPerfilAsync(id);
         if (!empleadoResult.Exito || empleadoResult.Datos is null)

@@ -61,6 +61,7 @@ public class TurnoService : ITurnoService
             .Select(a => new AsignacionTurnoDto
             {
                 EmpleadoId      = a.EmpleadoId,
+                JefeInmediatoId = a.Empleado.JefeInmediatoId,
                 EmpleadoNombre  = a.Empleado.NombreCompleto,
                 SedeNombre      = a.Empleado.Sede.Nombre,
                 PlantillaTurnoId = a.PlantillaTurnoId,

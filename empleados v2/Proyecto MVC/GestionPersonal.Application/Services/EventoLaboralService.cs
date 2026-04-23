@@ -116,6 +116,7 @@ public class EventoLaboralService : IEventoLaboralService
     {
         Id              = e.Id,
         EmpleadoId      = e.EmpleadoId,
+        JefeInmediatoId = e.Empleado?.JefeInmediatoId,
         EmpleadoNombre  = e.Empleado?.NombreCompleto ?? string.Empty,
         SedeNombre      = e.Empleado?.Sede?.Nombre   ?? string.Empty,
         TipoEvento      = e.TipoEvento.ToString(),

@@ -31,6 +31,9 @@ public class HoraExtraController : Controller
             ? await _horaExtraService.ObtenerPorEmpleadoAsync(empId.Value)
             : await _horaExtraService.ObtenerPorSedeAsync(sedeId);
 
+        if ((rol == RolUsuario.Regente || rol == RolUsuario.AuxiliarRegente) && empId.HasValue)
+            todos = todos.Where(h => h.EmpleadoId == empId.Value || h.JefeInmediatoId == empId.Value).ToList();
+
         var pendientes       = todos.Count(h => h.Estado == "Pendiente");
         var aprobadasEsteMes = todos.Count(h => h.Estado == "Aprobado" &&
             h.FechaAprobacion != null &&
@@ -75,6 +78,22 @@ public class HoraExtraController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> AprobarAjax([FromForm] int id)
     {
+        var rol   = SesionHelper.GetRol(User);
+        var empId = SesionHelper.GetEmpleadoId(User);
+
+        if (rol == RolUsuario.Operario)
+            return Json(new { exito = false, mensaje = "Sin permisos." });
+
+        if (rol == RolUsuario.Regente || rol == RolUsuario.AuxiliarRegente)
+        {
+            if (!empId.HasValue) return Json(new { exito = false, mensaje = "Sin permisos." });
+            var sedeId = SesionHelper.GetSedeId(User);
+            var lista  = await _horaExtraService.ObtenerPorSedeAsync(sedeId);
+            var he     = lista.FirstOrDefault(h => h.Id == id);
+            if (he is null || he.JefeInmediatoId != empId.Value)
+                return Json(new { exito = false, mensaje = "No tienes permisos para gestionar esta hora extra." });
+        }
+
         var usuarioId = SesionHelper.GetUsuarioId(User);
         var resultado = await _horaExtraService.AprobarAsync(id, usuarioId);
         return Json(new { exito = resultado.Exito, mensaje = resultado.Mensaje });
@@ -87,6 +106,22 @@ public class HoraExtraController : Controller
     {
         if (string.IsNullOrWhiteSpace(motivoRechazo))
             return Json(new { exito = false, mensaje = "El motivo de rechazo es obligatorio." });
+
+        var rol   = SesionHelper.GetRol(User);
+        var empId = SesionHelper.GetEmpleadoId(User);
+
+        if (rol == RolUsuario.Operario)
+            return Json(new { exito = false, mensaje = "Sin permisos." });
+
+        if (rol == RolUsuario.Regente || rol == RolUsuario.AuxiliarRegente)
+        {
+            if (!empId.HasValue) return Json(new { exito = false, mensaje = "Sin permisos." });
+            var sedeId = SesionHelper.GetSedeId(User);
+            var lista  = await _horaExtraService.ObtenerPorSedeAsync(sedeId);
+            var he     = lista.FirstOrDefault(h => h.Id == id);
+            if (he is null || he.JefeInmediatoId != empId.Value)
+                return Json(new { exito = false, mensaje = "No tienes permisos para gestionar esta hora extra." });
+        }
 
         var usuarioId = SesionHelper.GetUsuarioId(User);
         var resultado = await _horaExtraService.RechazarAsync(id, motivoRechazo, usuarioId);

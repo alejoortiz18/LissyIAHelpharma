@@ -53,9 +53,52 @@
         <label asp-for="Password" class="form-label">
           Contraseña <span class="required" aria-hidden="true">*</span>
         </label>
-        <input asp-for="Password" class="form-input" type="password" autocomplete="current-password" />
+        <div style="position:relative">
+          <input asp-for="Password" id="inputPassword" class="form-input" type="password"
+                 autocomplete="current-password" style="padding-right:2.75rem" />
+          <button type="button" id="btnTogglePassword"
+                  aria-label="Mostrar u ocultar contraseña"
+                  style="position:absolute;top:50%;right:.75rem;transform:translateY(-50%);
+                         background:none;border:none;padding:0;cursor:pointer;
+                         color:var(--color-text-muted,#6b7280);line-height:1">
+            <!-- ojo abierto (visible por defecto) -->
+            <svg id="iconEyeOpen" xmlns="http://www.w3.org/2000/svg" width="18" height="18"
+                 viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+              <circle cx="12" cy="12" r="3"/>
+            </svg>
+            <!-- ojo cerrado (oculto por defecto) -->
+            <svg id="iconEyeOff" xmlns="http://www.w3.org/2000/svg" width="18" height="18"
+                 viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                 style="display:none">
+              <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94"/>
+              <path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"/>
+              <line x1="1" y1="1" x2="23" y2="23"/>
+            </svg>
+          </button>
+        </div>
         <span asp-validation-for="Password" class="form-error"></span>
       </div>
+
+      @section Scripts {
+        <script>
+          (function () {
+            var input = document.getElementById('inputPassword');
+            var btn   = document.getElementById('btnTogglePassword');
+            var open  = document.getElementById('iconEyeOpen');
+            var off   = document.getElementById('iconEyeOff');
+            btn.addEventListener('click', function () {
+              var show = input.type === 'password';
+              input.type  = show ? 'text' : 'password';
+              open.style.display = show ? 'none'  : '';
+              off.style.display  = show ? ''      : 'none';
+              btn.setAttribute('aria-label', show ? 'Ocultar contraseña' : 'Mostrar contraseña');
+            });
+          })();
+        </script>
+      }
 
       <div style="text-align:right;margin-bottom:var(--sp-6)">
         <a asp-action="RecuperarPassword" class="bc-link" style="font-size:.8125rem;font-weight:600">

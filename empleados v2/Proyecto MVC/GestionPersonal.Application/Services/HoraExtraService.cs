@@ -103,9 +103,10 @@ public class HoraExtraService : IHoraExtraService
 
     private static HoraExtraDto MapToDto(HoraExtra h) => new()
     {
-        Id             = h.Id,
-        EmpleadoId     = h.EmpleadoId,
-        EmpleadoNombre = h.Empleado?.NombreCompleto     ?? string.Empty,
+        Id              = h.Id,
+        EmpleadoId      = h.EmpleadoId,
+        JefeInmediatoId = h.Empleado?.JefeInmediatoId,
+        EmpleadoNombre  = h.Empleado?.NombreCompleto     ?? string.Empty,
         SedeNombre     = h.Empleado?.Sede?.Nombre       ?? string.Empty,
         FechaTrabajada = h.FechaTrabajada.ToString("dd/MM/yyyy"),
         CantidadHoras  = h.CantidadHoras,

@@ -59,7 +59,8 @@
     <nav class="sidebar-nav" aria-label="Menú principal">
       <span class="nav-section">Principal</span>
 
-      @if (User.IsInRole("Jefe") || User.IsInRole("Administrador"))
+      @if (User.IsInRole("Jefe") || User.IsInRole("Administrador")
+           || User.IsInRole("Regente") || User.IsInRole("AuxiliarRegente"))
       {
       <a asp-controller="Dashboard" asp-action="Index" class="@NavClass("Dashboard")" aria-label="Dashboard"
          aria-current="@(ctrl == "Dashboard" ? "page" : null)">
@@ -72,6 +73,23 @@
       </a>
       }
 
+      @if (User.IsInRole("Operario"))
+      {
+      <a asp-controller="Empleado" asp-action="Perfil"
+         asp-route-id="@User.FindFirstValue("EmpleadoId")"
+         class="@NavClass("Empleado")"
+         aria-current="@(ctrl == "Empleado" ? "page" : null)">
+        <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+             fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
+          <circle cx="9" cy="7" r="4"/>
+          <path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/>
+        </svg>
+        <span class="nav-text">Mi Perfil</span>
+      </a>
+      }
+      else
+      {
       <a asp-controller="Empleado" asp-action="Index" class="@NavClass("Empleado")"
          aria-current="@(ctrl == "Empleado" ? "page" : null)">
         <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
@@ -82,6 +100,7 @@
         </svg>
         <span class="nav-text">Empleados</span>
       </a>
+      }
 
       @if (!User.IsInRole("Operario"))
       {
