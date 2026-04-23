@@ -88,6 +88,32 @@ public class EventoLaboralController : Controller
         return View(vm);
     }
 
+    // GET /EventoLaboral/BuscarEmpleados?q=
+    [HttpGet]
+    public async Task<IActionResult> BuscarEmpleados(string? q)
+    {
+        if (string.IsNullOrWhiteSpace(q) || q.Trim().Length < 2)
+            return Json(Array.Empty<object>());
+
+        var rol    = SesionHelper.GetRol(User);
+        var sedeId = SesionHelper.GetSedeId(User);
+
+        var todos = rol == RolUsuario.Jefe || rol == RolUsuario.Administrador
+            ? await _empleadoService.ObtenerTodosAsync()
+            : await _empleadoService.ObtenerPorSedeAsync(sedeId);
+
+        var termino = q.Trim().ToLower();
+        var resultado = todos
+            .Where(e => e.Estado == "Activo" &&
+                        (e.NombreCompleto.ToLower().Contains(termino) ||
+                         e.Cedula.Contains(termino)))
+            .Take(15)
+            .Select(e => new { id = e.Id, texto = $"{e.NombreCompleto} — {e.SedeNombre}" })
+            .ToList();
+
+        return Json(resultado);
+    }
+
     // GET /EventoLaboral/SaldoVacaciones?empleadoId=
     [HttpGet]
     public async Task<IActionResult> SaldoVacaciones(int empleadoId)

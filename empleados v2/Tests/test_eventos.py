@@ -122,20 +122,25 @@ def test_tc_ev04_toggle_permiso(page):
     print("\n  TC-EV-04 PASO - Campo permiso visible, incapacidad oculta.")
 
 
+def _seleccionar_primer_empleado(page):
+    """Escribe en el combobox, espera resultados y selecciona el primero."""
+    page.fill("#ev-empleado-search", "ar")
+    page.wait_for_timeout(500)  # esperar debounce + respuesta AJAX
+    page.wait_for_selector("#ev-empleado-list [role='option']", timeout=8000)
+    page.click("#ev-empleado-list [role='option']:first-child")
+    empleado_id = page.input_value("#ev-empleado")
+    if not empleado_id:
+        pytest.skip("No hay empleados disponibles en el combobox.")
+    return empleado_id
+
+
 # ── TC-EV-05 ─────────────────────────────────────────────────────────────────
 def test_tc_ev05_widget_vacaciones(page):
     """Seleccionar tipo=Vacaciones + empleado muestra el widget de saldo."""
     page.click(BTN_ABRIR_MODAL)
     page.wait_for_selector("#modal-nuevo-evento:not([hidden])", timeout=5000)
 
-    first_employee_val = page.eval_on_selector(
-        "#ev-empleado option:not([value=''])",
-        "el => el.value"
-    )
-    if not first_employee_val:
-        pytest.skip("No hay empleados disponibles en el selector.")
-
-    page.select_option("#ev-empleado", first_employee_val)
+    _seleccionar_primer_empleado(page)
     page.select_option("#ev-tipo", "Vacaciones")
 
     page.wait_for_selector("#vac-balance-widget:not([hidden])", timeout=8000)
@@ -156,14 +161,7 @@ def test_tc_ev06_calculo_dias(page):
     page.click(BTN_ABRIR_MODAL)
     page.wait_for_selector("#modal-nuevo-evento:not([hidden])", timeout=5000)
 
-    first_employee_val = page.eval_on_selector(
-        "#ev-empleado option:not([value=''])",
-        "el => el.value"
-    )
-    if not first_employee_val:
-        pytest.skip("No hay empleados disponibles.")
-
-    page.select_option("#ev-empleado", first_employee_val)
+    _seleccionar_primer_empleado(page)
     page.select_option("#ev-tipo", "Vacaciones")
     page.wait_for_selector("#vac-balance-widget:not([hidden])", timeout=8000)
 
