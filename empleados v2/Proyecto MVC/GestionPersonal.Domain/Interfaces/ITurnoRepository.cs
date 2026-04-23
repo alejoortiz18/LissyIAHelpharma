@@ -22,6 +22,10 @@ public interface ITurnoRepository
     void AgregarPlantilla(PlantillaTurno plantilla);
     void EliminarDetalles(IEnumerable<PlantillaTurnoDetalle> detalles);
     void AgregarAsignacion(AsignacionTurno asignacion);
+    void EliminarAsignacion(AsignacionTurno asignacion);
+
+    /// <summary>Obtiene la asignación por ID incluyendo la entidad Empleado (para validar jerarquía).</summary>
+    Task<AsignacionTurno?> ObtenerAsignacionConEmpleadoPorIdAsync(int id, CancellationToken ct = default);
 
     Task<int> GuardarCambiosAsync(CancellationToken ct = default);
 }

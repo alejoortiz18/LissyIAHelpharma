@@ -13,4 +13,5 @@ public interface ITurnoService
     Task<IReadOnlyList<AsignacionTurnoDto>> ObtenerHistorialPorEmpleadoAsync(int empleadoId, CancellationToken ct = default);
     Task<ResultadoOperacion> AsignarTurnoAsync(AsignarTurnoDto dto, int programadoPorUsuarioId, CancellationToken ct = default);
     Task<ResultadoOperacion> EditarAsignacionAsync(EditarAsignacionDto dto, int usuarioId, CancellationToken ct = default);
+    Task<ResultadoOperacion> EliminarAsignacionAsync(int asignacionId, int usuarioId, int? usuarioEmpleadoId, CancellationToken ct = default);
 }

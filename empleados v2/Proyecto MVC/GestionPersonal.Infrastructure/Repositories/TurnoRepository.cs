@@ -78,6 +78,14 @@ public class TurnoRepository : ITurnoRepository
         => await _context.AsignacionesTurno
             .FirstOrDefaultAsync(a => a.Id == id, ct);
 
+    public async Task<AsignacionTurno?> ObtenerAsignacionConEmpleadoPorIdAsync(int id, CancellationToken ct = default)
+        => await _context.AsignacionesTurno
+            .Include(a => a.Empleado)
+            .FirstOrDefaultAsync(a => a.Id == id, ct);
+
+    public void EliminarAsignacion(AsignacionTurno asignacion)
+        => _context.AsignacionesTurno.Remove(asignacion);
+
     public Task<int> GuardarCambiosAsync(CancellationToken ct = default)
         => _context.SaveChangesAsync(ct);
 }

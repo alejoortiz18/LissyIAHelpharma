@@ -10,6 +10,9 @@
     bool puedeDesvincular = rol == RolUsuario.Jefe || rol == RolUsuario.Administrador;
     bool esTemporal  = e.TipoVinculacion == "Temporal";
     bool estaInactivo = e.Estado == "Inactivo";
+    var currentUsuarioId  = SesionHelper.GetUsuarioId(User);
+    var currentEmpleadoId = SesionHelper.GetEmpleadoId(User);
+    bool esJefeInmediatoDelEmpleado = currentEmpleadoId.HasValue && currentEmpleadoId.Value == e.JefeInmediatoId;
     var antiforgery = ViewContext.HttpContext.RequestServices
         .GetRequiredService<Microsoft.AspNetCore.Antiforgery.IAntiforgery>()
         .GetAndStoreTokens(ViewContext.HttpContext).RequestToken;
@@ -390,16 +393,30 @@
                     <td style="font-size:.8125rem;color:var(--c-gray-500)">@h.AsignadoPor</td>
                     @if (!estaInactivo && puedeEditar)
                     {
-                      <td>
-                        <button type="button" class="btn btn-ghost btn-sm"
-                                onclick="abrirEditarAsignacion(this)"
-                                data-id="@h.Id"
-                                data-plantilla-id="@h.PlantillaTurnoId"
-                                data-fecha="@h.FechaVigencia"
-                                aria-label="Editar asignación de @h.PlantillaNombre">
-                          Editar
-                        </button>
-                      </td>
+                      @if (h.ProgramadoPorUsuarioId == currentUsuarioId || esJefeInmediatoDelEmpleado)
+                      {
+                        <td style="display:flex;gap:var(--sp-2);align-items:center;white-space:nowrap">
+                          <button type="button" class="btn btn-ghost btn-sm"
+                                  onclick="abrirEditarAsignacion(this)"
+                                  data-id="@h.Id"
+                                  data-plantilla-id="@h.PlantillaTurnoId"
+                                  data-fecha="@h.FechaVigencia"
+                                  aria-label="Editar asignación de @h.PlantillaNombre">
+                            Editar
+                          </button>
+                          <button type="button" class="btn btn-ghost btn-sm"
+                                  onclick="confirmarEliminarAsignacion(this)"
+                                  data-id="@h.Id"
+                                  aria-label="Eliminar asignación de @h.PlantillaNombre"
+                                  style="color:var(--c-red-600)">
+                            Eliminar
+                          </button>
+                        </td>
+                      }
+                      else
+                      {
+                        <td></td>
+                      }
                     }
                   </tr>
                 }
@@ -455,6 +472,27 @@
     <div class="modal-footer">
       <button class="btn btn-secondary" data-modal-close>Cancelar</button>
       <button class="btn btn-primary" id="btn-guardar-turno">Asignar turno</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-eliminar-turno" hidden aria-modal="true"
+     aria-labelledby="eliminar-turno-title" role="dialog">
+  <div class="modal modal--sm">
+    <div class="modal-header">
+      <h2 class="modal-title" id="eliminar-turno-title">Eliminar asignación</h2>
+      <button class="modal-close btn" data-modal-close aria-label="Cerrar">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <p style="margin:0;font-size:.9375rem">¿Estás seguro de que deseas eliminar esta asignación de turno? Esta acción no se puede deshacer.</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" data-modal-close>Cancelar</button>
+      <button class="btn btn-danger" id="btn-confirmar-eliminar-turno">Sí, eliminar</button>
     </div>
   </div>
 </div>
@@ -533,6 +571,39 @@
         .catch(() => showToast('Error de red.', 'error'));
     });
   });
+
+  // ── Eliminar asignación ──────────────────────────────────────────────────
+  let asignacionEliminarId = null;
+
+  window.confirmarEliminarAsignacion = function (btn) {
+    asignacionEliminarId = parseInt(btn.dataset.id, 10);
+    openModal('modal-eliminar-turno');
+  };
+
+  document.getElementById('btn-confirmar-eliminar-turno')?.addEventListener('click', function () {
+    if (!asignacionEliminarId) return;
+    const btn = this;
+    btn.disabled = true;
+    postAjax('@Url.Action("EliminarAsignacionAjax", "Turno")', { Id: asignacionEliminarId }, null)
+      .then(data => {
+        closeModal('modal-eliminar-turno');
+        if (data.exito) {
+          showToast(data.mensaje || 'Asignación eliminada.', 'success');
+          setTimeout(() => {
+            window.location.href = '@Url.Action("Perfil", "Empleado", new { id = e.Id, tab = "horario" })';
+          }, 700);
+        } else {
+          showToast(data.mensaje || 'Error al eliminar.', 'error');
+          btn.disabled = false;
+        }
+        asignacionEliminarId = null;
+      })
+      .catch(() => {
+        showToast('Error de red.', 'error');
+        btn.disabled = false;
+      });
+  });
+
 })();
 </script>
 }

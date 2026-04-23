@@ -140,6 +140,20 @@ public class TurnoController : Controller
         return Json(new { exito = resultado.Exito, mensaje = resultado.Mensaje });
     }
 
+    // POST /Turno/EliminarAsignacionAjax
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> EliminarAsignacionAjax([FromForm] int id)
+    {
+        if (id <= 0)
+            return Json(new { exito = false, mensaje = "Datos inválidos." });
+
+        var usuarioId    = SesionHelper.GetUsuarioId(User);
+        var empleadoId   = SesionHelper.GetEmpleadoId(User);
+        var resultado    = await _turnoService.EliminarAsignacionAsync(id, usuarioId, empleadoId);
+        return Json(new { exito = resultado.Exito, mensaje = resultado.Mensaje });
+    }
+
     // GET /Turno/AsignarTurno?empleadoId=
     [HttpGet]
     public async Task<IActionResult> AsignarTurno(int empleadoId)

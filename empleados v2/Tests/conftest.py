@@ -29,6 +29,7 @@ def reset_estado_db():
     Usuarios:
       - carlos.rodriguez@yopmail.com : contraseña Usuario1, DebeCambiarPassword=0 → Dashboard
       - laura.sanchez@yopmail.com   : contraseña Usuario1, DebeCambiarPassword=1 → CambiarPassword
+      - diana.vargas@yopmail.com    : contraseña Usuario1, DebeCambiarPassword=0 → Dashboard
       - natalia.bermudez@yopmail.com: contraseña Usuario1 (para re-ejecutar TC-14)
 
     Tokens:
@@ -48,6 +49,11 @@ def reset_estado_db():
         f"PasswordSalt={_SALT_USUARIO1}, "
         f"DebecambiarPassword=1 "
         f"WHERE CorreoAcceso='laura.sanchez@yopmail.com'; "
+        f"UPDATE dbo.Usuarios SET "
+        f"PasswordHash={_HASH_USUARIO1}, "
+        f"PasswordSalt={_SALT_USUARIO1}, "
+        f"DebecambiarPassword=0 "
+        f"WHERE CorreoAcceso='diana.vargas@yopmail.com'; "
         f"UPDATE dbo.Usuarios SET "
         f"PasswordHash={_HASH_USUARIO1}, "
         f"PasswordSalt={_SALT_USUARIO1}, "

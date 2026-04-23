@@ -129,8 +129,9 @@ public class TurnoService : ITurnoService
             SedeNombre       = string.Empty,
             PlantillaTurnoId = a.PlantillaTurnoId,
             PlantillaNombre  = a.PlantillaTurno.Nombre,
-            FechaVigencia    = a.FechaVigencia.ToString("dd/MM/yyyy"),
-            AsignadoPor      = a.ProgramadoPorNavigation.CorreoAcceso,
+            FechaVigencia          = a.FechaVigencia.ToString("dd/MM/yyyy"),
+            AsignadoPor            = a.ProgramadoPorNavigation.CorreoAcceso,
+            ProgramadoPorUsuarioId = a.ProgramadoPor,
         }).ToList();
     }
 
@@ -147,10 +148,28 @@ public class TurnoService : ITurnoService
 
         asignacion.PlantillaTurnoId = dto.PlantillaTurnoId;
         asignacion.FechaVigencia    = dto.FechaVigencia;
-        asignacion.ProgramadoPor    = usuarioId;
 
         await _repo.GuardarCambiosAsync(ct);
         return ResultadoOperacion.Ok("Asignación actualizada exitosamente.");
+    }
+
+    public async Task<ResultadoOperacion> EliminarAsignacionAsync(
+        int asignacionId, int usuarioId, int? usuarioEmpleadoId, CancellationToken ct = default)
+    {
+        var asignacion = await _repo.ObtenerAsignacionConEmpleadoPorIdAsync(asignacionId, ct);
+        if (asignacion is null)
+            return ResultadoOperacion.Fail("Asignación no encontrada.");
+
+        bool esProgramador   = asignacion.ProgramadoPor == usuarioId;
+        bool esJefeInmediato = usuarioEmpleadoId.HasValue
+            && asignacion.Empleado.JefeInmediatoId == usuarioEmpleadoId.Value;
+
+        if (!esProgramador && !esJefeInmediato)
+            return ResultadoOperacion.Fail("No tienes permisos para eliminar esta asignación.");
+
+        _repo.EliminarAsignacion(asignacion);
+        await _repo.GuardarCambiosAsync(ct);
+        return ResultadoOperacion.Ok("Asignación eliminada correctamente.");
     }
 
     private static PlantillaTurnoDto MapToDto(PlantillaTurno p) => new()

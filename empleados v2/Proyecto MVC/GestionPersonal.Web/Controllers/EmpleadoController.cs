@@ -227,22 +227,23 @@ public class EmpleadoController : Controller
         // El DTO del empleado incluye el nombre del turno actual si existe
         // Para el detalle del turno (detalles por día), buscamos en las plantillas activas
         var todasPlantillas = await _turnoService.ObtenerPlantillasActivasAsync();
+        var historialTurnos = await _turnoService.ObtenerHistorialPorEmpleadoAsync(id);
+
         PlantillaTurnoDto? turnoActual = null;
-        if (!string.IsNullOrEmpty(empleado.PlantillaTurnoActualNombre))
+        var today = DateOnly.FromDateTime(DateTime.Today);
+        var vigente = historialTurnos.FirstOrDefault(h =>
+            DateOnly.TryParseExact(h.FechaVigencia, "dd/MM/yyyy",
+                System.Globalization.CultureInfo.InvariantCulture,
+                System.Globalization.DateTimeStyles.None, out var d) && d <= today);
+        if (vigente != null)
         {
-            var match = todasPlantillas.FirstOrDefault(p =>
-                p.Nombre.Equals(empleado.PlantillaTurnoActualNombre, StringComparison.OrdinalIgnoreCase));
-            if (match != null)
-            {
-                var detalle = await _turnoService.ObtenerPlantillaConDetallesAsync(match.Id);
-                if (detalle.Exito)
-                    turnoActual = detalle.Datos;
-            }
+            var detalle = await _turnoService.ObtenerPlantillaConDetallesAsync(vigente.PlantillaTurnoId);
+            if (detalle.Exito)
+                turnoActual = detalle.Datos;
         }
 
         var eventos    = await ObtenerEventosAsync(id);
         var horasExtras = await ObtenerHorasExtrasAsync(id);
-        var historialTurnos = await _turnoService.ObtenerHistorialPorEmpleadoAsync(id);
 
         var vm = new PerfilEmpleadoViewModel
         {

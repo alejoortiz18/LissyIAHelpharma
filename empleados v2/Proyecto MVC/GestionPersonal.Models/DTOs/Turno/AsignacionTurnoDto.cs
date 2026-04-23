@@ -10,4 +10,5 @@ public class AsignacionTurnoDto
     public string PlantillaNombre { get; init; } = null!;
     public string FechaVigencia { get; init; } = null!;
     public string AsignadoPor { get; init; } = null!;
+    public int ProgramadoPorUsuarioId { get; init; }
 }
