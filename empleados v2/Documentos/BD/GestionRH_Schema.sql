@@ -169,7 +169,7 @@ CREATE TABLE dbo.Usuarios (
     CONSTRAINT PK_Usuarios              PRIMARY KEY (Id),
     CONSTRAINT UX_Usuarios_Correo       UNIQUE      (CorreoAcceso),
     CONSTRAINT FK_Usuarios_Sedes        FOREIGN KEY (SedeId)    REFERENCES dbo.Sedes (Id),
-    CONSTRAINT CK_Usuarios_Rol          CHECK       (Rol IN ('Jefe', 'Regente', 'AuxiliarRegente', 'Operario', 'Administrador')),
+    CONSTRAINT CK_Usuarios_Rol          CHECK       (Rol IN ('DirectorTecnico', 'Regente', 'AuxiliarRegente', 'Operario', 'Administrador', 'Analista', 'Direccionador')),
     CONSTRAINT CK_Usuarios_Estado       CHECK       (Estado IN ('Activo', 'Inactivo'))
 );
 GO

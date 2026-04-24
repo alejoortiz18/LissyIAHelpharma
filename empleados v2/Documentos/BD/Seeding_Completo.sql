@@ -6,7 +6,9 @@
 --   PasswordHash: 64 bytes | PasswordSalt: 128 bytes
 --
 -- JERARQUÍA:
---   Carlos Rodríguez   → Jefe  (Sede Medellín, accede a todo)
+--   Carlos Rodríguez   → DirectorTecnico  (Sede Medellín, accede a todo)
+--   Sofía Gómez         → Analista          (Sede Medellín, acceso total multi-sede)
+--   Pedro Ramírez       → Direccionador     (Sede Bogotá, solo información propia)
 --   ├── Laura Sánchez           → Regente  (Sede Medellín)
 --   │   ├── Andrés Torres       → AuxiliarRegente
 --   │   ├── Diana Vargas        → Operario
@@ -89,27 +91,23 @@ DECLARE @SedeMed INT = (SELECT Id FROM dbo.Sedes WHERE Nombre = N'Sede Medellín
 DECLARE @SedeBog INT = (SELECT Id FROM dbo.Sedes WHERE Nombre = N'Sede Bogotá');
 
 -- ============================================================
--- 2. CARGOS
+-- 2. CARGOS (6 cargos — jerarquía oficial)
 -- ============================================================
 INSERT INTO dbo.Cargos (Nombre, Estado, FechaCreacion)
 VALUES
-    (N'Jefe de Sede',               N'Activo', '2018-01-01'),
-    (N'Farmacéutico Regente',       N'Activo', '2018-01-01'),
-    (N'Auxiliar de Farmacia',       N'Activo', '2018-01-01'),
-    (N'Auxiliar Administrativo',    N'Activo', '2018-01-01'),
-    (N'Cajero(a)',                   N'Activo', '2018-01-01'),
-    (N'Asesor(a) Comercial',        N'Activo', '2018-01-01'),
-    (N'Mensajero',                  N'Activo', '2018-01-01'),
-    (N'Coordinador de Sede',        N'Activo', '2018-01-01');
+    (N'Director Técnico',                    N'Activo', '2018-01-01'),  -- CargoId 1 — RolUsuario.DirectorTecnico
+    (N'Regente de Farmacia',                 N'Activo', '2018-01-01'),  -- CargoId 2 — RolUsuario.Regente
+    (N'Auxiliar de Farmacia',                N'Activo', '2018-01-01'),  -- CargoId 3 — RolUsuario.Operario
+    (N'Auxiliar Regente',                    N'Activo', '2018-01-01'),  -- CargoId 4 — RolUsuario.AuxiliarRegente
+    (N'Analista de Servicios Farmacéuticos', N'Activo', '2018-01-01'),  -- CargoId 5 — RolUsuario.Analista
+    (N'Direccionador',                       N'Activo', '2018-01-01');  -- CargoId 6 — RolUsuario.Direccionador
 
-DECLARE @CargoJefe   INT = (SELECT Id FROM dbo.Cargos WHERE Nombre = N'Jefe de Sede');
-DECLARE @CargoReg    INT = (SELECT Id FROM dbo.Cargos WHERE Nombre = N'Farmacéutico Regente');
-DECLARE @CargoAux    INT = (SELECT Id FROM dbo.Cargos WHERE Nombre = N'Auxiliar de Farmacia');
-DECLARE @CargoAdmin  INT = (SELECT Id FROM dbo.Cargos WHERE Nombre = N'Auxiliar Administrativo');
-DECLARE @CargoCaj    INT = (SELECT Id FROM dbo.Cargos WHERE Nombre = N'Cajero(a)');
-DECLARE @CargoAse    INT = (SELECT Id FROM dbo.Cargos WHERE Nombre = N'Asesor(a) Comercial');
-DECLARE @CargoMens   INT = (SELECT Id FROM dbo.Cargos WHERE Nombre = N'Mensajero');
-DECLARE @CargoCoor   INT = (SELECT Id FROM dbo.Cargos WHERE Nombre = N'Coordinador de Sede');
+DECLARE @CargoDT       INT = (SELECT Id FROM dbo.Cargos WHERE Nombre = N'Director Técnico');
+DECLARE @CargoReg      INT = (SELECT Id FROM dbo.Cargos WHERE Nombre = N'Regente de Farmacia');
+DECLARE @CargoAux      INT = (SELECT Id FROM dbo.Cargos WHERE Nombre = N'Auxiliar de Farmacia');
+DECLARE @CargoAuxReg   INT = (SELECT Id FROM dbo.Cargos WHERE Nombre = N'Auxiliar Regente');
+DECLARE @CargoAnalista INT = (SELECT Id FROM dbo.Cargos WHERE Nombre = N'Analista de Servicios Farmacéuticos');
+DECLARE @CargoDirecc   INT = (SELECT Id FROM dbo.Cargos WHERE Nombre = N'Direccionador');
 
 -- ============================================================
 -- 3. EMPRESAS TEMPORALES
@@ -182,9 +180,9 @@ DECLARE @PwdSalt VARBINARY(16) = 0xF2B483C7DAC61EC2CA7F1331C95D6800;
 
 -- ── Usuarios activos ──────────────────────────────────────────
 
--- U01. Carlos Rodríguez — Jefe (ya completó cambio de contraseña)
+-- U01. Carlos Rodríguez — DirectorTecnico (ya completó cambio de contraseña)
 INSERT INTO dbo.Usuarios (CorreoAcceso, PasswordHash, PasswordSalt, Rol, SedeId, DebecambiarPassword, Estado, FechaCreacion, UltimoAcceso)
-VALUES (N'carlos.rodriguez@yopmail.com', @PwdHash, @PwdSalt, N'Jefe', @SedeMed, 0, N'Activo', '2019-01-15', '2026-04-22');
+VALUES (N'carlos.rodriguez@yopmail.com', @PwdHash, @PwdSalt, N'DirectorTecnico', @SedeMed, 0, N'Activo', '2019-01-15', '2026-04-22');
 DECLARE @UJefe INT = SCOPE_IDENTITY();
 
 -- U02. Laura Sánchez — Regente Medellín
@@ -244,6 +242,21 @@ INSERT INTO dbo.Usuarios (CorreoAcceso, PasswordHash, PasswordSalt, Rol, SedeId,
 VALUES (N'ricardo.useche@yopmail.com', @PwdHash, @PwdSalt, N'Operario', @SedeMed, 1, N'Inactivo', '2021-08-01', '2024-09-30');
 DECLARE @URicardo INT = SCOPE_IDENTITY();
 
+-- U13. Sofía Gómez — Analista (Medellín, acceso total multi-sede)
+INSERT INTO dbo.Usuarios (CorreoAcceso, PasswordHash, PasswordSalt, Rol, SedeId, DebecambiarPassword, Estado, FechaCreacion)
+VALUES (N'sofia.gomez@yopmail.com', @PwdHash, @PwdSalt, N'Analista', @SedeMed, 0, N'Activo', '2024-01-01');
+DECLARE @UAnalista INT = SCOPE_IDENTITY();
+
+-- U14. Pedro Ramírez — Direccionador (Bogotá, solo información propia)
+INSERT INTO dbo.Usuarios (CorreoAcceso, PasswordHash, PasswordSalt, Rol, SedeId, DebecambiarPassword, Estado, FechaCreacion)
+VALUES (N'pedro.ramirez@yopmail.com', @PwdHash, @PwdSalt, N'Direccionador', @SedeBog, 0, N'Activo', '2024-03-01');
+DECLARE @UDirecc INT = SCOPE_IDENTITY();
+
+-- U15. Administrador de plataforma (sin EmpleadoId)
+INSERT INTO dbo.Usuarios (CorreoAcceso, PasswordHash, PasswordSalt, Rol, SedeId, DebecambiarPassword, Estado, FechaCreacion)
+VALUES (N'admin@yopmail.com', @PwdHash, @PwdSalt, N'Administrador', @SedeMed, 0, N'Activo', '2018-01-01');
+DECLARE @UAdmin INT = SCOPE_IDENTITY();
+
 -- ============================================================
 -- 6. EMPLEADOS
 --    Orden: Jefe → Regentes → subordinados activos → inactivos
@@ -259,7 +272,7 @@ INSERT INTO dbo.Empleados (
 VALUES (
     N'Carlos Alberto Rodríguez Mora', N'10234567', '1985-03-14', N'3104567890', N'carlos.rodriguez@yopmail.com',
     N'Cra 15 #45-32', N'Medellín', N'Antioquia', N'Profesional', N'Sura EPS', N'Sura ARL',
-    @SedeMed, @CargoJefe, @UJefe, NULL,
+    @SedeMed, @CargoDT, @UJefe, NULL,
     N'Directo', '2019-01-15', NULL, NULL, NULL,
     N'Activo', 30.0, '2019-01-15', @UJefe);
 DECLARE @EJefe INT = SCOPE_IDENTITY();
@@ -279,6 +292,7 @@ VALUES (
     N'Activo', 15.0, '2020-03-01', @UJefe);
 DECLARE @EReg1 INT = SCOPE_IDENTITY();
 
+
 -- E03. Hernán David Castillo Mejía — Regente Bogotá
 INSERT INTO dbo.Empleados (
     NombreCompleto, Cedula, FechaNacimiento, Telefono, CorreoElectronico,
@@ -289,7 +303,7 @@ INSERT INTO dbo.Empleados (
 VALUES (
     N'Hernán David Castillo Mejía', N'30456789', '1988-09-30', N'3156789012', N'hernan.castillo@yopmail.com',
     N'Av El Dorado #68C-61', N'Bogotá', N'Cundinamarca', N'Profesional', N'Compensar', N'Sura ARL',
-    @SedeBog, @CargoReg, @UReg2, @EJefe,
+    @SedeBog, @CargoReg, @UReg2, @EJefe,  -- ya usa @CargoReg = Regente de Farmacia
     N'Directo', '2020-06-15', NULL, NULL, NULL,
     N'Activo', 20.0, '2020-06-15', @UJefe);
 DECLARE @EReg2 INT = SCOPE_IDENTITY();
@@ -304,12 +318,12 @@ INSERT INTO dbo.Empleados (
 VALUES (
     N'Andrés Felipe Torres Ruiz', N'40567890', '1995-11-05', N'3178901234', N'andres.torres@yopmail.com',
     N'Cll 50 Sur #43-25', N'Medellín', N'Antioquia', N'Tecnico', N'Sura EPS', N'Sura ARL',
-    @SedeMed, @CargoAux, @UAux, @EReg1,
+    @SedeMed, @CargoAuxReg, @UAux, @EReg1,
     N'Directo', '2022-04-01', NULL, NULL, NULL,
     N'Activo', 0.0, '2022-04-01', @UJefe);
 DECLARE @EAndres INT = SCOPE_IDENTITY();
 
--- E05. Diana Marcela Vargas López — Operario Cajera (Medellín, bajo Laura)
+-- E05. Diana Marcela Vargas López — Operario / Auxiliar de Farmacia (Medellín, bajo Laura)
 INSERT INTO dbo.Empleados (
     NombreCompleto, Cedula, FechaNacimiento, Telefono, CorreoElectronico,
     Direccion, Ciudad, Departamento, NivelEscolaridad, Eps, Arl,
@@ -319,12 +333,12 @@ INSERT INTO dbo.Empleados (
 VALUES (
     N'Diana Marcela Vargas López', N'50678901', '1992-06-18', N'3190123456', N'diana.vargas@yopmail.com',
     N'Cra 50 #80-25', N'Medellín', N'Antioquia', N'Bachillerato', N'Famisanar', N'Positiva',
-    @SedeMed, @CargoCaj, @UDiana, @EReg1,
+    @SedeMed, @CargoAux, @UDiana, @EReg1,
     N'Directo', '2021-07-01', NULL, NULL, NULL,
     N'Activo', 10.0, '2021-07-01', @UJefe);
 DECLARE @EDiana INT = SCOPE_IDENTITY();
 
--- E06. Jorge Armando Herrera Quintana — Operario Asesor Comercial (Medellín, bajo Laura)
+-- E06. Jorge Armando Herrera Quintana — Operario / Auxiliar de Farmacia (Medellín, bajo Laura)
 --      Ingresó en 2026 para reemplazar a Valentina Ospina
 INSERT INTO dbo.Empleados (
     NombreCompleto, Cedula, FechaNacimiento, Telefono, CorreoElectronico,
@@ -335,12 +349,12 @@ INSERT INTO dbo.Empleados (
 VALUES (
     N'Jorge Armando Herrera Quintana', N'11223344', '1996-03-21', N'3016543210', N'jorge.herrera@yopmail.com',
     N'Cll 45 #72-30', N'Medellín', N'Antioquia', N'Tecnologico', N'Sura EPS', N'AXA Colpatria',
-    @SedeMed, @CargoAse, @UJorge, @EReg1,
+    @SedeMed, @CargoAux, @UJorge, @EReg1,
     N'Directo', '2026-02-03', NULL, NULL, NULL,
     N'Activo', 0.0, '2026-02-03', @UReg1);
 DECLARE @EJorge INT = SCOPE_IDENTITY();
 
--- E07. Natalia Bermúdez Salazar — Operario Administrativo (Bogotá, bajo Hernán)
+-- E07. Natalia Bermúdez Salazar — Operario / Auxiliar de Farmacia (Bogotá, bajo Hernán)
 INSERT INTO dbo.Empleados (
     NombreCompleto, Cedula, FechaNacimiento, Telefono, CorreoElectronico,
     Direccion, Ciudad, Departamento, NivelEscolaridad, Eps, Arl,
@@ -350,7 +364,7 @@ INSERT INTO dbo.Empleados (
 VALUES (
     N'Natalia Bermúdez Salazar', N'80901234', '1994-08-07', N'3256789012', N'natalia.bermudez@yopmail.com',
     N'Cll 9 #43B-10', N'Bogotá', N'Cundinamarca', N'Profesional', N'Coomeva', N'Bolívar ARL',
-    @SedeBog, @CargoAdmin, @UNata, @EReg2,
+    @SedeBog, @CargoAux, @UNata, @EReg2,
     N'Directo', '2021-02-15', NULL, NULL, NULL,
     N'Activo', 8.0, '2021-02-15', @UJefe);
 DECLARE @ENata INT = SCOPE_IDENTITY();
@@ -368,12 +382,12 @@ INSERT INTO dbo.Empleados (
 VALUES (
     N'Paula Andrea Quintero Ríos', N'91012345', '1997-05-20', N'3278901234', N'paula.quintero@yopmail.com',
     N'Cra 70 #34-15', N'Bogotá', N'Cundinamarca', N'Tecnico', N'Comfama', N'Sura ARL',
-    @SedeBog, @CargoCaj, @UPaula, @EReg2,
+    @SedeBog, @CargoAux, @UPaula, @EReg2,
     N'Directo', '2025-03-01', NULL, NULL, NULL,   -- Actualizado: ya no es Temporal
     N'Activo', 0.0, '2025-03-01', @UJefe, '2026-01-01', @UJefe);
 DECLARE @EPaula INT = SCOPE_IDENTITY();
 
--- E09. Camila Andrea Ríos Vargas — Operario Mensajera (Bogotá, bajo Hernán)
+-- E09. Camila Andrea Ríos Vargas — Operario / Auxiliar de Farmacia (Bogotá, bajo Hernán)
 --      Ingresó en 2025 para reemplazar a Sebastián Moreno
 INSERT INTO dbo.Empleados (
     NombreCompleto, Cedula, FechaNacimiento, Telefono, CorreoElectronico,
@@ -384,7 +398,7 @@ INSERT INTO dbo.Empleados (
 VALUES (
     N'Camila Andrea Ríos Vargas', N'99887766', '2000-11-12', N'3012223344', N'camila.rios@yopmail.com',
     N'Av Boyacá #12-45', N'Bogotá', N'Cundinamarca', N'Bachillerato', N'Sanitas', N'Positiva',
-    @SedeBog, @CargoMens, @UCamila, @EReg2,
+    @SedeBog, @CargoAux, @UCamila, @EReg2,
     N'Directo', '2025-07-01', NULL, NULL, NULL,
     N'Activo', 0.0, '2025-07-01', @UReg2);
 DECLARE @ECamila INT = SCOPE_IDENTITY();
@@ -403,7 +417,7 @@ INSERT INTO dbo.Empleados (
 VALUES (
     N'Valentina Ospina Restrepo', N'60789012', '1993-04-12', N'3212345678', N'valentina.ospina@yopmail.com',
     N'Cll 10 Sur #43-25', N'Medellín', N'Antioquia', N'Tecnologico', N'Comfama', N'AXA Colpatria',
-    @SedeMed, @CargoAse, @UVale, @EReg1,
+    @SedeMed, @CargoAux, @UVale, @EReg1,
     N'Temporal', '2024-01-15', @EmpAdecco, '2024-01-15', '2026-01-31',
     N'Inactivo', 5.0, '2024-01-15', @UJefe, '2026-01-31', @UJefe);
 DECLARE @EVale INT = SCOPE_IDENTITY();
@@ -419,7 +433,7 @@ INSERT INTO dbo.Empleados (
 VALUES (
     N'Sebastián Andrés Moreno Parra', N'70890123', '1998-12-03', N'3234567890', N'sebastian.moreno@yopmail.com',
     N'Cra 28 #12-60', N'Bogotá', N'Cundinamarca', N'Bachillerato', N'Sura EPS', N'Positiva',
-    @SedeBog, @CargoMens, @USeba, @EReg2,
+    @SedeBog, @CargoAux, @USeba, @EReg2,
     N'Directo', '2023-03-01', NULL, NULL, NULL,
     N'Inactivo', 5.0, '2023-03-01', @UJefe, '2025-06-30', @UJefe);
 DECLARE @ESeba INT = SCOPE_IDENTITY();
@@ -435,10 +449,40 @@ INSERT INTO dbo.Empleados (
 VALUES (
     N'Ricardo Enrique Useche Paredes', N'33445566', '1991-02-17', N'3005551234', N'ricardo.useche@yopmail.com',
     N'Cll 80 #45-20', N'Medellín', N'Antioquia', N'Bachillerato', N'Nueva EPS', N'Bolívar ARL',
-    @SedeMed, @CargoCaj, @URicardo, @EReg1,
+    @SedeMed, @CargoAux, @URicardo, @EReg1,
     N'Directo', '2021-08-01', NULL, NULL, NULL,
     N'Inactivo', 12.0, '2021-08-01', @UJefe, '2024-09-30', @UJefe);
 DECLARE @ERicardo INT = SCOPE_IDENTITY();
+
+-- E13. Sofía Isabel Gómez Luna — Analista (Medellín, acceso total multi-sede)
+INSERT INTO dbo.Empleados (
+    NombreCompleto, Cedula, FechaNacimiento, Telefono, CorreoElectronico,
+    Direccion, Ciudad, Departamento, NivelEscolaridad, Eps, Arl,
+    SedeId, CargoId, UsuarioId, JefeInmediatoId,
+    TipoVinculacion, FechaIngreso, EmpresaTemporalId, FechaInicioContrato, FechaFinContrato,
+    Estado, DiasVacacionesPrevios, FechaCreacion, CreadoPor)
+VALUES (
+    N'Sofía Isabel Gómez Luna', N'55666677', '1990-06-10', N'3150001111', N'sofia.gomez@yopmail.com',
+    N'Cll 33 #70-20', N'Medellín', N'Antioquia', N'Profesional', N'Comfama', N'Sura ARL',
+    @SedeMed, @CargoAnalista, @UAnalista, NULL,
+    N'Directo', '2024-01-01', NULL, '2024-01-01', NULL,
+    N'Activo', 0.0, '2024-01-01', @UJefe);
+DECLARE @EAnalista INT = SCOPE_IDENTITY();
+
+-- E14. Pedro Emilio Ramírez Vega — Direccionador (Bogotá, solo información propia)
+INSERT INTO dbo.Empleados (
+    NombreCompleto, Cedula, FechaNacimiento, Telefono, CorreoElectronico,
+    Direccion, Ciudad, Departamento, NivelEscolaridad, Eps, Arl,
+    SedeId, CargoId, UsuarioId, JefeInmediatoId,
+    TipoVinculacion, FechaIngreso, EmpresaTemporalId, FechaInicioContrato, FechaFinContrato,
+    Estado, DiasVacacionesPrevios, FechaCreacion, CreadoPor)
+VALUES (
+    N'Pedro Emilio Ramírez Vega', N'55443322', '1995-09-15', N'3150002222', N'pedro.ramirez@yopmail.com',
+    N'Cra 15 #30-10', N'Bogotá', N'Cundinamarca', N'Tecnologico', N'Sura EPS', N'Positiva',
+    @SedeBog, @CargoDirecc, @UDirecc, @EReg2,
+    N'Directo', '2024-03-01', NULL, '2024-03-01', NULL,
+    N'Activo', 0.0, '2024-03-01', @UJefe);
+DECLARE @EDirecc INT = SCOPE_IDENTITY();
 
 -- ============================================================
 -- 7. CONTACTOS DE EMERGENCIA
@@ -457,7 +501,10 @@ VALUES
     -- Inactivos también conservan contacto (historial perpetuo)
     (@EVale,    N'Luis Fernando Ospina',    N'3223456789'),
     (@ESeba,    N'Ana María Moreno',        N'3245678901'),
-    (@ERicardo, N'Gloria Useche',           N'3112223334');
+    (@ERicardo, N'Gloria Useche',           N'3112223334'),
+    -- Nuevos roles
+    (@EAnalista, N'Camilo Gómez',          N'3160003333'),
+    (@EDirecc,   N'Ana Ramírez',            N'3170004444');
 
 -- ============================================================
 -- 8. HISTORIAL DE DESVINCULACIONES (3)

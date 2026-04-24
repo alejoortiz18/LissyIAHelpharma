@@ -10,10 +10,11 @@ Ajustar únicamente la matriz de permisos para los cargos definidos en el sistem
 
 | Id | Nombre |
 |----|--------|
-| 1 | Jefe de Sede |
+| 1 | Jefe de Sede |analista de servicios farmaceuticos
 | 2 | Farmacéutico Regente |
 | 3 | Auxiliar de Farmacia |
 | 4 | Auxiliar Regente |
+| 5 | Administrador |
 
 ---
 

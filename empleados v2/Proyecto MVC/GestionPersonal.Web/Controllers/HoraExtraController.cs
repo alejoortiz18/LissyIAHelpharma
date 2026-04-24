@@ -27,7 +27,7 @@ public class HoraExtraController : Controller
         var sedeId = SesionHelper.GetSedeId(User);
         var empId  = SesionHelper.GetEmpleadoId(User);
 
-        var todos = rol == RolUsuario.Operario && empId.HasValue
+        var todos = (rol == RolUsuario.Operario || rol == RolUsuario.Direccionador) && empId.HasValue
             ? await _horaExtraService.ObtenerPorEmpleadoAsync(empId.Value)
             : await _horaExtraService.ObtenerPorSedeAsync(sedeId);
 
@@ -41,7 +41,7 @@ public class HoraExtraController : Controller
             fa.Month == DateTime.Today.Month && fa.Year == DateTime.Today.Year);
         var totalHoras = todos.Where(h => h.Estado == "Aprobado").Sum(h => h.CantidadHoras);
 
-        var empleados = rol != RolUsuario.Operario
+        var empleados = rol != RolUsuario.Operario && rol != RolUsuario.Direccionador
             ? await _empleadoService.ObtenerTodosAsync()
             : [];
 
@@ -81,7 +81,7 @@ public class HoraExtraController : Controller
         var rol   = SesionHelper.GetRol(User);
         var empId = SesionHelper.GetEmpleadoId(User);
 
-        if (rol == RolUsuario.Operario)
+        if (rol == RolUsuario.Operario || rol == RolUsuario.Direccionador)
             return Json(new { exito = false, mensaje = "Sin permisos." });
 
         if (rol == RolUsuario.Regente || rol == RolUsuario.AuxiliarRegente)
@@ -110,7 +110,7 @@ public class HoraExtraController : Controller
         var rol   = SesionHelper.GetRol(User);
         var empId = SesionHelper.GetEmpleadoId(User);
 
-        if (rol == RolUsuario.Operario)
+        if (rol == RolUsuario.Operario || rol == RolUsuario.Direccionador)
             return Json(new { exito = false, mensaje = "Sin permisos." });
 
         if (rol == RolUsuario.Regente || rol == RolUsuario.AuxiliarRegente)

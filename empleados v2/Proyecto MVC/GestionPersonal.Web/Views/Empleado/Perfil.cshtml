@@ -6,8 +6,9 @@
     var iniciales = string.Join("", e.NombreCompleto.Split(' ', StringSplitOptions.RemoveEmptyEntries)
                                     .Take(2).Select(w => char.ToUpper(w[0])));
     var rol       = SesionHelper.GetRol(User);
-    bool puedeEditar      = rol == RolUsuario.Jefe || rol == RolUsuario.Regente || rol == RolUsuario.AuxiliarRegente;
-    bool puedeDesvincular = rol == RolUsuario.Jefe || rol == RolUsuario.Administrador;
+    bool puedeEditar      = rol == RolUsuario.DirectorTecnico || rol == RolUsuario.Regente || rol == RolUsuario.AuxiliarRegente
+                         || rol == RolUsuario.Administrador || rol == RolUsuario.Analista;
+    bool puedeDesvincular = rol == RolUsuario.DirectorTecnico || rol == RolUsuario.Administrador || rol == RolUsuario.Analista;
     bool esTemporal  = e.TipoVinculacion == "Temporal";
     bool estaInactivo = e.Estado == "Inactivo";
     var currentUsuarioId  = SesionHelper.GetUsuarioId(User);

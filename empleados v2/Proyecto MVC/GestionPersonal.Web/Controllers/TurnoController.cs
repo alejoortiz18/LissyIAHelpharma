@@ -28,8 +28,8 @@ public class TurnoController : Controller
         var empId  = SesionHelper.GetEmpleadoId(User);
         var sedeId = SesionHelper.GetSedeId(User);
 
-        // Operario no tiene acceso a la vista de turnos
-        if (rol == RolUsuario.Operario)
+        // Operario y Direccionador no tienen acceso a la vista de turnos
+        if (rol == RolUsuario.Operario || rol == RolUsuario.Direccionador)
             return Forbid();
 
         var plantillas   = await _turnoService.ObtenerPlantillasActivasAsync();
@@ -138,7 +138,7 @@ public class TurnoController : Controller
         var rol   = SesionHelper.GetRol(User);
         var empId = SesionHelper.GetEmpleadoId(User);
 
-        if (rol == RolUsuario.Operario)
+        if (rol == RolUsuario.Operario || rol == RolUsuario.Direccionador)
             return Json(new { exito = false, mensaje = "No tienes permisos para asignar turnos." });
 
         if (rol == RolUsuario.Regente || rol == RolUsuario.AuxiliarRegente)

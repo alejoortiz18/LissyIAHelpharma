@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace GestionPersonal.Web.Controllers;
 
-[Authorize(Roles = "Jefe,Administrador")]
+[Authorize(Roles = "DirectorTecnico,Administrador")]
 public class CatalogosController : Controller
 {
     private readonly ICatalogoService _catalogoService;

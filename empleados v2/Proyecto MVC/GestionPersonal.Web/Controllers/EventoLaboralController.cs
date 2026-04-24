@@ -33,8 +33,8 @@ public class EventoLaboralController : Controller
         var sedeId = SesionHelper.GetSedeId(User);
         var empId  = SesionHelper.GetEmpleadoId(User);
 
-        // Operario no tiene acceso a eventos laborales
-        if (rol == RolUsuario.Operario)
+        // Operario y Direccionador no tienen acceso a eventos laborales
+        if (rol == RolUsuario.Operario || rol == RolUsuario.Direccionador)
             return Forbid();
 
         // Sequential awaits — EF Core DbContext is not thread-safe; Task.WhenAll is not allowed
@@ -44,7 +44,7 @@ public class EventoLaboralController : Controller
         if ((rol == RolUsuario.Regente || rol == RolUsuario.AuxiliarRegente) && empId.HasValue)
             todos = todos.Where(e => e.EmpleadoId == empId.Value || e.JefeInmediatoId == empId.Value).ToList();
 
-        var empleadosList = rol == RolUsuario.Jefe || rol == RolUsuario.Administrador
+        var empleadosList = (rol == RolUsuario.DirectorTecnico || rol == RolUsuario.Administrador || rol == RolUsuario.Analista)
             ? await _empleadoService.ObtenerTodosAsync()
             : await _empleadoService.ObtenerPorSedeAsync(sedeId);
 
@@ -98,7 +98,7 @@ public class EventoLaboralController : Controller
         var rol    = SesionHelper.GetRol(User);
         var sedeId = SesionHelper.GetSedeId(User);
 
-        var todos = rol == RolUsuario.Jefe || rol == RolUsuario.Administrador
+        var todos = (rol == RolUsuario.DirectorTecnico || rol == RolUsuario.Administrador || rol == RolUsuario.Analista)
             ? await _empleadoService.ObtenerTodosAsync()
             : await _empleadoService.ObtenerPorSedeAsync(sedeId);
 

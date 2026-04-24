@@ -44,8 +44,8 @@ public class EmpleadoController : Controller
         var rol    = SesionHelper.GetRol(User);
         var miSede = SesionHelper.GetSedeId(User);
 
-        // Operario solo ve su perfil
-        if (rol == RolUsuario.Operario)
+        // Operario y Direccionador solo ven su propio perfil
+        if (rol == RolUsuario.Operario || rol == RolUsuario.Direccionador)
         {
             var empId = SesionHelper.GetEmpleadoId(User);
             if (empId.HasValue)
@@ -54,7 +54,8 @@ public class EmpleadoController : Controller
         }
 
         IReadOnlyList<EmpleadoListaDto> todos;
-        if (rol == RolUsuario.Jefe || rol == RolUsuario.Administrador)
+        // Administrador y Analista: acceso total sin filtro de sede
+        if (rol == RolUsuario.Administrador || rol == RolUsuario.Analista)
             todos = await _empleadoService.ObtenerTodosAsync();
         else
             todos = await _empleadoService.ObtenerPorSedeAsync(miSede);
@@ -117,9 +118,8 @@ public class EmpleadoController : Controller
     public async Task<IActionResult> Nuevo()
     {
         var rol = SesionHelper.GetRol(User);
-        if (rol == RolUsuario.Operario)
-            return Forbid();
-        if (rol == RolUsuario.Regente || rol == RolUsuario.AuxiliarRegente)
+        if (rol == RolUsuario.Operario || rol == RolUsuario.Direccionador
+            || rol == RolUsuario.Regente || rol == RolUsuario.AuxiliarRegente)
             return Forbid();
 
         var vm = await ConstruirNuevoVm(new CrearEmpleadoDto());
@@ -136,9 +136,8 @@ public class EmpleadoController : Controller
     public async Task<IActionResult> Crear(NuevoEmpleadoViewModel vm)
     {
         var rol = SesionHelper.GetRol(User);
-        if (rol == RolUsuario.Operario)
-            return Forbid();
-        if (rol == RolUsuario.Regente || rol == RolUsuario.AuxiliarRegente)
+        if (rol == RolUsuario.Operario || rol == RolUsuario.Direccionador
+            || rol == RolUsuario.Regente || rol == RolUsuario.AuxiliarRegente)
             return Forbid();
 
         if (!ModelState.IsValid)
@@ -244,8 +243,8 @@ public class EmpleadoController : Controller
         var empId   = SesionHelper.GetEmpleadoId(User);
         var miSede  = SesionHelper.GetSedeId(User);
 
-        // Operario solo puede ver su propio perfil
-        if (rol == RolUsuario.Operario && empId.HasValue && empId.Value != id)
+        // Operario y Direccionador solo pueden ver su propio perfil
+        if ((rol == RolUsuario.Operario || rol == RolUsuario.Direccionador) && empId.HasValue && empId.Value != id)
             return Forbid();
 
         // Regente / AuxiliarRegente: solo puede ver su perfil o el de subordinados
@@ -357,7 +356,8 @@ public class EmpleadoController : Controller
     public async Task<IActionResult> Desvincular(int id)
     {
         var rolCheck = SesionHelper.GetRol(User);
-        if (rolCheck != RolUsuario.Jefe && rolCheck != RolUsuario.Administrador)
+        if (rolCheck != RolUsuario.DirectorTecnico && rolCheck != RolUsuario.Administrador
+            && rolCheck != RolUsuario.Analista)
             return Forbid();
 
         var empResult = await _empleadoService.ObtenerPerfilAsync(id);
@@ -384,7 +384,8 @@ public class EmpleadoController : Controller
     public async Task<IActionResult> Desvincular(DesvincularEmpleadoViewModel vm)
     {
         var rol = SesionHelper.GetRol(User);
-        if (rol != RolUsuario.Jefe && rol != RolUsuario.Administrador)
+        if (rol != RolUsuario.DirectorTecnico && rol != RolUsuario.Administrador
+            && rol != RolUsuario.Analista)
             return Forbid();
 
         if (!ModelState.IsValid)
@@ -417,7 +418,7 @@ public class EmpleadoController : Controller
         var cargos    = await _catalogoService.ObtenerCargosActivosAsync();
         var empresas  = await _catalogoService.ObtenerEmpresasTemporalesActivasAsync();
         var todosEmps = await _empleadoService.ObtenerTodosAsync();
-        var jefes     = todosEmps.Where(e => e.Rol == RolUsuario.Jefe.ToString()
+        var jefes     = todosEmps.Where(e => e.Rol == RolUsuario.DirectorTecnico.ToString()
                                           && e.Estado == "Activo").ToList();
         return new NuevoEmpleadoViewModel
         {
@@ -435,7 +436,7 @@ public class EmpleadoController : Controller
         var cargos    = await _catalogoService.ObtenerCargosActivosAsync();
         var empresas  = await _catalogoService.ObtenerEmpresasTemporalesActivasAsync();
         var todosEmps = await _empleadoService.ObtenerTodosAsync();
-        var jefes     = todosEmps.Where(e => e.Rol == RolUsuario.Jefe.ToString()
+        var jefes     = todosEmps.Where(e => e.Rol == RolUsuario.DirectorTecnico.ToString()
                                           && e.Estado == "Activo").ToList();
         return new EditarEmpleadoViewModel
         {

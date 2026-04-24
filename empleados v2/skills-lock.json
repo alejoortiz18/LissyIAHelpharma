@@ -40,6 +40,21 @@
       "source": "microsoft/playwright-cli",
       "sourceType": "github",
       "computedHash": null
+    },
+    "email-dotnet-aspnetcore": {
+      "source": "custom",
+      "sourceType": "local",
+      "computedHash": null
+    },
+    "owasp-top-10": {
+      "source": "microsoft/hve-core",
+      "sourceType": "github",
+      "computedHash": null
+    },
+    "improve-codebase-architecture": {
+      "source": "mattpocock/skills",
+      "sourceType": "github",
+      "computedHash": null
     }
   }
 }

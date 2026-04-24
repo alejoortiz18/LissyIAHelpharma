@@ -3,7 +3,7 @@
     ViewData["Title"] = "Empleados";
     ViewData["BreadcrumbCurrent"] = "Empleados";
     var rol = SesionHelper.GetRol(User);
-    bool puedeCrear = rol == RolUsuario.Jefe || rol == RolUsuario.Regente || rol == RolUsuario.AuxiliarRegente;
+    bool puedeCrear = rol == RolUsuario.DirectorTecnico || rol == RolUsuario.Administrador || rol == RolUsuario.Analista;
 }
 
 <div class="page-header">

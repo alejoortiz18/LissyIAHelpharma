@@ -6,7 +6,8 @@
     ViewData["BreadcrumbCurrent"] = "Horas extras";
     var rol          = SesionHelper.GetRol(User);
     var empId        = SesionHelper.GetEmpleadoId(User);
-    bool puedeAprobar = rol == RolUsuario.Jefe || rol == RolUsuario.Regente || rol == RolUsuario.AuxiliarRegente;
+    bool puedeAprobar = rol == RolUsuario.DirectorTecnico || rol == RolUsuario.Regente || rol == RolUsuario.AuxiliarRegente
+                     || rol == RolUsuario.Administrador || rol == RolUsuario.Analista;
     var antiforgery  = ViewContext.HttpContext.RequestServices
         .GetRequiredService<Microsoft.AspNetCore.Antiforgery.IAntiforgery>()
         .GetAndStoreTokens(ViewContext.HttpContext).RequestToken;

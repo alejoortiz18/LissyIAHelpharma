@@ -66,6 +66,21 @@ def reset_estado_db():
         f"WHERE CorreoAcceso='natalia.bermudez@yopmail.com'; "
         f"UPDATE dbo.TokensRecuperacion SET Usado=0 "
         f"WHERE Token='TK1H6K9M2N'; "
+        f"UPDATE dbo.Usuarios SET "
+        f"PasswordHash={_HASH_USUARIO1}, "
+        f"PasswordSalt={_SALT_USUARIO1}, "
+        f"DebecambiarPassword=0 "
+        f"WHERE CorreoAcceso='sofia.gomez@yopmail.com'; "
+        f"UPDATE dbo.Usuarios SET "
+        f"PasswordHash={_HASH_USUARIO1}, "
+        f"PasswordSalt={_SALT_USUARIO1}, "
+        f"DebecambiarPassword=0 "
+        f"WHERE CorreoAcceso='pedro.ramirez@yopmail.com'; "
+        f"UPDATE dbo.Usuarios SET "
+        f"PasswordHash={_HASH_USUARIO1}, "
+        f"PasswordSalt={_SALT_USUARIO1}, "
+        f"DebecambiarPassword=0 "
+        f"WHERE CorreoAcceso='admin@yopmail.com'; "
         f"UPDATE dbo.HorasExtras SET Estado=N'Pendiente', "
         f"AprobadoRechazadoPor=NULL, FechaAprobacion=NULL, MotivoRechazo=NULL "
         f"WHERE Estado IN (N'Aprobado', N'Rechazado') "
@@ -75,7 +90,12 @@ def reset_estado_db():
         f"  WHERE u.CorreoAcceso IN ("
         f"    'andres.torres@yopmail.com', 'diana.vargas@yopmail.com'"
         f"  )"
-        f");"
+        f"); "
+        # Limpiar eventos insertados por TC-PR-64 (Analista) y TC-PR-90 (Administrador)
+        # Para garantizar idempotencia en re-ejecuciones consecutivas
+        f"DELETE FROM dbo.EventosLaborales "
+        f"WHERE EmpleadoId = 1 AND TipoEvento = 'Permiso' "
+        f"AND FechaInicio IN ('2026-07-01', '2026-08-01');"
     )
     sql_file = os.path.join(tempfile.gettempdir(), "reset_test_usuarios.sql")
     with open(sql_file, "w", encoding="utf-8") as f:

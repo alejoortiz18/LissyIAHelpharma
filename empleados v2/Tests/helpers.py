@@ -66,15 +66,29 @@ def elemento_sidebar_visible(page, texto: str) -> bool:
 
 def obtener_token_antiforgery(page) -> str:
     """Obtiene el token antiforgery de la página actual.
-    Primero intenta extraerlo del HTML fuente (const TOKEN = '...'),
-    luego busca un hidden input como fallback."""
+    Busca en múltiples ubicaciones: const TOKEN, meta tag, hidden input, o inline JS."""
     content = page.content()
+    # Patrón 1: const TOKEN = '...'
     match = re.search(r"const TOKEN\s*=\s*'([^']+)'", content)
     if match:
         return match.group(1)
-    return page.evaluate(
+    # Patrón 2: meta tag <meta name="__RequestVerificationToken" content="...">
+    meta_val = page.evaluate(
+        "() => { var m = document.querySelector('meta[name=\"__RequestVerificationToken\"]'); return m ? m.getAttribute('content') : ''; }"
+    )
+    if meta_val:
+        return meta_val
+    # Patrón 3: hidden input
+    input_val = page.evaluate(
         "() => { var el = document.querySelector('input[name=\"__RequestVerificationToken\"]'); return el ? el.value : ''; }"
     )
+    if input_val:
+        return input_val
+    # Patrón 4: Razor inline JS: return input ? input.value : 'TOKEN';
+    match2 = re.search(r"return input \? input\.value : '([^']+)'", content)
+    if match2:
+        return match2.group(1)
+    return ""
 
 
 def llamar_ajax_post(page, ruta: str, datos: dict) -> dict:

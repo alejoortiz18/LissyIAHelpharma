@@ -6,7 +6,8 @@
     ViewData["Title"] = "Horarios y turnos";
     ViewData["BreadcrumbCurrent"] = "Horarios";
     var rol = SesionHelper.GetRol(User);
-    bool puedeGestionar = rol == RolUsuario.Jefe || rol == RolUsuario.Regente || rol == RolUsuario.AuxiliarRegente;
+    bool puedeGestionar = rol == RolUsuario.DirectorTecnico || rol == RolUsuario.Regente || rol == RolUsuario.AuxiliarRegente
+                       || rol == RolUsuario.Administrador || rol == RolUsuario.Analista;
     var antiforgery = ViewContext.HttpContext.RequestServices
         .GetRequiredService<Microsoft.AspNetCore.Antiforgery.IAntiforgery>()
         .GetAndStoreTokens(ViewContext.HttpContext).RequestToken;
