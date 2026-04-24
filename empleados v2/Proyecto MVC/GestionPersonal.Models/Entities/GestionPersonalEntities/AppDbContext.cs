@@ -29,6 +29,9 @@ public class AppDbContext : DbContext
     public DbSet<EventoLaboral> EventosLaborales => Set<EventoLaboral>();
     public DbSet<HoraExtra> HorasExtras => Set<HoraExtra>();
 
+    // ── Auditoría de notificaciones ─────────────────────────
+    public DbSet<RegistroNotificacion> RegistroNotificaciones => Set<RegistroNotificacion>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         // Carga todas las IEntityTypeConfiguration<T> del mismo ensamblado

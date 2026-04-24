@@ -2,6 +2,7 @@ using AutoMapper;
 using GestionPersonal.Application.AccessDependency;
 using GestionPersonal.Helpers.AccessDependency;
 using GestionPersonal.Infrastructure.AccessDependency;
+using GestionPersonal.Models.Models.Email;
 using GestionPersonal.Web.AutoMapper;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
@@ -15,6 +16,7 @@ public static class DependencyContainer
     public static IServiceCollection DependencyInjection(
         this IServiceCollection services, IConfiguration configuration)
     {
+        services.Configure<EmailSettings>(configuration.GetSection(EmailSettings.SectionName));
         services.AddInfrastructure(configuration);
         services.AddApplication();
         services.AddHelpers();

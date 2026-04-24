@@ -1,8 +1,21 @@
 namespace GestionPersonal.Helpers.Email;
 
+/// <summary>
+/// Contrato de transporte de correo. Solo responsable del envío.
+/// No conoce plantillas ni lógica de negocio.
+/// </summary>
 public interface IEmailHelper
 {
-    Task EnviarCorreoAsync(string destinatario, string asunto, string cuerpo);
-    Task EnviarCorreoConCodigoAsync(string destinatario, string asunto, string plantilla, string codigo);
-    Task EnviarCorreoNuevoUsuarioAsync(string destinatario, string asunto, string plantilla, string correo, string contrasenaTemp);
+    Task EnviarAsync(
+        string destinatario,
+        string asunto,
+        string cuerpoHtml,
+        CancellationToken ct = default);
+
+    Task EnviarConCopiaAsync(
+        string destinatario,
+        string copia,
+        string asunto,
+        string cuerpoHtml,
+        CancellationToken ct = default);
 }

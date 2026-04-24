@@ -17,6 +17,7 @@ public static class ApplicationAccessDependency
         services.AddScoped<IDashboardService, DashboardService>();
         services.AddScoped<ICatalogoService, CatalogoService>();
         services.AddScoped<IHistorialService, HistorialService>();
+        services.AddScoped<INotificationService, NotificationService>();
 
         return services;
     }

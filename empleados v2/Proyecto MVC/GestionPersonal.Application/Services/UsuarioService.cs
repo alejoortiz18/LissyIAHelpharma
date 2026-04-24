@@ -1,8 +1,7 @@
 using GestionPersonal.Application.Interfaces;
-using GestionPersonal.Constants.Messages;
 using GestionPersonal.Domain.Interfaces;
-using GestionPersonal.Helpers.Email;
 using GestionPersonal.Helpers.Security;
+using GestionPersonal.Models.DTOs.Notificaciones;
 using GestionPersonal.Models.Entities.GestionPersonalEntities;
 using GestionPersonal.Models.Enums;
 using GestionPersonal.Models.Models;
@@ -11,13 +10,13 @@ namespace GestionPersonal.Application.Services;
 
 public class UsuarioService : IUsuarioService
 {
-    private readonly IUsuarioRepository _repo;
-    private readonly IEmailHelper _emailHelper;
+    private readonly IUsuarioRepository    _repo;
+    private readonly INotificationService  _notificationService;
 
-    public UsuarioService(IUsuarioRepository repo, IEmailHelper emailHelper)
+    public UsuarioService(IUsuarioRepository repo, INotificationService notificationService)
     {
-        _repo         = repo;
-        _emailHelper  = emailHelper;
+        _repo                = repo;
+        _notificationService = notificationService;
     }
 
     public async Task<ResultadoOperacion<int>> CrearParaEmpleadoAsync(
@@ -44,13 +43,14 @@ public class UsuarioService : IUsuarioService
         _repo.Agregar(usuario);
         await _repo.GuardarCambiosAsync(ct);
 
-        // Enviar correo de bienvenida
-        await _emailHelper.EnviarCorreoNuevoUsuarioAsync(
-            correo,
-            EmailConstant.AsuntoUsuarioNuevo,
-            EmailConstant.CuerpoCrearUsuario,
-            correo,
-            contrasenaTemp);
+        // Enviar correo de bienvenida (NO se envía contraseña — OWASP A02)
+        await _notificationService.NotificarNuevoUsuarioAsync(
+            new NotificacionNuevoUsuarioDto(
+                DestinatarioCorreo  : correo,
+                NombreEmpleado      : correo,
+                CorreoAcceso        : correo,
+                NombreCreadorEvento : "Sistema"),
+            ct);
 
         return ResultadoOperacion<int>.Ok(usuario.Id);
     }

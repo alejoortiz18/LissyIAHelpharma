@@ -19,6 +19,9 @@ def pytest_configure(config):
     config.addinivalue_line(
         "markers", "recuperacion: pruebas del flujo de recuperación de contraseña"
     )
+    config.addinivalue_line(
+        "markers", "yopmail: pruebas que requieren verificación en yopmail.com"
+    )
 
 
 @pytest.fixture(scope="session", autouse=True)

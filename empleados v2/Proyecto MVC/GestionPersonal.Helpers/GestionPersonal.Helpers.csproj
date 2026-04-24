@@ -2,11 +2,15 @@
 
   <ItemGroup>
     <ProjectReference Include="..\GestionPersonal.Constants\GestionPersonal.Constants.csproj" />
+    <ProjectReference Include="..\GestionPersonal.Models\GestionPersonal.Models.csproj" />
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="MailKit"  Version="4.*" />
+    <PackageReference Include="MimeKit"  Version="4.*" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="10.0.7" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.7" />
+    <PackageReference Include="Microsoft.Extensions.Options" Version="10.0.7" />
   </ItemGroup>
 
   <PropertyGroup>

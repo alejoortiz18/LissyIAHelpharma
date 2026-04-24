@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <ItemGroup>
     <ProjectReference Include="..\GestionPersonal.Application\GestionPersonal.Application.csproj" />
@@ -21,6 +21,7 @@
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>999a68a8-11d5-4535-ab2f-2c3f3193a37f</UserSecretsId>
   </PropertyGroup>
 
 </Project>

@@ -1,10 +1,14 @@
+using System.Security.Cryptography;
+using System.Text;
 using GestionPersonal.Application.Interfaces;
 using GestionPersonal.Constants.Messages;
 using GestionPersonal.Domain.Interfaces;
-using GestionPersonal.Helpers.Email;
 using GestionPersonal.Helpers.Security;
 using GestionPersonal.Models.DTOs.Cuenta;
+using GestionPersonal.Models.DTOs.Notificaciones;
 using GestionPersonal.Models.Models;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace GestionPersonal.Application.Services;
 
@@ -13,18 +17,18 @@ public class CuentaService : ICuentaService
     private readonly IUsuarioRepository _usuarioRepo;
     private readonly ITokenRecuperacionRepository _tokenRepo;
     private readonly ICodigoHelper _codigoHelper;
-    private readonly IEmailHelper _emailHelper;
+    private readonly INotificationService _notificationService;
 
     public CuentaService(
         IUsuarioRepository usuarioRepo,
         ITokenRecuperacionRepository tokenRepo,
         ICodigoHelper codigoHelper,
-        IEmailHelper emailHelper)
+        INotificationService notificationService)
     {
-        _usuarioRepo  = usuarioRepo;
-        _tokenRepo    = tokenRepo;
-        _codigoHelper = codigoHelper;
-        _emailHelper  = emailHelper;
+        _usuarioRepo         = usuarioRepo;
+        _tokenRepo           = tokenRepo;
+        _codigoHelper        = codigoHelper;
+        _notificationService = notificationService;
     }
 
     public async Task<ResultadoOperacion<UsuarioSesionDto>> LoginAsync(LoginDto dto, CancellationToken ct = default)
@@ -64,11 +68,12 @@ public class CuentaService : ICuentaService
         if (usuario is null)
             return ResultadoOperacion.Ok();
 
+        var codigoPlano = GenerarCodigoSeguro();
         var token = new GestionPersonal.Models.Entities.GestionPersonalEntities.TokenRecuperacion
         {
             UsuarioId       = usuario.Id,
-            Token           = _codigoHelper.GenerarCodigoUnico(),
-            FechaExpiracion = DateTime.UtcNow.AddHours(1),
+            Token           = ComputarHashSha256(codigoPlano),
+            FechaExpiracion = DateTime.UtcNow.AddMinutes(30),
             Usado           = false,
             FechaCreacion   = DateTime.UtcNow
         };
@@ -76,26 +81,19 @@ public class CuentaService : ICuentaService
         _tokenRepo.Agregar(token);
         await _tokenRepo.GuardarCambiosAsync(ct);
 
-        try
-        {
-            await _emailHelper.EnviarCorreoConCodigoAsync(
-                dto.Correo,
-                EmailConstant.AsuntoRestablecerContrasena,
-                EmailConstant.CuerpoRestablecerContrasena,
-                token.Token);
-        }
-        catch
-        {
-            // El token ya fue creado. Si el SMTP falla, el usuario puede solicitar de nuevo.
-            // No se interrumpe el flujo ni se revela el error al usuario.
-        }
+        await _notificationService.NotificarRecuperacionContrasenaAsync(
+            new NotificacionRecuperacionDto(
+                DestinatarioCorreo : dto.Correo,
+                NombreEmpleado     : usuario.CorreoAcceso,
+                Codigo             : codigoPlano),
+            ct);
 
         return ResultadoOperacion.Ok();
     }
 
     public async Task<ResultadoOperacion> RestablecerPasswordAsync(RestablecerPasswordDto dto, CancellationToken ct = default)
     {
-        var tokenEntidad = await _tokenRepo.ObtenerTokenActivoAsync(dto.Token, ct);
+        var tokenEntidad = await _tokenRepo.ObtenerTokenActivoAsync(ComputarHashSha256(dto.Token), ct);
 
         if (tokenEntidad is null)
             return ResultadoOperacion.Fail("El código es inválido o ha expirado.");
@@ -115,6 +113,12 @@ public class CuentaService : ICuentaService
         _usuarioRepo.Actualizar(usuario);
         _tokenRepo.Actualizar(tokenEntidad);
         await _usuarioRepo.GuardarCambiosAsync(ct);
+
+        await _notificationService.NotificarCambioContrasenaExitosoAsync(
+            new NotificacionCambioContrasenaDto(
+                DestinatarioCorreo : usuario.CorreoAcceso,
+                NombreEmpleado     : usuario.Empleado?.NombreCompleto ?? usuario.CorreoAcceso
+            ), ct);
 
         return ResultadoOperacion.Ok("Contraseña restablecida exitosamente.");
     }
@@ -138,5 +142,18 @@ public class CuentaService : ICuentaService
         await _usuarioRepo.GuardarCambiosAsync(ct);
 
         return ResultadoOperacion.Ok("Contraseña actualizada exitosamente.");
+    }
+
+    private static string GenerarCodigoSeguro()
+    {
+        const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+        var bytes = RandomNumberGenerator.GetBytes(12);
+        return new string(bytes.Select(b => chars[b % chars.Length]).ToArray());
+    }
+
+    private static string ComputarHashSha256(string entrada)
+    {
+        var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(entrada));
+        return Convert.ToHexString(bytes).ToLowerInvariant();
     }
 }

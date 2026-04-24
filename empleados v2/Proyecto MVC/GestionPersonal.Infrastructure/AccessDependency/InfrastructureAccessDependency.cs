@@ -27,6 +27,7 @@ public static class InfrastructureAccessDependency
         services.AddScoped<ITurnoRepository, TurnoRepository>();
         services.AddScoped<ICatalogoRepository, CatalogoRepository>();
         services.AddScoped<IHistorialDesvinculacionRepository, HistorialDesvinculacionRepository>();
+        services.AddScoped<INotificacionRepository, NotificacionRepository>();
 
         return services;
     }
