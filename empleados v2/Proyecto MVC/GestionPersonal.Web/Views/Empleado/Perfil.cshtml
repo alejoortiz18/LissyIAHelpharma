@@ -217,16 +217,40 @@
   {
     <div class="tab-panel is-active" role="tabpanel" tabindex="0">
 
-      <form method="get" asp-action="Perfil" asp-route-id="@e.Id" style="display:flex;gap:var(--sp-3);align-items:center;flex-wrap:wrap;margin-bottom:var(--sp-4)">
+      <form method="get" asp-action="Perfil" asp-route-id="@e.Id"
+            class="filter-bar" style="align-items:flex-end"
+            role="search" aria-label="Filtrar eventos por período">
         <input type="hidden" name="tab" value="historial" />
-        <label style="display:flex;align-items:center;gap:var(--sp-2);font-size:.8125rem">
-          Desde <input type="date" name="desde" value="@Model.FiltroDesde" style="font-size:.8125rem" />
-        </label>
-        <label style="display:flex;align-items:center;gap:var(--sp-2);font-size:.8125rem">
-          Hasta <input type="date" name="hasta" value="@Model.FiltroHasta" style="font-size:.8125rem" />
-        </label>
-        <button type="submit" class="btn btn-sm btn-primary">Filtrar</button>
-        <a asp-action="Perfil" asp-route-id="@e.Id" asp-route-tab="historial" class="btn btn-sm btn-ghost">Limpiar</a>
+
+        <div class="form-group" style="margin-bottom:0;flex:1;min-width:8rem;max-width:13rem">
+          <label class="form-label" for="filtro-desde">Desde</label>
+          <input type="date" id="filtro-desde" name="desde"
+                 class="form-input" value="@Model.FiltroDesde"
+                 autocomplete="off" />
+        </div>
+
+        <div class="form-group" style="margin-bottom:0;flex:1;min-width:8rem;max-width:13rem">
+          <label class="form-label" for="filtro-hasta">Hasta</label>
+          <input type="date" id="filtro-hasta" name="hasta"
+                 class="form-input" value="@Model.FiltroHasta"
+                 autocomplete="off" />
+        </div>
+
+        <div style="display:flex;gap:var(--sp-2)">
+          <button type="submit" class="btn btn-secondary btn-sm">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
+                 fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                 stroke-linejoin="round" aria-hidden="true">
+              <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
+            </svg>
+            Filtrar
+          </button>
+          @if (!string.IsNullOrEmpty(Model.FiltroDesde) || !string.IsNullOrEmpty(Model.FiltroHasta))
+          {
+            <a asp-action="Perfil" asp-route-id="@e.Id" asp-route-tab="historial"
+               class="btn btn-ghost btn-sm">Limpiar</a>
+          }
+        </div>
       </form>
 
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--sp-5)">
