@@ -236,15 +236,19 @@
       @if (Model.ResumenEventos.Any())
       {
         <div style="margin-bottom:var(--sp-5)">
-          <table class="table" style="font-size:.8125rem">
-            <thead><tr><th>Tipo de evento</th><th>Total días</th></tr></thead>
-            <tbody>
-              @foreach (var r in Model.ResumenEventos)
-              {
-                <tr><td>@r.TipoEvento</td><td class="tabular-nums">@r.TotalDias</td></tr>
-              }
-            </tbody>
-          </table>
+          <div class="table-wrapper">
+            <div class="table-scroll">
+              <table>
+                <thead><tr><th>Tipo de evento</th><th>Total días</th></tr></thead>
+                <tbody>
+                  @foreach (var r in Model.ResumenEventos)
+                  {
+                    <tr><td>@r.TipoEvento</td><td class="tabular-nums">@r.TotalDias</td></tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
       }
 
@@ -262,30 +266,32 @@
       }
       else
       {
-        <div class="table-scroll">
-          <table>
-            <thead>
-              <tr>
-                <th>Tipo</th>
-                <th>Período</th>
-                <th>Días</th>
-                <th>Autorizado por</th>
-                <th>Estado</th>
-              </tr>
-            </thead>
-            <tbody>
-              @foreach (var ev in Model.Eventos)
-              {
+        <div class="table-wrapper">
+          <div class="table-scroll">
+            <table>
+              <thead>
                 <tr>
-                  <td>@ev.TipoEvento</td>
-                  <td class="tabular-nums" style="font-size:.8125rem">@ev.FechaInicio — @ev.FechaFin</td>
-                  <td class="tabular-nums">@ev.DiasSolicitados</td>
-                  <td>@ev.AutorizadoPor</td>
-                  <td><span class="badge">@ev.Estado</span></td>
+                  <th>Tipo</th>
+                  <th>Período</th>
+                  <th>Días</th>
+                  <th>Autorizado por</th>
+                  <th>Estado</th>
                 </tr>
-              }
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                @foreach (var ev in Model.Eventos)
+                {
+                  <tr>
+                    <td>@ev.TipoEvento</td>
+                    <td class="tabular-nums" style="font-size:.8125rem">@ev.FechaInicio — @ev.FechaFin</td>
+                    <td class="tabular-nums">@ev.DiasSolicitados</td>
+                    <td>@ev.AutorizadoPor</td>
+                    <td><span class="badge">@ev.Estado</span></td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
         </div>
       }
 
@@ -306,28 +312,30 @@
       }
       else
       {
-        <div class="table-scroll">
-          <table>
-            <thead>
-              <tr>
-                <th>Fecha</th>
-                <th>Horas</th>
-                <th>Motivo</th>
-                <th>Estado</th>
-              </tr>
-            </thead>
-            <tbody>
-              @foreach (var h in Model.HorasExtras)
-              {
+        <div class="table-wrapper">
+          <div class="table-scroll">
+            <table>
+              <thead>
                 <tr>
-                  <td class="tabular-nums" style="font-size:.8125rem">@h.FechaTrabajada</td>
-                  <td class="tabular-nums">@h.CantidadHoras h</td>
-                  <td style="font-size:.8125rem;max-width:16rem;white-space:normal">@h.Motivo</td>
-                  <td><span class="badge">@h.Estado</span></td>
+                  <th>Fecha</th>
+                  <th>Horas</th>
+                  <th>Motivo</th>
+                  <th>Estado</th>
                 </tr>
-              }
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                @foreach (var h in Model.HorasExtras)
+                {
+                  <tr>
+                    <td class="tabular-nums" style="font-size:.8125rem">@h.FechaTrabajada</td>
+                    <td class="tabular-nums">@h.CantidadHoras h</td>
+                    <td style="font-size:.8125rem;max-width:16rem;white-space:normal">@h.Motivo</td>
+                    <td><span class="badge">@h.Estado</span></td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
         </div>
       }
 
