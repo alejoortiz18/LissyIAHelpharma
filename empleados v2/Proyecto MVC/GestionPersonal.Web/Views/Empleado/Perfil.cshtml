@@ -188,7 +188,11 @@
             <div class="dl-item"><p class="dl-label">Tipo de vinculación</p><p class="dl-value">@e.TipoVinculacion</p></div>
             <div class="dl-item"><p class="dl-label">Jefe inmediato</p><p class="dl-value">@(e.JefeInmediatoNombre ?? "—")</p></div>
             <div class="dl-item"><p class="dl-label">Fecha de ingreso</p><p class="dl-value">@e.FechaIngreso</p></div>
-            <div class="dl-item"><p class="dl-label">Días de vacaciones previos</p><p class="dl-value">@e.DiasVacacionesPrevios</p></div>
+            <div class="dl-item"><p class="dl-label">Fecha inicio contrato</p><p class="dl-value">@(e.FechaInicioContrato ?? "—")</p></div>
+            <div class="dl-item">
+              <p class="dl-label">Vacaciones disponibles</p>
+              <p class="dl-value">@(Model.VacacionesDisponibles.HasValue ? $"{Model.VacacionesDisponibles:F1} días" : "—")</p>
+            </div>
           </div>
 
           @if (esTemporal)
@@ -213,9 +217,37 @@
   {
     <div class="tab-panel is-active" role="tabpanel" tabindex="0">
 
+      <form method="get" asp-action="Perfil" asp-route-id="@e.Id" style="display:flex;gap:var(--sp-3);align-items:center;flex-wrap:wrap;margin-bottom:var(--sp-4)">
+        <input type="hidden" name="tab" value="historial" />
+        <label style="display:flex;align-items:center;gap:var(--sp-2);font-size:.8125rem">
+          Desde <input type="date" name="desde" value="@Model.FiltroDesde" style="font-size:.8125rem" />
+        </label>
+        <label style="display:flex;align-items:center;gap:var(--sp-2);font-size:.8125rem">
+          Hasta <input type="date" name="hasta" value="@Model.FiltroHasta" style="font-size:.8125rem" />
+        </label>
+        <button type="submit" class="btn btn-sm btn-primary">Filtrar</button>
+        <a asp-action="Perfil" asp-route-id="@e.Id" asp-route-tab="historial" class="btn btn-sm btn-ghost">Limpiar</a>
+      </form>
+
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--sp-5)">
         <h2 style="font-size:.9375rem;font-weight:600;color:var(--c-gray-800)">Eventos laborales</h2>
       </div>
+
+      @if (Model.ResumenEventos.Any())
+      {
+        <div style="margin-bottom:var(--sp-5)">
+          <table class="table" style="font-size:.8125rem">
+            <thead><tr><th>Tipo de evento</th><th>Total días</th></tr></thead>
+            <tbody>
+              @foreach (var r in Model.ResumenEventos)
+              {
+                <tr><td>@r.TipoEvento</td><td class="tabular-nums">@r.TotalDias</td></tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+
       @if (!Model.Eventos.Any())
       {
         <div class="empty-state">
@@ -236,6 +268,7 @@
               <tr>
                 <th>Tipo</th>
                 <th>Período</th>
+                <th>Días</th>
                 <th>Autorizado por</th>
                 <th>Estado</th>
               </tr>
@@ -246,6 +279,7 @@
                 <tr>
                   <td>@ev.TipoEvento</td>
                   <td class="tabular-nums" style="font-size:.8125rem">@ev.FechaInicio — @ev.FechaFin</td>
+                  <td class="tabular-nums">@ev.DiasSolicitados</td>
                   <td>@ev.AutorizadoPor</td>
                   <td><span class="badge">@ev.Estado</span></td>
                 </tr>

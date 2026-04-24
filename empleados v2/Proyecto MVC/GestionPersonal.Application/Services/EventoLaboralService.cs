@@ -31,6 +31,13 @@ public class EventoLaboralService : IEventoLaboralService
         return lista.Select(MapToDto).ToList();
     }
 
+    public async Task<IReadOnlyList<EventoLaboralDto>> ObtenerPorEmpleadoConFiltroAsync(
+        int empleadoId, DateOnly? desde, DateOnly? hasta, CancellationToken ct = default)
+    {
+        var lista = await _repo.ObtenerPorEmpleadoConFiltroAsync(empleadoId, desde, hasta, ct);
+        return lista.Select(MapToDto).ToList();
+    }
+
     public async Task<ResultadoOperacion> CrearAsync(CrearEventoLaboralDto dto, int creadoPorUsuarioId, CancellationToken ct = default)
     {
         // Verificar solapamiento
@@ -83,20 +90,30 @@ public class EventoLaboralService : IEventoLaboralService
         var empleado = await _empleadoRepo.ObtenerPorIdAsync(empleadoId, ct);
         if (empleado is null) return null;
 
-        var hoy = DateOnly.FromDateTime(DateTime.Today);
-        var diasAntiguedad = (hoy.DayNumber - empleado.FechaIngreso.DayNumber) / 365.0;
-        var acumulados = (int)(diasAntiguedad * 15) + (int)empleado.DiasVacacionesPrevios;
+        // Sin contrato directo no se puede calcular vacaciones causadas
+        if (empleado.FechaInicioContrato is null)
+            return new SaldoVacacionesDto { Acumulados = 0, Tomados = 0, Disponibles = 0 };
+
+        var hoy    = DateOnly.FromDateTime(DateTime.Today);
+        var inicio = empleado.FechaInicioContrato.Value;
+
+        // Meses laborados con calendario real
+        var meses = ((hoy.Year - inicio.Year) * 12) + hoy.Month - inicio.Month;
+        if (hoy.Day < inicio.Day) meses--;
+        if (meses < 0) meses = 0;
+
+        var causadas = (int)(meses * 1.25m);
 
         var vacaciones = await _repo.ObtenerPorEmpleadoYTipoAsync(empleadoId, TipoEvento.Vacaciones, ct);
         var tomados = vacaciones
-            .Where(e => e.Estado != EstadoEvento.Anulado)
-            .Sum(e => ContarDiasHabiles(e.FechaInicio, e.FechaFin));
+            .Where(e => e.Estado != EstadoEvento.Anulado && e.FechaInicio >= inicio)
+            .Sum(e => e.FechaFin.DayNumber - e.FechaInicio.DayNumber + 1);
 
         return new SaldoVacacionesDto
         {
-            Acumulados  = acumulados,
+            Acumulados  = causadas,
             Tomados     = tomados,
-            Disponibles = Math.Max(0, acumulados - tomados),
+            Disponibles = Math.Max(0, causadas - tomados),
         };
     }
 

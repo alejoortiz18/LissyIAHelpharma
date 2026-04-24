@@ -64,6 +64,16 @@ public class EventoLaboralRepository : IEventoLaboralRepository
             .AsNoTracking()
             .ToListAsync(ct);
 
+    public async Task<IReadOnlyList<EventoLaboral>> ObtenerPorEmpleadoConFiltroAsync(
+        int empleadoId, DateOnly? desde, DateOnly? hasta, CancellationToken ct = default)
+        => await _context.EventosLaborales
+            .Where(e => e.EmpleadoId == empleadoId
+                     && (desde == null || e.FechaInicio >= desde)
+                     && (hasta == null || e.FechaInicio <= hasta))
+            .AsNoTracking()
+            .OrderByDescending(e => e.FechaInicio)
+            .ToListAsync(ct);
+
     public void Agregar(EventoLaboral evento) => _context.EventosLaborales.Add(evento);
 
     public void Actualizar(EventoLaboral evento) => _context.EventosLaborales.Update(evento);

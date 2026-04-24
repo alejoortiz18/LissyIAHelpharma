@@ -235,9 +235,10 @@ public class EmpleadoController : Controller
         return RedirectToAction("Perfil", new { id = vm.Dto.Id });
     }
 
-    // GET /Empleado/Perfil/{id}?tab=datos
+    // GET /Empleado/Perfil/{id}?tab=datos&desde=2026-01-01&hasta=2026-04-30
     [HttpGet]
-    public async Task<IActionResult> Perfil(int id, string tab = "datos")
+    public async Task<IActionResult> Perfil(int id, string tab = "datos",
+        DateOnly? desde = null, DateOnly? hasta = null)
     {
         var rol     = SesionHelper.GetRol(User);
         var empId   = SesionHelper.GetEmpleadoId(User);
@@ -282,18 +283,66 @@ public class EmpleadoController : Controller
                 turnoActual = detalle.Datos;
         }
 
-        var eventos    = await ObtenerEventosAsync(id);
+        // Eventos con filtro opcional por rango de FechaInicio
+        var eventoSvc = HttpContext.RequestServices.GetRequiredService<IEventoLaboralService>();
+        var eventos   = await eventoSvc.ObtenerPorEmpleadoConFiltroAsync(id, desde, hasta);
+
+        // Resumen totalizado por tipo (solo eventos no anulados)
+        var resumen = eventos
+            .Where(ev => ev.Estado != "Anulado")
+            .GroupBy(ev => ev.TipoEvento)
+            .Select(g => new GestionPersonal.Models.DTOs.EventoLaboral.ResumenEventoDto
+            {
+                TipoEvento = g.Key,
+                TotalDias  = g.Sum(e => e.DiasSolicitados)
+            })
+            .OrderByDescending(r => r.TotalDias)
+            .ToList();
+
+        // Cálculo de vacaciones disponibles basado en FechaInicioContrato × 1.25 por mes
+        decimal? vacacionesDisponibles = null;
+        if (empleado.FechaInicioContrato is not null &&
+            System.DateOnly.TryParseExact(empleado.FechaInicioContrato, "dd/MM/yyyy",
+                System.Globalization.CultureInfo.InvariantCulture,
+                System.Globalization.DateTimeStyles.None, out var inicioContrato))
+        {
+            var hoy   = DateOnly.FromDateTime(DateTime.Today);
+            var meses = ((hoy.Year - inicioContrato.Year) * 12) + hoy.Month - inicioContrato.Month;
+            if (hoy.Day < inicioContrato.Day) meses--;
+            if (meses < 0) meses = 0;
+            var causadas = meses * 1.25m;
+
+            // Descuenta TODOS los eventos de vacaciones (sin filtro de fecha) con inicio >= FechaInicioContrato
+            var todosEventos = desde.HasValue || hasta.HasValue
+                ? await eventoSvc.ObtenerPorEmpleadoConFiltroAsync(id, null, null)
+                : eventos;
+            var disfrutadas = todosEventos
+                .Where(ev => ev.TipoEvento == TipoEvento.Vacaciones.ToString() &&
+                             ev.Estado     != "Anulado" &&
+                             System.DateOnly.TryParseExact(ev.FechaInicio, "dd/MM/yyyy",
+                                 System.Globalization.CultureInfo.InvariantCulture,
+                                 System.Globalization.DateTimeStyles.None, out var fi) &&
+                             fi >= inicioContrato)
+                .Sum(ev => ev.DiasSolicitados);
+
+            vacacionesDisponibles = Math.Max(0m, causadas - disfrutadas);
+        }
+
         var horasExtras = await ObtenerHorasExtrasAsync(id);
 
         var vm = new PerfilEmpleadoViewModel
         {
-            Empleado        = empleado,
-            Eventos         = eventos,
-            HorasExtras     = horasExtras,
-            TurnoActual     = turnoActual,
-            Plantillas      = todasPlantillas,
-            HistorialTurnos = historialTurnos,
-            Tab             = tab,
+            Empleado              = empleado,
+            Eventos               = eventos,
+            HorasExtras           = horasExtras,
+            TurnoActual           = turnoActual,
+            Plantillas            = todasPlantillas,
+            HistorialTurnos       = historialTurnos,
+            Tab                   = tab,
+            ResumenEventos        = resumen,
+            VacacionesDisponibles = vacacionesDisponibles,
+            FiltroDesde           = desde?.ToString("yyyy-MM-dd"),
+            FiltroHasta           = hasta?.ToString("yyyy-MM-dd"),
         };
 
         ViewData["Title"] = empleado.NombreCompleto;
