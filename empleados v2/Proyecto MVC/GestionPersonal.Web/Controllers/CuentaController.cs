@@ -88,7 +88,16 @@ public class CuentaController : Controller
     {
         if (!ModelState.IsValid) return View(vm);
 
-        var dto = new SolicitarRecuperacionDto { Correo = vm.CorreoAcceso };
+        // Generar URL base de restablecimiento (sin el token).
+        // El servicio agrega ?token=CODIGO al armar el correo.
+        var urlBase = Url.Action("RestablecerPassword", "Cuenta",
+                                 values: null, protocol: Request.Scheme);
+
+        var dto = new SolicitarRecuperacionDto
+        {
+            Correo                  = vm.CorreoAcceso,
+            UrlBaseRestablecimiento = urlBase,
+        };
         await _cuentaService.SolicitarRecuperacionAsync(dto);
 
         TempData["Info"] = "Si el correo está registrado, recibirás las instrucciones de recuperación.";

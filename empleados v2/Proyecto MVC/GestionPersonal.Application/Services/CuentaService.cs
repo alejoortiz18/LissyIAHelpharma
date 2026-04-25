@@ -83,9 +83,12 @@ public class CuentaService : ICuentaService
 
         await _notificationService.NotificarRecuperacionContrasenaAsync(
             new NotificacionRecuperacionDto(
-                DestinatarioCorreo : dto.Correo,
-                NombreEmpleado     : usuario.CorreoAcceso,
-                Codigo             : codigoPlano),
+                DestinatarioCorreo  : dto.Correo,
+                NombreEmpleado      : usuario.CorreoAcceso,
+                Codigo              : codigoPlano,
+                UrlRestablecimiento : dto.UrlBaseRestablecimiento is not null
+                    ? $"{dto.UrlBaseRestablecimiento}?token={Uri.EscapeDataString(codigoPlano)}"
+                    : null),
             ct);
 
         return ResultadoOperacion.Ok();

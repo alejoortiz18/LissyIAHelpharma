@@ -49,7 +49,8 @@ public class NotificationService : INotificationService
                Asunto("Recuperación de Contraseña", d.DestinatarioCorreo),
                d.DestinatarioCorreo, null,
                SeguridadEmailTemplate.RecuperacionContrasena(
-                   d.NombreEmpleado, d.DestinatarioCorreo, d.Codigo, d.VigenciaMinutos),
+                   d.NombreEmpleado, d.DestinatarioCorreo, d.Codigo,
+                   d.VigenciaMinutos, d.UrlRestablecimiento),
                ct);
 
     public Task NotificarCambioContrasenaExitosoAsync(

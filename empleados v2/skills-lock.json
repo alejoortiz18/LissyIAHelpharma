@@ -55,6 +55,11 @@
       "source": "mattpocock/skills",
       "sourceType": "github",
       "computedHash": null
+    },
+    "dotnet-testing": {
+      "source": "custom",
+      "sourceType": "local",
+      "computedHash": null
     }
   }
 }

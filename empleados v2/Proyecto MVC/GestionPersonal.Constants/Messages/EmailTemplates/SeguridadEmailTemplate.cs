@@ -63,8 +63,27 @@ public static class SeguridadEmailTemplate
         string nombreEmpleado,
         string correoAcceso,
         string codigo,
-        string vigenciaMinutos = "30")
+        string vigenciaMinutos = "30",
+        string? urlRestablecimiento = null)
     {
+        // Botón CTA: se incluye solo cuando se provee la URL
+        var botonCta = urlRestablecimiento is not null
+            ? $"""
+
+            <div style="text-align:center;margin:28px 0 8px;">
+              <a href="{EmailBase.EscapeHtml(urlRestablecimiento)}"
+                 style="display:inline-block;background-color:#3b5bdb;color:#ffffff;text-decoration:none;
+                        font-weight:700;font-size:15px;padding:14px 40px;border-radius:8px;letter-spacing:.4px;">
+                Restablecer contraseña
+              </a>
+            </div>
+            <p style="text-align:center;font-size:12px;color:#94a3b8;margin:0 0 24px;">
+              ¿No funciona el botón? Copia y pega este enlace en tu navegador:<br/>
+              <span style="color:#3b5bdb;word-break:break-all;">{EmailBase.EscapeHtml(urlRestablecimiento)}</span>
+            </p>
+            """
+            : string.Empty;
+
         var cuerpo = $"""
             <p style="margin:0 0 20px;font-size:15px;color:#1e293b;line-height:1.7;">
               Hola <strong>{EmailBase.EscapeHtml(nombreEmpleado)}</strong>,
@@ -85,6 +104,7 @@ public static class SeguridadEmailTemplate
               </div>
             </div>
 
+            {botonCta}
             {EmailBase.Banner(
                 $"Este código expira en {vigenciaMinutos} minutos y solo puede usarse una vez. Si no solicitaste este cambio, ignora este correo.",
                 "advertencia")}

@@ -150,7 +150,7 @@ def test_tc14_restablecer_con_token_valido(page):
 
     # Verificar que el login funciona con la nueva contraseña
     page.fill("#CorreoAcceso", CORREO_NATALIA)
-    page.fill("#Password", PASSWORD_NUEVA_RECUPERACION)
+    page.fill("#inputPassword", PASSWORD_NUEVA_RECUPERACION)
     page.click("button[type=submit]")
     page.wait_for_load_state("networkidle")
 

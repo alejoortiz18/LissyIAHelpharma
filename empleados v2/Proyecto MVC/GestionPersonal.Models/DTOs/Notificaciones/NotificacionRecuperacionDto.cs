@@ -4,4 +4,5 @@ public record NotificacionRecuperacionDto(
     string DestinatarioCorreo,
     string NombreEmpleado,
     string Codigo,
-    string VigenciaMinutos = "30");
+    string VigenciaMinutos = "30",
+    string? UrlRestablecimiento = null);

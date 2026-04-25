@@ -795,16 +795,20 @@ VALUES (@ECamila, '2026-04-21', 2.0, N'Entrega urgente de medicamentos a domicil
 -- ============================================================
 
 -- Token usado (Laura Sánchez lo usó para cambiar su contraseña)
+-- Código plano: TK3F9A2B1C  |  Hash SHA-256 almacenado:
 INSERT INTO dbo.TokensRecuperacion (UsuarioId, Token, FechaExpiracion, Usado, FechaCreacion)
-VALUES (@UReg1, N'TK3F9A2B1C', '2026-03-20 10:00:00', 1, '2026-03-20 08:00:00');
+VALUES (@UReg1, N'4699794aa379e99d71299e3f6e90e4a07d6958f6f761d58ae2954e3bfb2ff586', '2026-03-20 10:00:00', 1, '2026-03-20 08:00:00');
 
 -- Token expirado sin usar (Andrés Torres lo solicitó pero no lo usó a tiempo)
+-- Código plano: TK7E4D8F5G  |  Hash SHA-256 almacenado:
 INSERT INTO dbo.TokensRecuperacion (UsuarioId, Token, FechaExpiracion, Usado, FechaCreacion)
-VALUES (@UAux, N'TK7E4D8F5G', '2026-04-10 15:00:00', 0, '2026-04-10 13:00:00');
+VALUES (@UAux, N'bef34a12d2b646c25ab8a5763cfd12ef8e89bcf004d0c36417dbfe327394fe3c', '2026-04-10 15:00:00', 0, '2026-04-10 13:00:00');
 
--- Token vigente (Natalia Bermúdez tiene solicitud activa de recuperación)
+-- Token vigente para pruebas (Natalia Bermúdez)
+-- Código plano: TK1H6K9M2N  |  Hash SHA-256 almacenado:
+-- FechaExpiracion fija al año 2099 para que nunca expire en suite de pruebas
 INSERT INTO dbo.TokensRecuperacion (UsuarioId, Token, FechaExpiracion, Usado, FechaCreacion)
-VALUES (@UNata, N'TK1H6K9M2N', '2026-04-24 09:00:00', 0, '2026-04-22 09:00:00');
+VALUES (@UNata, N'6730ac0c93c8353faa2e834123cf3e4636dc3ce39f6654760a27e92484ed2235', '2099-12-31 23:59:00', 0, '2026-04-22 09:00:00');
 
 -- ============================================================
 -- 13. VERIFICACIÓN FINAL

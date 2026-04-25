@@ -67,8 +67,10 @@ def reset_estado_db():
         f"PasswordSalt={_SALT_USUARIO1}, "
         f"DebecambiarPassword=1 "
         f"WHERE CorreoAcceso='natalia.bermudez@yopmail.com'; "
-        f"UPDATE dbo.TokensRecuperacion SET Usado=0 "
-        f"WHERE Token='TK1H6K9M2N'; "
+        # El token se almacena como hash SHA-256 de 'TK1H6K9M2N'
+        f"UPDATE dbo.TokensRecuperacion SET Usado=0, "
+        f"FechaExpiracion='2099-12-31 23:59:00' "
+        f"WHERE Token='6730ac0c93c8353faa2e834123cf3e4636dc3ce39f6654760a27e92484ed2235'; "
         f"UPDATE dbo.Usuarios SET "
         f"PasswordHash={_HASH_USUARIO1}, "
         f"PasswordSalt={_SALT_USUARIO1}, "
