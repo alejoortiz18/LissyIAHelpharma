@@ -414,6 +414,7 @@ tbody tr:hover td { background: var(--c-gray-50); }
 .badge--rechazado{ background: var(--c-error-100);   color: var(--c-error-700); }
 .badge--finalizado{ background: var(--c-gray-100);   color: var(--c-gray-500); }
 .badge--anulado  { background: var(--c-gray-100);    color: var(--c-gray-400); }
+.badge--en-revision{ background: var(--c-warning-100); color: var(--c-warning-700); }
 
 /* Type */
 .badge--directo  { background: var(--c-brand-100);   color: var(--c-brand-700); }

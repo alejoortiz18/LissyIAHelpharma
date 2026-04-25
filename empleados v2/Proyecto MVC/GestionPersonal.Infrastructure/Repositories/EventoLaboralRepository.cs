@@ -33,6 +33,14 @@ public class EventoLaboralRepository : IEventoLaboralRepository
             .OrderByDescending(e => e.FechaInicio)
             .ToListAsync(ct);
 
+    public async Task<IReadOnlyList<EventoLaboral>> ObtenerTodosAsync(CancellationToken ct = default)
+        => await _context.EventosLaborales
+            .Include(e => e.Empleado)
+                .ThenInclude(emp => emp.Sede)
+            .AsNoTracking()
+            .OrderByDescending(e => e.FechaInicio)
+            .ToListAsync(ct);
+
     public async Task<IReadOnlyList<EventoLaboral>> ObtenerActivosEnFechaAsync(
         int empleadoId, DateOnly fecha, CancellationToken ct = default)
         => await _context.EventosLaborales

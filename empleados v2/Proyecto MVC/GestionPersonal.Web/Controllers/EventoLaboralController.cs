@@ -37,12 +37,37 @@ public class EventoLaboralController : Controller
         if (rol == RolUsuario.Operario || rol == RolUsuario.Direccionador)
             return Forbid();
 
-        // Sequential awaits — EF Core DbContext is not thread-safe; Task.WhenAll is not allowed
-        var todos = await _eventoService.ObtenerPorSedeAsync(sedeId);
+        IReadOnlyList<EventoLaboralDto> todos;
 
-        // Regente / AuxiliarRegente: solo eventos propios y de subordinados directos
-        if ((rol == RolUsuario.Regente || rol == RolUsuario.AuxiliarRegente) && empId.HasValue)
-            todos = todos.Where(e => e.EmpleadoId == empId.Value || e.JefeInmediatoId == empId.Value).ToList();
+        if (rol == RolUsuario.Analista)
+        {
+            // Analista ve TODOS los eventos de TODAS las sedes
+            todos = await _eventoService.ObtenerTodosAsync();
+        }
+        else if (rol == RolUsuario.DirectorTecnico && empId.HasValue)
+        {
+            // DirectorTecnico ve todos los eventos de su árbol jerárquico completo
+            // (sus subordinados pueden pertenecer a distintas sedes)
+            var descendientes = await _eventoService.ObtenerDescendientesAsync(empId.Value);
+            var todosEventos   = await _eventoService.ObtenerTodosAsync();
+            todos = todosEventos
+                .Where(e => e.EmpleadoId == empId.Value || descendientes.Contains(e.EmpleadoId))
+                .ToList();
+        }
+        else
+        {
+            todos = await _eventoService.ObtenerPorSedeAsync(sedeId);
+
+            // Regente / AuxiliarRegente: árbol jerárquico descendente completo dentro de su sede
+            if (empId.HasValue &&
+                (rol == RolUsuario.Regente || rol == RolUsuario.AuxiliarRegente))
+            {
+                var descendientes = await _eventoService.ObtenerDescendientesAsync(empId.Value);
+                todos = todos
+                    .Where(e => e.EmpleadoId == empId.Value || descendientes.Contains(e.EmpleadoId))
+                    .ToList();
+            }
+        }
 
         var empleadosList = (rol == RolUsuario.DirectorTecnico || rol == RolUsuario.Administrador || rol == RolUsuario.Analista)
             ? await _empleadoService.ObtenerTodosAsync()
@@ -188,6 +213,55 @@ public class EventoLaboralController : Controller
         var usuarioId = SesionHelper.GetUsuarioId(User);
         var resultado = await _eventoService.AnularAsync(id, motivoAnulacion, usuarioId);
 
+        return Json(new { exito = resultado.Exito, mensaje = resultado.Mensaje });
+    }
+
+    // POST /EventoLaboral/CambiarEstadoAjax
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> CambiarEstadoAjax(
+        [FromForm] int id,
+        [FromForm] string nuevoEstado,
+        [FromForm] string? observacion)
+    {
+        var rol       = SesionHelper.GetRol(User);
+        var empId     = SesionHelper.GetEmpleadoId(User);
+        var sedeId    = SesionHelper.GetSedeId(User);
+        var nombreResp = SesionHelper.GetNombreCompleto(User);
+
+        // Solo roles autorizados
+        bool esAprobador = rol == RolUsuario.Regente    ||
+                           rol == RolUsuario.AuxiliarRegente ||
+                           rol == RolUsuario.DirectorTecnico ||
+                           rol == RolUsuario.Analista;
+
+        if (!esAprobador)
+            return Json(new { exito = false, mensaje = "No tienes permisos para gestionar solicitudes." });
+
+        if (!Enum.TryParse<GestionPersonal.Models.Enums.EstadoEvento>(nuevoEstado, out var estado))
+            return Json(new { exito = false, mensaje = "Estado no válido." });
+
+        // Regente y AuxiliarRegente solo pueden gestionar solicitudes de su árbol jerárquico
+        if (rol == RolUsuario.Regente || rol == RolUsuario.AuxiliarRegente)
+        {
+            if (!empId.HasValue)
+                return Json(new { exito = false, mensaje = "Sin permisos." });
+
+            var lista = await _eventoService.ObtenerPorSedeAsync(sedeId);
+            var target = lista.FirstOrDefault(e => e.Id == id);
+            if (target is null)
+                return Json(new { exito = false, mensaje = "Solicitud no encontrada." });
+
+            var descendientes = await _eventoService.ObtenerDescendientesAsync(empId.Value);
+            bool esSubordinado = descendientes.Contains(target.EmpleadoId);
+            if (!esSubordinado)
+                return Json(new { exito = false, mensaje = "Solo puedes gestionar solicitudes de tu línea jerárquica." });
+        }
+
+        // DirectorTecnico: puede gestionar cualquier solicitud de su sede (ya filtrada)
+        // Analista: puede gestionar cualquier solicitud sin restricción de sede
+
+        var resultado = await _eventoService.CambiarEstadoAsync(id, estado, nombreResp, observacion);
         return Json(new { exito = resultado.Exito, mensaje = resultado.Mensaje });
     }
 

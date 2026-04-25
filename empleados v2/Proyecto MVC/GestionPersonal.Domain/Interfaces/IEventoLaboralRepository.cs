@@ -9,6 +9,9 @@ public interface IEventoLaboralRepository
     Task<IReadOnlyList<EventoLaboral>> ObtenerPorEmpleadoAsync(int empleadoId, CancellationToken ct = default);
     Task<IReadOnlyList<EventoLaboral>> ObtenerPorSedeAsync(int sedeId, CancellationToken ct = default);
 
+    /// <summary>Todos los eventos de todas las sedes (para el Analista de Servicios Farmacéuticos).</summary>
+    Task<IReadOnlyList<EventoLaboral>> ObtenerTodosAsync(CancellationToken ct = default);
+
     /// <summary>Eventos activos (estado Activo) cuyo rango cubre la fecha indicada. Para detectar solapamientos.</summary>
     Task<IReadOnlyList<EventoLaboral>> ObtenerActivosEnFechaAsync(int empleadoId, DateOnly fecha, CancellationToken ct = default);
 

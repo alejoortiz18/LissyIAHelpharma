@@ -6,6 +6,10 @@
     ViewData["BreadcrumbCurrent"] = "Eventos laborales";
     var rol = SesionHelper.GetRol(User);
     bool puedeRegistrar = rol != RolUsuario.Operario;
+    bool puedeGestionar = rol == RolUsuario.Regente ||
+                          rol == RolUsuario.AuxiliarRegente ||
+                          rol == RolUsuario.DirectorTecnico ||
+                          rol == RolUsuario.Analista;
     var antiforgery = ViewContext.HttpContext.RequestServices
         .GetRequiredService<Microsoft.AspNetCore.Antiforgery.IAntiforgery>()
         .GetAndStoreTokens(ViewContext.HttpContext).RequestToken;
@@ -54,9 +58,13 @@
   </select>
   <select name="estado" class="form-select" aria-label="Estado del evento">
     <option value="">Todos los estados</option>
-    <option value="Activo" selected="@(Model.Estado == "Activo")">Activo</option>
-    <option value="Finalizado" selected="@(Model.Estado == "Finalizado")">Finalizado</option>
-    <option value="Anulado" selected="@(Model.Estado == "Anulado")">Anulado</option>
+    <option value="Pendiente"   selected="@(Model.Estado == "Pendiente")">Pendiente</option>
+    <option value="Aprobado"    selected="@(Model.Estado == "Aprobado")">Aprobado</option>
+    <option value="Rechazado"   selected="@(Model.Estado == "Rechazado")">Rechazado</option>
+    <option value="EnRevision"  selected="@(Model.Estado == "EnRevision")">En revisión</option>
+    <option value="Activo"      selected="@(Model.Estado == "Activo")">Activo</option>
+    <option value="Finalizado"  selected="@(Model.Estado == "Finalizado")">Finalizado</option>
+    <option value="Anulado"     selected="@(Model.Estado == "Anulado")">Anulado</option>
   </select>
   <input name="desde" type="date" class="form-input" value="@Model.Desde" aria-label="Desde fecha" />
   <input name="hasta" type="date" class="form-input" value="@Model.Hasta" aria-label="Hasta fecha" />
@@ -99,7 +107,7 @@ else
             <th scope="col">Días/Info</th>
             <th scope="col">Autorizado por</th>
             <th scope="col">Estado</th>
-            @if (puedeRegistrar)
+              @if (puedeRegistrar)
             {
               <th scope="col"><span class="sr-only">Acciones</span></th>
             }
@@ -150,6 +158,14 @@ else
                         <circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>
                       </svg>
                       Anular
+                    </button>
+                  }
+                  @if (puedeGestionar && (ev.Estado == "Pendiente" || ev.Estado == "Aprobado" || ev.Estado == "Rechazado"))
+                  {
+                    <button class="btn btn-secondary btn-sm"
+                            onclick="iniciarGestion(@ev.Id, '@ev.Estado')"
+                            aria-label="Gestionar solicitud">
+                      Gestionar
                     </button>
                   }
                 </td>
@@ -366,7 +382,39 @@ else
 </div>
 }
 
-@section Scripts {
+<!-- Modal: Gestionar solicitud (aprobar / rechazar / reversar) -->
+@if (puedeGestionar)
+{
+<div class="modal-overlay" id="modal-gestion" hidden aria-modal="true"
+     aria-labelledby="gestion-title" role="dialog">
+  <div class="modal modal--sm">
+    <div class="modal-header">
+      <h2 class="modal-title" id="gestion-title">Gestionar solicitud</h2>
+      <button class="modal-close btn" data-modal-close aria-label="Cerrar">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label" for="gest-nuevo-estado">Nueva decisión <span class="required" aria-hidden="true">*</span></label>
+        <select class="form-select" id="gest-nuevo-estado"></select>
+      </div>
+      <div class="form-group" id="gest-obs-group" style="margin-bottom:0">
+        <label class="form-label" for="gest-observacion">Observación <span class="required" aria-hidden="true" id="gest-obs-required">*</span></label>
+        <textarea class="form-textarea" id="gest-observacion"
+                  placeholder="Escribe una observación…" style="min-height:4rem"></textarea>
+        <span class="form-hint" id="gest-obs-hint">Obligatoria al rechazar o reversar una decisión.</span>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" data-modal-close>Cancelar</button>
+      <button class="btn btn-primary" id="btn-confirmar-gestion">Confirmar</button>
+    </div>
+  </div>
+</div>
+}
 <script>
 (function () {
   'use strict';
@@ -642,6 +690,90 @@ else
     .catch(function () { showToast('Error de conexión. Intenta nuevamente.', 'error'); });
   });
 
+  /* ── Gestión de solicitudes (aprobar / rechazar / reversar) ─ */
+  var gestionEventoId = null;
+  var gestionRequiereObs = false;
+
+  function getOpcionesTransicion(estado) {
+    if (estado === 'Pendiente')
+      return [{ value: 'Aprobado',  label: 'Aprobar' },
+              { value: 'Rechazado', label: 'Rechazar' }];
+    if (estado === 'Aprobado')
+      return [{ value: 'Pendiente', label: 'Devolver a Pendiente' },
+              { value: 'Rechazado', label: 'Rechazar' }];
+    if (estado === 'Rechazado')
+      return [{ value: 'Aprobado',  label: 'Aprobar' },
+              { value: 'Pendiente', label: 'Devolver a Pendiente' }];
+    return [];
+  }
+
+  function esObligatoriaObservacion(estadoActual, nuevoEstado) {
+    return nuevoEstado === 'Rechazado' ||
+           estadoActual === 'Aprobado' ||
+           estadoActual === 'Rechazado';
+  }
+
+  function actualizarGrupObservacion(estadoActual, nuevoEstado) {
+    var obligatoria = esObligatoriaObservacion(estadoActual, nuevoEstado);
+    gestionRequiereObs = obligatoria;
+    document.getElementById('gest-obs-required').hidden = !obligatoria;
+    document.getElementById('gest-obs-hint').textContent = obligatoria
+      ? 'Obligatoria al rechazar o reversar una decisión.'
+      : 'Opcional.';
+  }
+
+  window.iniciarGestion = function (id, estadoActual) {
+    gestionEventoId = id;
+    var sel = document.getElementById('gest-nuevo-estado');
+    sel.innerHTML = '';
+    getOpcionesTransicion(estadoActual).forEach(function (op) {
+      var opt = document.createElement('option');
+      opt.value = op.value;
+      opt.textContent = op.label;
+      sel.appendChild(opt);
+    });
+    document.getElementById('gest-observacion').value = '';
+    actualizarGrupObservacion(estadoActual, sel.value);
+    sel.addEventListener('change', function () {
+      actualizarGrupObservacion(estadoActual, this.value);
+    });
+    openModal('modal-gestion');
+  };
+
+  var btnConfGest = document.getElementById('btn-confirmar-gestion');
+  if (btnConfGest) {
+    btnConfGest.addEventListener('click', function () {
+      var nuevoEstado = document.getElementById('gest-nuevo-estado').value;
+      var observacion = document.getElementById('gest-observacion').value.trim();
+
+      if (gestionRequiereObs && !observacion) {
+        showToast('La observación es obligatoria para esta acción.', 'error'); return;
+      }
+
+      var data = new FormData();
+      data.append('id', gestionEventoId);
+      data.append('nuevoEstado', nuevoEstado);
+      if (observacion) data.append('observacion', observacion);
+
+      fetch('@Url.Action("CambiarEstadoAjax", "EventoLaboral")', {
+        method: 'POST',
+        headers: { 'RequestVerificationToken': getToken() },
+        body: data
+      })
+      .then(function (r) { return r.json(); })
+      .then(function (res) {
+        closeModal('modal-gestion');
+        if (res.exito) {
+          showToast(res.mensaje || 'Solicitud actualizada.', 'success');
+          setTimeout(function () { window.location.reload(); }, 1000);
+        } else {
+          showToast(res.mensaje || 'No se pudo actualizar la solicitud.', 'error');
+        }
+      })
+      .catch(function () { showToast('Error de conexión. Intenta nuevamente.', 'error'); });
+    });
+  }
+
   /* ── Close modal resets form ─────────────────────────────── */
   document.querySelectorAll('[data-modal-close]').forEach(function (btn) {
     btn.addEventListener('click', function () {
@@ -657,6 +789,10 @@ else
 @functions {
     string BadgeEstado(string estado) => estado.ToLower() switch
     {
+        "pendiente"  => "<span class=\"badge badge--pendiente\"><span class=\"badge-dot\"></span>Pendiente</span>",
+        "aprobado"   => "<span class=\"badge badge--aprobado\"><span class=\"badge-dot\"></span>Aprobado</span>",
+        "rechazado"  => "<span class=\"badge badge--rechazado\"><span class=\"badge-dot\"></span>Rechazado</span>",
+        "enrevision" => "<span class=\"badge badge--en-revision\"><span class=\"badge-dot\"></span>En revisión</span>",
         "activo"     => "<span class=\"badge badge--activo\"><span class=\"badge-dot\"></span>Activo</span>",
         "finalizado" => "<span class=\"badge badge--finalizado\"><span class=\"badge-dot\"></span>Finalizado</span>",
         "anulado"    => "<span class=\"badge badge--anulado\"><span class=\"badge-dot\"></span>Anulado</span>",

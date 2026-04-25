@@ -29,4 +29,7 @@ public static class SesionHelper
         var val = user.FindFirstValue("EmpleadoId");
         return string.IsNullOrEmpty(val) ? null : int.Parse(val);
     }
+
+    public static string GetNombreCompleto(ClaimsPrincipal user) =>
+        user.FindFirstValue(ClaimTypes.Name) ?? string.Empty;
 }

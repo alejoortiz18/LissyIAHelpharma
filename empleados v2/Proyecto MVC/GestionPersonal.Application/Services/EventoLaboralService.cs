@@ -25,6 +25,12 @@ public class EventoLaboralService : IEventoLaboralService
         return lista.Select(MapToDto).ToList();
     }
 
+    public async Task<IReadOnlyList<EventoLaboralDto>> ObtenerTodosAsync(CancellationToken ct = default)
+    {
+        var lista = await _repo.ObtenerTodosAsync(ct);
+        return lista.Select(MapToDto).ToList();
+    }
+
     public async Task<IReadOnlyList<EventoLaboralDto>> ObtenerPorEmpleadoAsync(int empleadoId, CancellationToken ct = default)
     {
         var lista = await _repo.ObtenerPorEmpleadoAsync(empleadoId, ct);
@@ -49,7 +55,7 @@ public class EventoLaboralService : IEventoLaboralService
         {
             EmpleadoId      = dto.EmpleadoId,
             TipoEvento      = dto.TipoEvento,
-            Estado          = EstadoEvento.Activo,
+            Estado          = dto.EstadoInicial,
             FechaInicio     = dto.FechaInicio,
             FechaFin        = dto.FechaFin,
             TipoIncapacidad = dto.TipoIncapacidad,
@@ -83,6 +89,79 @@ public class EventoLaboralService : IEventoLaboralService
         await _repo.GuardarCambiosAsync(ct);
 
         return ResultadoOperacion.Ok("El evento fue anulado exitosamente.");
+    }
+
+    /// <summary>
+    /// Devuelve el conjunto de IDs de todos los empleados que están bajo el jefe
+    /// en la jerarquía (descendientes directos e indirectos, BFS).
+    /// </summary>
+    public async Task<IReadOnlySet<int>> ObtenerDescendientesAsync(int jefeId, CancellationToken ct = default)
+    {
+        // Necesitamos el mapeo completo jefe->subordinados de TODA la plataforma
+        var todos = await _empleadoRepo.ObtenerTodosAsync(ct);
+        var porJefe = todos
+            .Where(e => e.JefeInmediatoId.HasValue)
+            .GroupBy(e => e.JefeInmediatoId!.Value)
+            .ToDictionary(g => g.Key, g => g.Select(e => e.Id).ToList());
+
+        var resultado = new HashSet<int>();
+        var cola = new Queue<int>();
+        cola.Enqueue(jefeId);
+
+        while (cola.Count > 0)
+        {
+            var actual = cola.Dequeue();
+            if (!porJefe.TryGetValue(actual, out var hijos)) continue;
+            foreach (var hijo in hijos)
+            {
+                if (resultado.Add(hijo))
+                    cola.Enqueue(hijo);
+            }
+        }
+        return resultado;
+    }
+
+    public async Task<ResultadoOperacion> CambiarEstadoAsync(
+        int eventoId,
+        EstadoEvento nuevoEstado,
+        string nombreResponsable,
+        string? observacion,
+        CancellationToken ct = default)
+    {
+        var evento = await _repo.ObtenerPorIdAsync(eventoId, ct);
+        if (evento is null)
+            return ResultadoOperacion.Fail(EventoLaboralConstant.EventoNoEncontrado);
+
+        // El estado Anulado solo se maneja por AnularAsync
+        if (nuevoEstado == EstadoEvento.Anulado)
+            return ResultadoOperacion.Fail("Usa la acción Anular para anular un evento.");
+
+        var estadoAnterior = evento.Estado;
+
+        // Observación obligatoria al rechazar o al reversar (cambiar desde Aprobado o Rechazado)
+        bool esRechazo   = nuevoEstado == EstadoEvento.Rechazado;
+        bool esReversion = estadoAnterior == EstadoEvento.Aprobado || estadoAnterior == EstadoEvento.Rechazado;
+
+        if ((esRechazo || esReversion) && string.IsNullOrWhiteSpace(observacion))
+            return ResultadoOperacion.Fail("La observación es obligatoria al rechazar o reversar una decisión.");
+
+        evento.Estado            = nuevoEstado;
+        evento.AutorizadoPor     = nombreResponsable;
+        evento.MotivoAnulacion   = string.IsNullOrWhiteSpace(observacion) ? evento.MotivoAnulacion : observacion;
+        evento.FechaModificacion = DateTime.UtcNow;
+
+        _repo.Actualizar(evento);
+        await _repo.GuardarCambiosAsync(ct);
+
+        var etiqueta = nuevoEstado switch
+        {
+            EstadoEvento.Aprobado  => "aprobada",
+            EstadoEvento.Rechazado => "rechazada",
+            EstadoEvento.Pendiente => "devuelta a Pendiente",
+            _                      => nuevoEstado.ToString().ToLower()
+        };
+
+        return ResultadoOperacion.Ok($"La solicitud fue {etiqueta} correctamente.");
     }
 
     public async Task<SaldoVacacionesDto?> ObtenerSaldoVacacionesAsync(int empleadoId, CancellationToken ct = default)

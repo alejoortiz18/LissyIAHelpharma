@@ -39,4 +39,10 @@ public class CrearEventoLaboralDto
 
     [StringLength(200)]
     public string? NombreDocumento { get; set; }
+
+    /// <summary>
+    /// Estado inicial del evento. Por defecto <see cref="EstadoEvento.Activo"/> (flujo clásico de supervisor).
+    /// Las solicitudes de autogestión usan <see cref="EstadoEvento.Pendiente"/>.
+    /// </summary>
+    public EstadoEvento EstadoInicial { get; set; } = EstadoEvento.Activo;
 }

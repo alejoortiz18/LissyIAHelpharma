@@ -54,7 +54,8 @@ public class CuentaService : ICuentaService
             SedeId             = usuario.SedeId,
             SedeNombre         = usuario.Sede?.Nombre ?? string.Empty,
             DebeCambiarPassword = usuario.DebecambiarPassword,
-            EmpleadoId         = usuario.Empleado?.Id
+            EmpleadoId         = usuario.Empleado?.Id,
+            NombreCompleto     = usuario.Empleado?.NombreCompleto ?? usuario.CorreoAcceso
         };
 
         return ResultadoOperacion<UsuarioSesionDto>.Ok(sesion, InicioSesionConstant.UsuarioBienvenido);

@@ -58,6 +58,7 @@ public class CuentaController : Controller
         };
         if (sesion.EmpleadoId.HasValue)
             claims.Add(new Claim("EmpleadoId", sesion.EmpleadoId.Value.ToString()));
+        claims.Add(new Claim(ClaimTypes.Name, sesion.NombreCompleto));
 
         var identity  = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
         var principal = new ClaimsPrincipal(identity);

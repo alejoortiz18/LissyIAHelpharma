@@ -12,4 +12,5 @@ public class UsuarioSesionDto
     public string SedeNombre { get; init; } = null!;
     public bool DebeCambiarPassword { get; init; }
     public int? EmpleadoId { get; init; }
+    public string NombreCompleto { get; init; } = string.Empty;
 }
