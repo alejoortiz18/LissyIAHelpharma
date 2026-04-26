@@ -20,7 +20,7 @@ public class UsuarioService : IUsuarioService
     }
 
     public async Task<ResultadoOperacion<int>> CrearParaEmpleadoAsync(
-        string correo, RolUsuario rol, int sedeId, CancellationToken ct = default)
+        string correo, RolUsuario rol, int sedeId, string? urlRestablecimiento = null, CancellationToken ct = default)
     {
         if (await _repo.ExisteCorreoAsync(correo, ct: ct))
             return new ResultadoOperacion<int> { Exito = false, Mensaje = "Ya existe un usuario con ese correo." };
@@ -49,7 +49,8 @@ public class UsuarioService : IUsuarioService
                 DestinatarioCorreo  : correo,
                 NombreEmpleado      : correo,
                 CorreoAcceso        : correo,
-                NombreCreadorEvento : "Sistema"),
+                NombreCreadorEvento : "Sistema",
+                UrlRestablecimiento : urlRestablecimiento),
             ct);
 
         return ResultadoOperacion<int>.Ok(usuario.Id);

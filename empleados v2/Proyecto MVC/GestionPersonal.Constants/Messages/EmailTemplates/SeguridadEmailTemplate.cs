@@ -13,13 +13,32 @@ public static class SeguridadEmailTemplate
 
     /// <summary>
     /// Correo de bienvenida al crear una cuenta nueva.
-    /// NO incluye contraseña — el usuario la establece al primer inicio de sesión.
+    /// NO incluye contraseña — el usuario la establece al restablecer contraseña.
     /// </summary>
     public static string NuevoUsuario(
         string nombreEmpleado,
         string correoAcceso,
-        string nombreCreador)
+        string nombreCreador,
+        string? urlRestablecimiento = null)
     {
+        // Botón CTA: se incluye solo cuando se provee la URL
+        var botonCta = urlRestablecimiento is not null
+            ? $"""
+
+            <div style="text-align:center;margin:28px 0 8px;">
+              <a href="{EmailBase.EscapeHtml(urlRestablecimiento)}"
+                 style="display:inline-block;background-color:#3b5bdb;color:#ffffff;text-decoration:none;
+                        font-weight:700;font-size:15px;padding:14px 40px;border-radius:8px;letter-spacing:.4px;">
+                Restablecer contraseña
+              </a>
+            </div>
+            <p style="text-align:center;font-size:12px;color:#94a3b8;margin:0 0 24px;">
+              O copia y pega este enlace en tu navegador:<br>
+              <span style="color:#3b5bdb;word-break:break-all;">{EmailBase.EscapeHtml(urlRestablecimiento)}</span>
+            </p>
+            """
+            : string.Empty;
+
         var cuerpo = $"""
             <p style="margin:0 0 20px;font-size:15px;color:#1e293b;line-height:1.7;">
               Hola <strong>{EmailBase.EscapeHtml(nombreEmpleado)}</strong>,
@@ -34,8 +53,10 @@ public static class SeguridadEmailTemplate
             )}
 
             {EmailBase.Banner(
-                "Por seguridad no enviamos contraseñas por correo. Al ingresar por primera vez el sistema te pedirá crear tu propia contraseña.",
+                "Para ingresar al sistema debes restablecer tu contraseña. Haz clic en el botón de abajo y sigue las instrucciones para crear tu contraseña de acceso.",
                 "info")}
+
+            {botonCta}
 
             <p style="margin:24px 0 0;font-size:14px;color:#475569;line-height:1.7;">
               Si tienes dificultades para acceder, comunícate con

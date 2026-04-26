@@ -77,7 +77,7 @@ public class EmpleadoService : IEmpleadoService
 
         // Crear usuario de acceso
         var resultadoUsuario = await _usuarioService.CrearParaEmpleadoAsync(
-            dto.CorreoElectronico, dto.Rol, dto.SedeId, ct);
+            dto.CorreoElectronico, dto.Rol, dto.SedeId, dto.UrlBaseRestablecimiento, ct);
 
         if (!resultadoUsuario.Exito)
             return ResultadoOperacion.Fail(resultadoUsuario.Mensaje);

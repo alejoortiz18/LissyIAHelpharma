@@ -147,6 +147,10 @@ public class EmpleadoController : Controller
         }
 
         var usuarioId = SesionHelper.GetUsuarioId(User);
+
+        vm.Dto.UrlBaseRestablecimiento = Url.Action(
+            "RecuperarPassword", "Cuenta", values: null, protocol: Request.Scheme);
+
         var resultado = await _empleadoService.CrearAsync(vm.Dto, usuarioId);
 
         if (!resultado.Exito)

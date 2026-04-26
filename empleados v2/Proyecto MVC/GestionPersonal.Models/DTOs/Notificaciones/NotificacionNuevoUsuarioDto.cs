@@ -4,4 +4,5 @@ public record NotificacionNuevoUsuarioDto(
     string DestinatarioCorreo,
     string NombreEmpleado,
     string CorreoAcceso,
-    string NombreCreadorEvento);
+    string NombreCreadorEvento,
+    string? UrlRestablecimiento = null);

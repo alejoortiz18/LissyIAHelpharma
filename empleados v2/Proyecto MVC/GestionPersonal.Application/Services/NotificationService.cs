@@ -40,7 +40,7 @@ public class NotificationService : INotificationService
         => Enviar("NuevoUsuario",
                Asunto("Nuevo Usuario", d.NombreCreadorEvento),
                d.DestinatarioCorreo, null,
-               SeguridadEmailTemplate.NuevoUsuario(d.NombreEmpleado, d.CorreoAcceso, d.NombreCreadorEvento),
+               SeguridadEmailTemplate.NuevoUsuario(d.NombreEmpleado, d.CorreoAcceso, d.NombreCreadorEvento, d.UrlRestablecimiento),
                ct);
 
     public Task NotificarRecuperacionContrasenaAsync(

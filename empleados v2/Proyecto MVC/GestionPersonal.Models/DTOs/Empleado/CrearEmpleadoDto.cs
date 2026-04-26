@@ -81,4 +81,7 @@ public class CrearEmpleadoDto
     public int? EmpresaTemporalId { get; set; }
     public DateOnly? FechaInicioContrato { get; set; }
     public DateOnly? FechaFinContrato { get; set; }
+
+    // URL absoluta de la página de restablecimiento de contraseña (inyectada por el controller)
+    public string? UrlBaseRestablecimiento { get; set; }
 }
