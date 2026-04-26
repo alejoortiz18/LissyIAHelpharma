@@ -105,7 +105,13 @@ def reset_estado_db():
         f"DELETE FROM dbo.EventosLaborales "
         f"WHERE EmpleadoId = 5 AND TipoEvento = 'Vacaciones'; "
         # Seed FechaInicioContrato para tests de saldo vacaciones
-        f"UPDATE dbo.Empleados SET FechaInicioContrato = '2020-01-01' WHERE Id IN (1, 5);"
+        f"UPDATE dbo.Empleados SET FechaInicioContrato = '2020-01-01' WHERE Id IN (1, 5); "
+        # Migración: empleados Directo sin FechaInicioContrato (creados antes de la regla)
+        f"UPDATE dbo.Empleados SET FechaInicioContrato = FechaIngreso "
+        f"WHERE TipoVinculacion = 'Directo' AND FechaInicioContrato IS NULL; "
+        # Migración: empleados Temporal con FechaInicioContrato (creados con un bug anterior)
+        f"UPDATE dbo.Empleados SET FechaInicioContrato = NULL "
+        f"WHERE TipoVinculacion = 'Temporal' AND FechaInicioContrato IS NOT NULL;"
     )
     sql_file = os.path.join(tempfile.gettempdir(), "reset_test_usuarios.sql")
     with open(sql_file, "w", encoding="utf-8") as f:
@@ -163,7 +169,7 @@ IF @EmpId IS NULL
 UPDATE dbo.Empleados
 SET TipoVinculacion     = N'Temporal',
     EmpresaTemporalId   = @EmpId,
-    FechaInicioContrato = '2025-07-01',
+    FechaInicioContrato = NULL,
     FechaFinContrato    = '2026-07-01'
 WHERE Cedula = N'99887766';
 """

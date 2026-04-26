@@ -278,21 +278,24 @@ CREATE TABLE dbo.Empleados (
     ),
     CONSTRAINT CK_Empleados_DiasVac         CHECK       (DiasVacacionesPrevios >= 0),
 
-    -- Coherencia de contrato temporal: si Temporal, los tres campos son obligatorios
+    -- Coherencia de contrato temporal: si Temporal, EmpresaTemporalId y FechaFinContrato son obligatorios.
+    -- FechaInicioContrato NO aplica para Temporal (se gestiona solo en contratos Directos).
     CONSTRAINT CK_Empleados_ContratoTemp    CHECK (
         TipoVinculacion = 'Directo'
         OR
         (
             TipoVinculacion = 'Temporal'
-            AND EmpresaTemporalId   IS NOT NULL
-            AND FechaInicioContrato IS NOT NULL
-            AND FechaFinContrato    IS NOT NULL
+            AND EmpresaTemporalId IS NOT NULL
+            AND FechaFinContrato  IS NOT NULL
         )
     ),
 
-    -- Coherencia de fechas de contrato
+    -- Coherencia de fechas de contrato.
+    -- Se permite FechaInicioContrato NULL (empleados Temporales no tienen inicio de contrato).
     CONSTRAINT CK_Empleados_FechasContrato  CHECK (
-        FechaFinContrato IS NULL OR FechaFinContrato >= FechaInicioContrato
+        FechaFinContrato IS NULL
+        OR FechaInicioContrato IS NULL
+        OR FechaFinContrato >= FechaInicioContrato
     )
 );
 GO

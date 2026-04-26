@@ -46,32 +46,37 @@ Los siguientes campos dejan de ser obligatorios en creación **y** edición:
 
 ### 3.2 Comportamiento condicional según Tipo de Vinculación
 
-El formulario se comporta diferente según la opción elegida en el selector **Tipo de Vinculación**:
+El formulario se comporta diferente según la opción elegida en el selector **Tipo de Vinculación**.
+
+**`FechaIngreso` es SIEMPRE visible y obligatoria** para ambos tipos. Representa la fecha en que el empleado comenzó a laborar en la organización.
 
 #### Al seleccionar `Contrato Directo`
 
 ```
 [Tipo Vinculación = Contrato Directo]
-  → Muestra: Fecha de ingreso (campo obligatorio *)
+  → Muestra: Fecha de ingreso (obligatorio *)
+  → El servicio deriva: FechaInicioContrato = FechaIngreso (misma fecha)
   → Oculta: sección completa de Empresa Temporal
-             (Empresa Temporal, Fecha inicio contrato, Fecha fin contrato)
+             (Empresa Temporal, Fecha fin contrato)
 ```
 
 - `FechaIngreso` es **obligatoria** y visible.
-- La sección de empresa temporal se **oculta completamente** (no solo se deshabilita).
+- `FechaInicioContrato` **no se ingresa en el formulario** — el servicio la asigna igual a `FechaIngreso` automáticamente.
+- La sección de empresa temporal se **oculta completamente**.
 
 #### Al seleccionar `Empresa Temporal`
 
 ```
 [Tipo Vinculación = Empresa Temporal]
-  → Muestra: sección Empresa Temporal
-             (Empresa Temporal *, Fecha inicio contrato, Fecha fin contrato)
-  → Oculta: Fecha de ingreso
-             (es un concepto exclusivo del contrato directo)
+  → Muestra: Fecha de ingreso (obligatorio *)
+             sección Empresa Temporal
+             (Empresa Temporal *, Fecha fin contrato)
+  → FechaInicioContrato = NULL (el servicio siempre la ignora para este tipo)
 ```
 
-- `FechaIngreso` **no se muestra** — no aplica conceptualmente para un contrato temporal que maneja el empleado una empresa externa.
-- `EmpresaTemporalId` es **obligatoria** cuando el tipo es Temporal (regla ya existente, se mantiene).
+- `FechaIngreso` es **obligatoria** — registra cuándo entró el empleado a la organización.
+- `FechaInicioContrato` **siempre queda en `NULL`** en base de datos. El acumulado de vacaciones NO aplica mientras el contrato es temporal.
+- `EmpresaTemporalId` es **obligatoria** cuando el tipo es Temporal.
 
 ### 3.3 Breadboard del formulario
 
@@ -91,16 +96,16 @@ El formulario se comporta diferente según la opción elegida en el selector **T
   └── Vinculación laboral
         Sede *, Cargo *, Rol *, TipoVinculacion *
         JefeInmediato, DiasVacacionesPrevios
+        FechaIngreso *          ← SIEMPRE visible y obligatorio (ambos tipos)
         │
         ├── [Si Contrato Directo]
-        │     FechaIngreso *          ← visible y obligatorio
+        │     FechaInicioContrato = FechaIngreso (derivado por el servicio)
         │     (ocultar bloque temporal)
         │
         └── [Si Empresa Temporal]
               EmpresaTemporalId *     ← visible y obligatorio
-              FechaInicioContrato
               FechaFinContrato
-              (ocultar FechaIngreso)
+              FechaInicioContrato = NULL (siempre, gestionado por el servicio)
 ```
 
 ### 3.4 Capas de código afectadas
@@ -121,8 +126,9 @@ El formulario se comporta diferente según la opción elegida en el selector **T
 - **`ContactoEmergencia` como entidad separada:** El contacto de emergencia es una entidad `ContactoEmergencia` con su propia tabla y FK al empleado. Al hacerlo opcional, el Service debe manejar correctamente el caso en que `ContactoEmergenciaNombre` y `ContactoEmergenciaTelefono` vengan vacíos: **no crear la entidad** (dejar `ContactoEmergencia = null`) en lugar de crear un registro vacío. Este caso también aplica en edición: si ya existía y ahora ambos campos se dejan vacíos, ¿se elimina el registro o se deja intacto?  
   **Decisión:** si ambos campos están vacíos, no se crea/actualiza el registro. Si uno tiene valor, ambos son necesarios (validación cruzada del par).
 
-- **`FechaIngreso` en la base de datos:** La columna `FechaIngreso` en la tabla `Empleados` está definida como `NOT NULL` (`IsRequired()` en `EmpleadoConfiguration`). Si se quiere permitir que empleados de tipo Temporal no tengan `FechaIngreso`, hay dos opciones: (a) hacerla nullable en BD con migración, o (b) asignar un valor centinela.  
-  **Decisión para este ciclo:** mantener `FechaIngreso NOT NULL` en BD. Para empleados Temporales se asignará automáticamente la `FechaInicioContrato` como `FechaIngreso` (son el mismo dato bajo nombres distintos). El campo simplemente no se muestra en el formulario — el Service lo rellena internamente.
+- **`FechaIngreso` en la base de datos:** La columna `FechaIngreso` en la tabla `Empleados` está definida como `NOT NULL`. `FechaIngreso` es **siempre obligatoria** para ambos tipos de vinculación.
+  **Regla definitiva para Contrato Directo:** el servicio asigna `FechaInicioContrato = FechaIngreso` automáticamente (misma fecha, no se muestra en el formulario de creación).
+  **Regla definitiva para Empresa Temporal:** el servicio siempre asigna `FechaInicioContrato = NULL`. El cálculo de vacaciones no aplica mientras el contrato es temporal. Al cambiar a Directo, el analista ingresa manualmente la `FechaInicioContrato` (que debe ser ≥ `FechaIngreso`).
 
 - **Validación en servidor sin JS:** el comportamiento condicional es en el cliente (JavaScript). Pero si el formulario se envía con JS deshabilitado o por manipulación directa, el servidor debe validar también. El Service debe rechazar cualquier combinación inválida (ej. `TipoVinculacion = Directo` sin `FechaIngreso`).
 

@@ -62,13 +62,18 @@ public class EmpleadoService : IEmpleadoService
         if (await _repo.ExisteCorreoAsync(dto.CorreoElectronico, ct: ct))
             return ResultadoOperacion.Fail(EmpleadoConstant.CorreoElectronicoDuplicado);
 
-        // Validación condicional de FechaIngreso según TipoVinculacion
-        if (dto.TipoVinculacion == TipoVinculacion.Directo && dto.FechaIngreso is null)
-            return ResultadoOperacion.Fail("La fecha de ingreso es obligatoria para contrato directo.");
+        // FechaIngreso es obligatoria para cualquier tipo de vinculación
+        if (dto.FechaIngreso is null)
+            return ResultadoOperacion.Fail("La fecha de ingreso es obligatoria.");
 
-        var fechaIngreso = dto.TipoVinculacion == TipoVinculacion.Directo
-            ? dto.FechaIngreso!.Value
-            : (dto.FechaInicioContrato ?? DateOnly.FromDateTime(DateTime.UtcNow));
+        // Contrato directo: FechaInicioContrato obligatoria y >= FechaIngreso
+        if (dto.TipoVinculacion == TipoVinculacion.Directo)
+        {
+            if (dto.FechaInicioContrato is null)
+                return ResultadoOperacion.Fail("La fecha de inicio de contrato es obligatoria para contrato directo.");
+            if (dto.FechaInicioContrato.Value < dto.FechaIngreso.Value)
+                return ResultadoOperacion.Fail("La fecha de inicio de contrato no puede ser anterior a la fecha de ingreso.");
+        }
 
         // Crear usuario de acceso
         var resultadoUsuario = await _usuarioService.CrearParaEmpleadoAsync(
@@ -95,10 +100,10 @@ public class EmpleadoService : IEmpleadoService
             UsuarioId              = resultadoUsuario.Datos,
             JefeInmediatoId        = dto.JefeInmediatoId,
             TipoVinculacion        = dto.TipoVinculacion,
-            FechaIngreso           = fechaIngreso,
+            FechaIngreso           = dto.FechaIngreso!.Value,
             DiasVacacionesPrevios  = dto.DiasVacacionesPrevios,
-            EmpresaTemporalId      = dto.EmpresaTemporalId,
-            FechaInicioContrato    = dto.FechaInicioContrato,
+            EmpresaTemporalId      = dto.TipoVinculacion == TipoVinculacion.Temporal ? dto.EmpresaTemporalId : null,
+            FechaInicioContrato    = dto.TipoVinculacion == TipoVinculacion.Directo ? dto.FechaInicioContrato : (DateOnly?)null,
             FechaFinContrato       = dto.FechaFinContrato,
             Estado                 = EstadoEmpleado.Activo,
             FechaCreacion          = DateTime.UtcNow,
@@ -142,14 +147,20 @@ public class EmpleadoService : IEmpleadoService
         emp.TipoVinculacion       = Enum.Parse<TipoVinculacion>(dto.TipoVinculacion);
         if (dto.TipoVinculacion == "Directo")
         {
+            // Contrato directo: FechaInicioContrato obligatoria y >= FechaIngreso
+            if (dto.FechaInicioContrato is null)
+                return ResultadoOperacion.Fail("La fecha de inicio de contrato es obligatoria para contrato directo.");
+            if (dto.FechaInicioContrato.Value < emp.FechaIngreso)
+                return ResultadoOperacion.Fail("La fecha de inicio de contrato no puede ser anterior a la fecha de ingreso.");
             emp.EmpresaTemporalId   = null;
             emp.FechaInicioContrato = dto.FechaInicioContrato;
             emp.FechaFinContrato    = null;
         }
         else
         {
+            // Contrato temporal: FechaInicioContrato siempre null
             emp.EmpresaTemporalId   = dto.EmpresaTemporalId;
-            emp.FechaInicioContrato = dto.FechaInicioContrato;
+            emp.FechaInicioContrato = null;
             emp.FechaFinContrato    = dto.FechaFinContrato;
         }
         emp.FechaModificacion     = DateTime.UtcNow;

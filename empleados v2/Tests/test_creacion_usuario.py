@@ -30,15 +30,15 @@ def test_tc_cre_01_directo_muestra_fecha_ingreso_oculta_temporal(page: Page):
     expect(page.locator("#seccion-temporal")).to_be_hidden()
 
 
-def test_tc_cre_02_temporal_oculta_fecha_ingreso_muestra_temporal(page: Page):
-    """TC-CRE-02: Seleccionar 'Temporal' → FechaIngreso oculta, #seccion-temporal visible."""
+def test_tc_cre_02_temporal_muestra_fecha_ingreso_y_seccion_temporal(page: Page):
+    """TC-CRE-02: Seleccionar 'Temporal' → FechaIngreso SIEMPRE visible (regla nueva) y #seccion-temporal visible."""
     hacer_login_completo(page, JEFE_EMAIL, JEFE_PASSWORD)
     page.goto(f"{BASE_URL}/Empleado/Nuevo")
     page.wait_for_load_state("networkidle")
 
     page.select_option("#TipoVinculacion", "Temporal")
 
-    expect(page.locator("#seccion-fecha-ingreso")).to_be_hidden()
+    expect(page.locator("#seccion-fecha-ingreso")).to_be_visible()
     expect(page.locator("#seccion-temporal")).to_be_visible()
 
 
@@ -69,8 +69,8 @@ def test_tc_cre_04_contacto_emergencia_sin_asteriscos(page: Page):
         expect(form_group.locator("span.required")).to_have_count(0)
 
 
-def test_tc_cre_11_toggle_directo_temporal_limpia_fecha_ingreso(page: Page):
-    """TC-CRE-11: Cambiar de Directo a Temporal limpia el valor de FechaIngreso."""
+def test_tc_cre_11_toggle_directo_temporal_conserva_fecha_ingreso(page: Page):
+    """TC-CRE-11: Cambiar de Directo a Temporal NO limpia FechaIngreso (siempre visible y requerido)."""
     hacer_login_completo(page, JEFE_EMAIL, JEFE_PASSWORD)
     page.goto(f"{BASE_URL}/Empleado/Nuevo")
     page.wait_for_load_state("networkidle")
@@ -80,22 +80,24 @@ def test_tc_cre_11_toggle_directo_temporal_limpia_fecha_ingreso(page: Page):
 
     page.select_option("#TipoVinculacion", "Temporal")
 
+    expect(page.locator("#seccion-fecha-ingreso")).to_be_visible()
     valor = page.input_value("input[name='Dto.FechaIngreso']")
-    assert valor == "", f"Se esperaba campo vacío, se obtuvo: '{valor}'"
+    assert valor == "2026-04-25", f"Se esperaba que FechaIngreso se conserve, se obtuvo: '{valor}'"
 
 
-def test_tc_cre_12_toggle_temporal_directo_fecha_ingreso_vacia(page: Page):
-    """TC-CRE-12: Volver de Temporal a Directo → FechaIngreso re-aparece vacío."""
+def test_tc_cre_12_toggle_temporal_directo_fecha_ingreso_visible(page: Page):
+    """TC-CRE-12: FechaIngreso es visible tanto en Temporal como en Directo (siempre requerido)."""
     hacer_login_completo(page, JEFE_EMAIL, JEFE_PASSWORD)
     page.goto(f"{BASE_URL}/Empleado/Nuevo")
     page.wait_for_load_state("networkidle")
 
     page.select_option("#TipoVinculacion", "Temporal")
-    page.select_option("#TipoVinculacion", "Directo")
+    expect(page.locator("#seccion-fecha-ingreso")).to_be_visible()
 
+    page.select_option("#TipoVinculacion", "Directo")
     expect(page.locator("#seccion-fecha-ingreso")).to_be_visible()
     valor = page.input_value("input[name='Dto.FechaIngreso']")
-    assert valor == "", f"Se esperaba campo vacío, se obtuvo: '{valor}'"
+    assert valor == "", f"Se esperaba campo vacío (nunca fue llenado), se obtuvo: '{valor}'"
 
 
 # ── Scope B — Happy Path ──────────────────────────────────────────────────────
@@ -330,9 +332,10 @@ def _rellenar_formulario_directo(page: Page, cedula: str, fecha_ingreso: str):
     page.select_option("select[name='Dto.Rol']", "Operario")
     page.select_option("#TipoVinculacion", "Directo")
     page.fill("input[name='Dto.FechaIngreso']", fecha_ingreso)
+    page.fill("input[name='Dto.FechaInicioContrato']", fecha_ingreso)
 
 
-def _rellenar_formulario_temporal(page: Page, cedula: str, fecha_inicio: str, fecha_fin: str):
+def _rellenar_formulario_temporal(page: Page, cedula: str, fecha_ingreso: str, fecha_fin: str):
     page.fill("input[name='Dto.NombreCompleto']", f"Prueba Temporal {cedula}")
     page.fill("input[name='Dto.Cedula']", cedula)
     page.fill("input[name='Dto.Telefono']", "3001234502")
@@ -344,6 +347,6 @@ def _rellenar_formulario_temporal(page: Page, cedula: str, fecha_inicio: str, fe
     page.select_option("select[name='Dto.CargoId']", index=1)
     page.select_option("select[name='Dto.Rol']", "Operario")
     page.select_option("#TipoVinculacion", "Temporal")
+    page.fill("input[name='Dto.FechaIngreso']", fecha_ingreso)
     page.select_option("select[name='Dto.EmpresaTemporalId']", index=1)
-    page.fill("input[name='Dto.FechaInicioContrato']", fecha_inicio)
     page.fill("input[name='Dto.FechaFinContrato']", fecha_fin)

@@ -281,9 +281,12 @@
           <span asp-validation-for="Dto.DiasVacacionesPrevios" class="form-error"></span>
         </div>
 
-        <div class="form-group">
-          <label asp-for="Dto.FechaInicioContrato" class="form-label">Inicio del contrato</label>
+        <div id="grupo-inicio-contrato" class="form-group" @(esTemporal ? "hidden" : "")>
+          <label asp-for="Dto.FechaInicioContrato" class="form-label">
+            Inicio del contrato <span class="required" aria-hidden="true">*</span>
+          </label>
           <input asp-for="Dto.FechaInicioContrato" type="date" class="form-input" />
+          <span asp-validation-for="Dto.FechaInicioContrato" class="form-error"></span>
         </div>
 
       </div>
@@ -345,23 +348,26 @@
 (function () {
     const sel = document.getElementById('TipoVinculacion');
     const sec = document.getElementById('seccion-temporal');
-    const secIngreso   = document.getElementById('seccion-fecha-ingreso');
-    const inputIngreso = document.querySelector("input[name='Dto.FechaIngreso']");
     if (!sel || !sec) return;
 
     function toggle() {
         const esTemporal = sel.value === 'Temporal';
+        const grupoInicio = document.getElementById('grupo-inicio-contrato');
         if (esTemporal) {
             sec.removeAttribute('hidden');
+            if (grupoInicio) {
+                grupoInicio.setAttribute('hidden', '');
+                const inputInicio = grupoInicio.querySelector('input');
+                if (inputInicio) inputInicio.value = '';
+            }
         } else {
             sec.setAttribute('hidden', '');
             const empSelect = sec.querySelector('select[name$="EmpresaTemporalId"]');
             const fechaFin   = sec.querySelector('input[name$="FechaFinContrato"]');
             if (empSelect) empSelect.value = '';
             if (fechaFin)   fechaFin.value  = '';
+            if (grupoInicio) grupoInicio.removeAttribute('hidden');
         }
-        if (secIngreso) secIngreso.hidden = esTemporal;
-        if (esTemporal && inputIngreso) inputIngreso.value = '';
     }
 
     sel.addEventListener('change', toggle);

@@ -309,6 +309,14 @@
           </div>
         </div>
 
+        <div id="grupo-inicio-contrato" class="form-group" hidden>
+          <label asp-for="Dto.FechaInicioContrato" class="form-label">
+            Inicio del contrato <span class="required" aria-hidden="true">*</span>
+          </label>
+          <input asp-for="Dto.FechaInicioContrato" type="date" class="form-input" />
+          <span asp-validation-for="Dto.FechaInicioContrato" class="form-error"></span>
+        </div>
+
         <div class="form-group" style="grid-column:1/-1">
           <label asp-for="Dto.DiasVacacionesPrevios" class="form-label">Días de vacaciones ya tomados antes del sistema</label>
           <input asp-for="Dto.DiasVacacionesPrevios" type="number" step="0.5" min="0"
@@ -349,14 +357,6 @@
             }
           </select>
           <span asp-validation-for="Dto.EmpresaTemporalId" class="form-error"></span>
-        </div>
-
-        <div class="form-group">
-          <label asp-for="Dto.FechaInicioContrato" class="form-label">
-            Inicio de contrato <span class="required" aria-hidden="true">*</span>
-          </label>
-          <input asp-for="Dto.FechaInicioContrato" type="date" class="form-input" />
-          <span asp-validation-for="Dto.FechaInicioContrato" class="form-error"></span>
         </div>
 
         <div class="form-group">
@@ -411,20 +411,42 @@
 @section Scripts {
 <script>
 (function () {
-    const selector    = document.getElementById('TipoVinculacion');
-    const secTemporal = document.getElementById('seccion-temporal');
-    const secIngreso  = document.getElementById('seccion-fecha-ingreso');
-    const inputIngreso = document.querySelector("input[name='Dto.FechaIngreso']");
+    const sel = document.getElementById('TipoVinculacion');
+    const sec = document.getElementById('seccion-temporal');
+    if (!sel || !sec) return;
 
-    function actualizarVisibilidad() {
-        const esTemporal = selector.value === 'Temporal';
-        secTemporal.hidden = !esTemporal;
-        if (secIngreso) secIngreso.hidden = esTemporal;
-        if (esTemporal && inputIngreso) inputIngreso.value = '';
+    function toggle() {
+        const esTemporal = sel.value === 'Temporal';
+        const esDirecto  = sel.value === 'Directo';
+        const grupoInicio = document.getElementById('grupo-inicio-contrato');
+
+        if (esTemporal) {
+            sec.removeAttribute('hidden');
+            if (grupoInicio) {
+                grupoInicio.setAttribute('hidden', '');
+                const inputInicio = grupoInicio.querySelector('input');
+                if (inputInicio) inputInicio.value = '';
+            }
+        } else {
+            sec.setAttribute('hidden', '');
+            const empSelect = sec.querySelector('select[name$="EmpresaTemporalId"]');
+            const fechaFin   = sec.querySelector('input[name$="FechaFinContrato"]');
+            if (empSelect) empSelect.value = '';
+            if (fechaFin)   fechaFin.value  = '';
+            if (grupoInicio) {
+                if (esDirecto) {
+                    grupoInicio.removeAttribute('hidden');
+                } else {
+                    grupoInicio.setAttribute('hidden', '');
+                    const inputInicio = grupoInicio.querySelector('input');
+                    if (inputInicio) inputInicio.value = '';
+                }
+            }
+        }
     }
 
-    selector.addEventListener('change', actualizarVisibilidad);
-    actualizarVisibilidad();
+    sel.addEventListener('change', toggle);
+    toggle();
 })();
 </script>
 }

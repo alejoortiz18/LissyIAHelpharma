@@ -26,7 +26,7 @@ Verificar que el sistema permite cambiar correctamente el tipo de vinculación d
 | RN-01 | `TipoVinculacion` cambia de `Temporal` a `Directo`. |
 | RN-02 | `EmpresaTemporalId` pasa a `NULL` al cambiar a Directo. |
 | RN-03 | `FechaFinContrato` pasa a `NULL` (ya no aplica). |
-| RN-04 | `FechaInicioContrato` se establece como la **fecha en que se realiza el cambio** (hoy). |
+| RN-04 | `FechaInicioContrato` se establece con la fecha que el analista ingresa en el formulario de edición (debe ser ≥ `FechaIngreso` del empleado). No necesariamente es la fecha de hoy. |
 | RN-05 | `FechaIngreso` **no cambia** — sigue siendo la fecha en que el empleado comenzó a laborar en la empresa. |
 | RN-06 | El cálculo de vacaciones usa `FechaInicioContrato` como base: **1.25 días/mes = 15 días/año**. |
 | RN-07 | Los días acumulados durante el contrato temporal **no se trasladan** — el nuevo contrato directo comienza con saldo `0`. |
@@ -106,16 +106,17 @@ Verificar que el sistema permite cambiar correctamente el tipo de vinculación d
 6. Verificar que aparece la sección de contrato temporal con los campos: Empresa temporal, Fecha inicio contrato, Fecha fin contrato.
 7. Completar:
    - Empresa temporal: `ManpowerGroup Colombia`
-   - Fecha inicio contrato: `2025-04-25`
    - Fecha fin contrato: `2026-04-25`
+   - **No completar** Fecha inicio contrato (para empleados Temporales, `FechaInicioContrato` siempre queda en `NULL`)
 8. Hacer clic en **Guardar**.
 
 **Resultado esperado:**
 
 - El empleado aparece en la lista de empleados activos.
 - El perfil muestra `TipoVinculacion = Temporal`.
-- La sección de contrato temporal muestra empresa, fecha inicio y fecha fin correctas.
+- La sección de contrato temporal muestra empresa y fecha fin correctas.
 - `FechaIngreso` = `2025-04-25`.
+- `FechaInicioContrato` = `NULL` en base de datos.
 
 ---
 
@@ -133,22 +134,19 @@ Verificar que el sistema permite cambiar correctamente el tipo de vinculación d
 
 **Cálculo esperado:**
 
-> La fecha de hoy es `2026-04-25`.  
-> `FechaInicioContrato` = `2025-04-25`.  
-> Meses laborados = 12 meses exactos.  
-> Días acumulados = `12 × 1.25 = 15 días`.  
-> Días tomados = 0.  
-> **Saldo disponible = 15 días**.
+> Los empleados con contrato Temporal tienen `FechaInicioContrato = NULL`.  
+> El acumulado de vacaciones se calcula a partir de `FechaInicioContrato`.  
+> Con `FechaInicioContrato = NULL`, el saldo de vacaciones disponible es **0 días**.
 
 | Dato | Valor esperado |
 |---|---|
-| Días acumulados | `15` |
+| Días acumulados | `0` |
 | Días tomados | `0` |
-| Días disponibles | `15` |
+| Días disponibles | `0` |
 
 **Resultado esperado:**
 
-- El saldo disponible muestra **15 días**.
+- El saldo disponible muestra **0 días** (contrato temporal no acumula vacaciones en el sistema).
 
 ---
 
