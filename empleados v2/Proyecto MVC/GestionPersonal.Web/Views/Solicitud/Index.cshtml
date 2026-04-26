@@ -179,6 +179,45 @@ else
           </div>
         </div>
 
+        <!-- Balance vacaciones (solo visible cuando tipo = Vacaciones) -->
+        <div id="sol-vac-balance-widget" hidden>
+          <div class="vac-balance" aria-live="polite">
+            <div class="vac-balance-row">
+              <span class="vac-balance-label">Días acumulados</span>
+              <span class="vac-balance-val" id="sol-vac-acumulados">—</span>
+            </div>
+            <div class="vac-balance-row">
+              <span class="vac-balance-label">Días tomados</span>
+              <span class="vac-balance-val" id="sol-vac-tomados">—</span>
+            </div>
+            <div class="vac-balance-row" style="margin-bottom:var(--sp-3)">
+              <span class="vac-balance-label" style="font-weight:700">Saldo disponible</span>
+              <span class="vac-balance-val" id="sol-vac-disponibles" style="font-size:1.125rem">—</span>
+            </div>
+            <div class="vac-bar-track" aria-hidden="true">
+              <div class="vac-bar-fill" id="sol-vac-bar" style="width:0%"></div>
+            </div>
+          </div>
+          <div class="alert alert--warning" id="sol-vac-sin-saldo" hidden role="alert">
+            <div class="alert-body">
+              <p class="alert-title">Sin días disponibles</p>
+              <p>Usted no cuenta con días disponibles de vacaciones.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Días a disfrutar (solo Vacaciones) -->
+        <div class="form-group" id="sol-campo-dias-disfrutar" hidden>
+          <label class="form-label" for="sol-dias-disfrutar">
+            Días a disfrutar <span class="required" aria-hidden="true">*</span>
+          </label>
+          <input class="form-input" type="number" id="sol-dias-disfrutar"
+                 name="diasDisfrutar" min="1" max="365" inputmode="numeric"
+                 placeholder="Ej: 5"
+                 style="max-width:10rem">
+          <span class="form-hint" id="sol-dias-hint">Ingresa la cantidad de días que deseas disfrutar.</span>
+        </div>
+
         <div class="form-grid form-grid-2">
           <!-- Fecha inicio -->
           <div class="form-group">
@@ -230,17 +269,100 @@ else
 (function () {
   'use strict';
 
-  // ── Validación cliente básica ──────────────────────────────────────
-  const form    = document.getElementById('form-solicitud');
-  const errBox  = document.getElementById('sol-error');
-  const inicio  = document.getElementById('sol-inicio');
-  const fin     = document.getElementById('sol-fin');
+  var empId        = @ViewBag.EmpleadoId;
+  var vacSaldo     = null;
 
+  var form         = document.getElementById('form-solicitud');
+  var errBox       = document.getElementById('sol-error');
+  var tipoSel      = document.getElementById('sol-tipo');
+  var inicio       = document.getElementById('sol-inicio');
+  var fin          = document.getElementById('sol-fin');
+  var balanceWgt   = document.getElementById('sol-vac-balance-widget');
+  var sinSaldoAlrt = document.getElementById('sol-vac-sin-saldo');
+  var campoDias    = document.getElementById('sol-campo-dias-disfrutar');
+  var inputDias    = document.getElementById('sol-dias-disfrutar');
+  var hintDias     = document.getElementById('sol-dias-hint');
+  var submitBtn    = document.getElementById('sol-submit');
+
+  // ── Al cambiar el tipo de solicitud ───────────────────────────────
+  tipoSel.addEventListener('change', onTipoChange);
+
+  function onTipoChange() {
+    if (tipoSel.value === 'Vacaciones') {
+      cargarSaldo();
+    } else {
+      balanceWgt.hidden = true;
+      campoDias.hidden  = true;
+      inputDias.removeAttribute('required');
+      inputDias.value   = '';
+      vacSaldo = null;
+      habilitarFormulario();
+    }
+  }
+
+  // ── Cargar saldo vía AJAX ─────────────────────────────────────────
+  function cargarSaldo() {
+    fetch('/EventoLaboral/SaldoVacaciones?empleadoId=' + encodeURIComponent(empId))
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (data) {
+        if (!data) { balanceWgt.hidden = true; return; }
+
+        vacSaldo = data;
+
+        document.getElementById('sol-vac-acumulados').textContent  = data.acumulados + ' días';
+        document.getElementById('sol-vac-tomados').textContent     = data.tomados    + ' días';
+        document.getElementById('sol-vac-disponibles').textContent = data.disponibles + ' días';
+
+        var pct = data.acumulados > 0
+          ? Math.min(100, (data.disponibles / data.acumulados) * 100)
+          : 0;
+        var bar = document.getElementById('sol-vac-bar');
+        bar.style.width = pct + '%';
+        bar.className   = 'vac-bar-fill' +
+          (pct <= 0 ? ' is-empty' : pct <= 40 ? ' is-low' : '');
+
+        balanceWgt.hidden = false;
+
+        if (data.disponibles <= 0) {
+          sinSaldoAlrt.hidden = false;
+          campoDias.hidden    = true;
+          inputDias.value     = '';
+          bloquearFormulario();
+        } else {
+          sinSaldoAlrt.hidden = true;
+          campoDias.hidden    = false;
+          inputDias.setAttribute('required', 'required');
+          inputDias.setAttribute('max', data.disponibles);
+          hintDias.textContent = 'Máximo ' + data.disponibles + ' días disponibles.';
+          habilitarFormulario();
+        }
+      })
+      .catch(function () {
+        balanceWgt.hidden = true;
+        campoDias.hidden  = true;
+      });
+  }
+
+  function bloquearFormulario() {
+    inicio.disabled    = true;
+    fin.disabled       = true;
+    inputDias.disabled = true;
+    submitBtn.disabled = true;
+  }
+
+  function habilitarFormulario() {
+    inicio.disabled    = false;
+    fin.disabled       = false;
+    inputDias.disabled = false;
+    submitBtn.disabled = false;
+  }
+
+  // ── Validación en submit ──────────────────────────────────────────
   form.addEventListener('submit', function (e) {
     errBox.hidden = true;
-    const errors = [];
+    var errors = [];
 
-    if (!document.getElementById('sol-tipo').value)
+    if (!tipoSel.value)
       errors.push('Selecciona el tipo de solicitud.');
     if (!inicio.value)
       errors.push('Ingresa la fecha de inicio.');
@@ -251,6 +373,17 @@ else
     if (!document.getElementById('sol-descripcion').value.trim())
       errors.push('El motivo es obligatorio.');
 
+    if (tipoSel.value === 'Vacaciones') {
+      var dias = parseInt(inputDias.value, 10);
+      if (!inputDias.value || isNaN(dias) || dias < 1)
+        errors.push('Ingresa una cantidad válida de días a disfrutar (mínimo 1).');
+      else if (vacSaldo && dias > vacSaldo.disponibles)
+        errors.push('Los días a disfrutar (' + dias + ') superan tu saldo disponible (' + vacSaldo.disponibles + ' días).');
+
+      if (vacSaldo && vacSaldo.disponibles <= 0)
+        errors.push('No cuentas con días disponibles de vacaciones.');
+    }
+
     if (errors.length) {
       e.preventDefault();
       errBox.textContent = errors.join(' ');
@@ -258,8 +391,8 @@ else
     }
   });
 
-  // Fechas mínimas — no se puede solicitar en el pasado (fecha de inicio)
-  const hoy = new Date().toISOString().split('T')[0];
+  // ── Fechas mínimas ────────────────────────────────────────────────
+  var hoy = new Date().toISOString().split('T')[0];
   inicio.setAttribute('min', hoy);
 
   inicio.addEventListener('change', function () {

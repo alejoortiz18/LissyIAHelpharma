@@ -18,6 +18,9 @@ public class EventoLaboral
     // Solo para Permiso
     public string? Descripcion { get; set; }
 
+    /// <summary>Días explícitamente solicitados para vacaciones. Null para otros tipos de evento.</summary>
+    public int? DiasDisfrutar { get; set; }
+
     public string AutorizadoPor { get; set; } = null!;
     public string? MotivoAnulacion { get; set; }
     public string? RutaDocumento { get; set; }

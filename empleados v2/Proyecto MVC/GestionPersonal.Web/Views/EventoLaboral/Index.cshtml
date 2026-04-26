@@ -280,6 +280,35 @@ else
           </div>
         </div>
 
+        <!-- Días a disfrutar (solo Vacaciones) -->
+        <div class="form-group" id="ev-campo-dias-disfrutar" hidden>
+          <label class="form-label" for="ev-dias-disfrutar">
+            Días a disfrutar <span class="required" aria-hidden="true">*</span>
+          </label>
+          <input class="form-input" type="number" id="ev-dias-disfrutar"
+                 name="DiasDisfrutar" min="1" max="365" inputmode="numeric"
+                 placeholder="Ej: 5" style="max-width:10rem">
+          <span class="form-hint" id="ev-dias-hint">Ingresa los días de vacaciones a disfrutar.</span>
+        </div>
+
+        <!-- Motivo y Observaciones (solo Vacaciones) -->
+        <div id="campos-vacaciones-descripcion" hidden>
+          <div class="form-group">
+            <label class="form-label" for="ev-vac-motivo">
+              Motivo <span class="required" aria-hidden="true">*</span>
+            </label>
+            <textarea class="form-input" id="ev-vac-motivo"
+                      rows="3" maxlength="400"
+                      placeholder="Describe brevemente el motivo de la solicitud de vacaciones…"></textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="ev-vac-observaciones">Observaciones</label>
+            <textarea class="form-input" id="ev-vac-observaciones"
+                      rows="2" maxlength="300"
+                      placeholder="Información adicional (opcional)…"></textarea>
+          </div>
+        </div>
+
         <div class="form-grid form-grid-2">
           <div class="form-group">
             <label class="form-label" for="ev-inicio">Fecha inicio <span class="required" aria-hidden="true">*</span></label>
@@ -567,6 +596,8 @@ else
         bar.style.width = pct + '%';
         bar.className   = 'vac-bar-fill' + (pct <= 20 ? ' is-empty' : pct <= 40 ? ' is-low' : '');
         widget.hidden = false;
+        document.getElementById('ev-campo-dias-disfrutar').hidden = data.disponibles <= 0;
+        document.getElementById('campos-vacaciones-descripcion').hidden = data.disponibles <= 0;
         updateDiasCalc();
       })
       .catch(function () { widget.hidden = true; vacSaldo = null; });
@@ -599,16 +630,22 @@ else
     document.getElementById('campos-incapacidad').hidden   = true;
     document.getElementById('campos-permiso').hidden       = true;
     document.getElementById('campo-dias').hidden           = true;
-    document.getElementById('vac-sin-saldo').hidden        = true;
-    document.getElementById('doc-hint').textContent        = 'Opcional — PDF, JPG o PNG (máx. 5 MB).';
+    document.getElementById('vac-sin-saldo').hidden        = true;    document.getElementById('ev-campo-dias-disfrutar').hidden = true;
+    document.getElementById('campos-vacaciones-descripcion').hidden = true;
+    document.getElementById('ev-dias-disfrutar').value     = '';
+    document.getElementById('ev-vac-motivo').value         = '';
+    document.getElementById('ev-vac-observaciones').value  = '';    document.getElementById('doc-hint').textContent        = 'Opcional — PDF, JPG o PNG (máx. 5 MB).';
     vacSaldo = null;
   }
 
   /* ── Event type toggle ────────────────────────────────────── */
   document.getElementById('ev-tipo').addEventListener('change', function () {
     document.getElementById('campos-incapacidad').hidden = this.value !== 'Incapacidad';
-    document.getElementById('campos-permiso').hidden     = this.value !== 'Permiso';
-    document.getElementById('doc-hint').textContent = this.value === 'Incapacidad'
+    document.getElementById('campos-permiso').hidden     = this.value !== 'Permiso';    // Ocultar sección de vacaciones si no es vacaciones
+    if (this.value !== 'Vacaciones') {
+      document.getElementById('ev-campo-dias-disfrutar').hidden = true;
+      document.getElementById('campos-vacaciones-descripcion').hidden = true;
+    }    document.getElementById('doc-hint').textContent = this.value === 'Incapacidad'
       ? 'Requerido — certificado médico (PDF, JPG o PNG, máx. 5 MB).'
       : 'Opcional — PDF, JPG o PNG (máx. 5 MB).';
     updateVacBalance();
@@ -628,15 +665,30 @@ else
     if (!empId || !tipo || !inicio || !fin || !autorizante) {
       showToast('Completa todos los campos obligatorios.', 'error'); return;
     }
-    if (tipo === 'Vacaciones' && vacSaldo !== null) {
-      var dias = calcDiasHabiles(inicio, fin);
-      if (dias > vacSaldo.disponibles) {
-        showToast('Saldo de vacaciones insuficiente.', 'error'); return;
+    if (tipo === 'Vacaciones') {
+      var diasDisfrutar = parseInt(document.getElementById('ev-dias-disfrutar').value, 10);
+      if (isNaN(diasDisfrutar) || diasDisfrutar < 1) {
+        showToast('Ingresa los días a disfrutar (mínimo 1).', 'error'); return;
+      }
+      if (vacSaldo !== null && diasDisfrutar > vacSaldo.disponibles) {
+        showToast('Los días a disfrutar superan el saldo disponible.', 'error'); return;
+      }
+      var motivo = document.getElementById('ev-vac-motivo').value.trim();
+      if (!motivo) {
+        showToast('El motivo es obligatorio para las vacaciones.', 'error'); return;
       }
     }
 
     var form = document.getElementById('form-evento');
     var data = new FormData(form);
+
+    // Para vacaciones: inyectar motivo+observaciones en el campo Descripcion
+    if (tipo === 'Vacaciones') {
+      var motiVac = document.getElementById('ev-vac-motivo').value.trim();
+      var obsVac  = document.getElementById('ev-vac-observaciones').value.trim();
+      var descFinal = obsVac ? motiVac + ' | Observaciones: ' + obsVac : motiVac;
+      data.set('Descripcion', descFinal);
+    }
 
     fetch('@Url.Action("RegistrarAjax", "EventoLaboral")', {
       method: 'POST',

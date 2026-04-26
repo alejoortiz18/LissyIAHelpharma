@@ -51,6 +51,21 @@ public class EventoLaboralService : IEventoLaboralService
         if (solapados.Any())
             return ResultadoOperacion.Fail(EventoLaboralConstant.SolapamientoFechas);
 
+        // Validación de saldo de vacaciones
+        if (dto.TipoEvento == TipoEvento.Vacaciones && dto.DiasDisfrutar.HasValue)
+        {
+            var saldo = await ObtenerSaldoVacacionesAsync(dto.EmpleadoId, ct);
+            if (saldo is null)
+                return ResultadoOperacion.Fail("No se pudo calcular el saldo de vacaciones del empleado.");
+
+            if (saldo.Disponibles <= 0)
+                return ResultadoOperacion.Fail("El empleado no cuenta con días disponibles de vacaciones.");
+
+            if (dto.DiasDisfrutar.Value > saldo.Disponibles)
+                return ResultadoOperacion.Fail(
+                    $"Los días a disfrutar ({dto.DiasDisfrutar.Value}) superan el saldo disponible ({saldo.Disponibles} días).");
+        }
+
         var evento = new EventoLaboral
         {
             EmpleadoId      = dto.EmpleadoId,
@@ -61,6 +76,7 @@ public class EventoLaboralService : IEventoLaboralService
             TipoIncapacidad = dto.TipoIncapacidad,
             EntidadExpide   = dto.EntidadExpide,
             Descripcion     = dto.Descripcion,
+            DiasDisfrutar   = dto.TipoEvento == TipoEvento.Vacaciones ? dto.DiasDisfrutar : null,
             AutorizadoPor   = dto.AutorizadoPor,
             RutaDocumento   = dto.RutaDocumento,
             NombreDocumento = dto.NombreDocumento,
@@ -228,6 +244,7 @@ public class EventoLaboralService : IEventoLaboralService
         Estado          = e.Estado.ToString(),
         MotivoAnulacion = e.MotivoAnulacion,
         RutaDocumento   = e.RutaDocumento,
-        NombreDocumento = e.NombreDocumento
+        NombreDocumento = e.NombreDocumento,
+        DiasDisfrutar   = e.DiasDisfrutar
     };
 }

@@ -17,6 +17,7 @@ public class EventoLaboralDto
     public string? TipoIncapacidad { get; init; }
     public string? EntidadExpide { get; init; }
     public string? Descripcion { get; init; }
+    public int? DiasDisfrutar { get; init; }
     public string AutorizadoPor { get; init; } = null!;
     public string Estado { get; init; } = null!;
     public string? MotivoAnulacion { get; init; }

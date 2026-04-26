@@ -2,7 +2,8 @@ namespace GestionPersonal.Constants.Messages;
 
 public static class EmpleadoConstant
 {
-    public const string CedulaDuplicada         = "Ya existe un empleado registrado con esa cédula.";
+    public const string CedulaDuplicada              = "Ya existe un empleado registrado con esa cédula.";
+    public const string CorreoElectronicoDuplicado   = "Ya existe un empleado registrado con ese correo electrónico.";
     public const string EmpleadoNoEncontrado    = "El empleado no fue encontrado.";
     public const string EmpleadoDesactivado     = "El empleado fue desvinculado exitosamente.";
     public const string MotivoRetiroObligatorio = "El motivo de retiro es obligatorio.";

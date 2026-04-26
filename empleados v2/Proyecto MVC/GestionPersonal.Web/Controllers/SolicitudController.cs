@@ -28,6 +28,8 @@ public class SolicitudController : Controller
         if (!empId.HasValue)
             return Forbid();
 
+        ViewBag.EmpleadoId = empId.Value;
+
         var todas = await _solicitudService.ObtenerPropiosAsync(empId.Value);
 
         var q = todas.AsEnumerable();
@@ -63,7 +65,8 @@ public class SolicitudController : Controller
         string fechaInicio,
         string fechaFin,
         string? descripcion,
-        string? observaciones)
+        string? observaciones,
+        int? diasDisfrutar)
     {
         var empId      = SesionHelper.GetEmpleadoId(User);
         var usuarioId  = SesionHelper.GetUsuarioId(User);
@@ -92,11 +95,14 @@ public class SolicitudController : Controller
 
         var dto = new CrearEventoLaboralDto
         {
-            EmpleadoId  = empId.Value,
-            TipoEvento  = tipo,
-            FechaInicio = inicio,
-            FechaFin    = fin,
-            Descripcion = CombinarDescripcion(descripcion, observaciones),
+            EmpleadoId    = empId.Value,
+            TipoEvento    = tipo,
+            FechaInicio   = inicio,
+            FechaFin      = fin,
+            Descripcion   = CombinarDescripcion(descripcion, observaciones),
+            DiasDisfrutar = (tipo == TipoEvento.Vacaciones && diasDisfrutar.HasValue && diasDisfrutar > 0)
+                            ? diasDisfrutar
+                            : null,
             // AutorizadoPor y EstadoInicial son forzados por SolicitudService
             AutorizadoPor = string.Empty
         };

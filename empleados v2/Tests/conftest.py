@@ -100,7 +100,12 @@ def reset_estado_db():
         # Para garantizar idempotencia en re-ejecuciones consecutivas
         f"DELETE FROM dbo.EventosLaborales "
         f"WHERE EmpleadoId = 1 AND TipoEvento = 'Permiso' "
-        f"AND FechaInicio IN ('2026-07-01', '2026-08-01');"
+        f"AND FechaInicio IN ('2026-07-01', '2026-08-01'); "
+        # Vacaciones de prueba creadas por TC-SOL-VAC-06
+        f"DELETE FROM dbo.EventosLaborales "
+        f"WHERE EmpleadoId = 5 AND TipoEvento = 'Vacaciones'; "
+        # Seed FechaInicioContrato para tests de saldo vacaciones
+        f"UPDATE dbo.Empleados SET FechaInicioContrato = '2020-01-01' WHERE Id IN (1, 5);"
     )
     sql_file = os.path.join(tempfile.gettempdir(), "reset_test_usuarios.sql")
     with open(sql_file, "w", encoding="utf-8") as f:
@@ -127,3 +132,101 @@ def reset_estado_db():
 @pytest.fixture(scope="session")
 def base_url():
     return BASE_URL
+
+
+def _run_sql(sql: str) -> None:
+    """Ejecuta un bloque SQL contra (localdb)\\MSSQLLocalDB usando Invoke-Sqlcmd."""
+    import tempfile, os
+    sql_file = os.path.join(tempfile.gettempdir(), "reset_vinculacion.sql")
+    with open(sql_file, "w", encoding="utf-8") as f:
+        f.write(sql)
+    result = subprocess.run(
+        [
+            "powershell", "-Command",
+            (
+                f"Invoke-Sqlcmd -ServerInstance '(localdb)\\MSSQLLocalDB' "
+                f"-Database 'GestionPersonal' -InputFile '{sql_file}'"
+            ),
+        ],
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+    if result.returncode != 0:
+        pytest.fail(f"SQL falló: {result.stderr}")
+
+
+_SQL_CAMILA_TEMPORAL = """
+DECLARE @EmpId INT = (SELECT TOP 1 Id FROM dbo.EmpresasTemporales WHERE Nombre LIKE '%Adecco%');
+IF @EmpId IS NULL
+    SET @EmpId = (SELECT TOP 1 Id FROM dbo.EmpresasTemporales);
+UPDATE dbo.Empleados
+SET TipoVinculacion     = N'Temporal',
+    EmpresaTemporalId   = @EmpId,
+    FechaInicioContrato = '2025-07-01',
+    FechaFinContrato    = '2026-07-01'
+WHERE Cedula = N'99887766';
+"""
+
+_SQL_CAMILA_DIRECTO = """
+UPDATE dbo.Empleados
+SET TipoVinculacion     = N'Directo',
+    EmpresaTemporalId   = NULL,
+    FechaInicioContrato = NULL,
+    FechaFinContrato    = NULL
+WHERE Cedula = N'99887766';
+"""
+
+
+@pytest.fixture
+def reset_empleado_temporal():
+    """
+    Asegura que Camila Ríos Vargas (CC 99887766) esté en estado Temporal
+    antes del test, y la restaura a Temporal al finalizar (idempotencia).
+    """
+    _run_sql(_SQL_CAMILA_TEMPORAL)
+    yield
+    _run_sql(_SQL_CAMILA_TEMPORAL)
+
+
+@pytest.fixture(scope="session", autouse=False)
+def restaurar_camila_directo():
+    """Restaura a Camila a Directo al finalizar toda la suite de vinculación."""
+    yield
+    _run_sql(_SQL_CAMILA_DIRECTO)
+
+
+# ── Fixture para tests de creación de empleado ───────────────────────────────
+
+_CEDULAS_PRUEBA_CREACION = ("'12345001'", "'12345002'")
+
+
+def _borrar_empleados_prueba() -> None:
+    """Elimina los empleados de prueba creados por test_creacion_usuario.py."""
+    cedulas = ", ".join(_CEDULAS_PRUEBA_CREACION)
+    correos = (
+        "'directo.12345001@yopmail.com'",
+        "'temporal.12345002@yopmail.com'",
+    )
+    correos_in = ", ".join(correos)
+    sql = (
+        # 1. Contactos de emergencia (FK → Empleados)
+        f"DELETE ce FROM dbo.ContactosEmergencia ce "
+        f"INNER JOIN dbo.Empleados e ON ce.EmpleadoId = e.Id "
+        f"WHERE e.Cedula IN ({cedulas}); "
+        # 2. Romper FK Empleados.UsuarioId → Usuarios antes de borrar Usuarios
+        f"UPDATE dbo.Empleados SET UsuarioId = NULL WHERE Cedula IN ({cedulas}); "
+        # 3. Borrar Empleados
+        f"DELETE FROM dbo.Empleados WHERE Cedula IN ({cedulas}); "
+        # 4. Borrar Usuarios por correo (pueden quedar huérfanos si paso 3 falló)
+        f"DELETE FROM dbo.Usuarios WHERE CorreoAcceso IN ({correos_in});"
+    )
+    _run_sql(sql)
+
+
+@pytest.fixture(autouse=False)
+def limpiar_empleado_prueba():
+    """Elimina los empleados de prueba ANTES y DESPUÉS de cada test que la use."""
+    _borrar_empleados_prueba()
+    yield
+    _borrar_empleados_prueba()

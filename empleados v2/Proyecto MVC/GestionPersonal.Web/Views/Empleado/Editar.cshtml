@@ -4,7 +4,7 @@
     ViewData["BreadcrumbCurrent"] = "Editar empleado";
     var rolOptions = new[] { "DirectorTecnico", "Regente", "AuxiliarRegente", "Operario", "Analista", "Direccionador" };
     var nivelOptions = new[] { "Primaria", "Bachillerato", "Tecnico", "Tecnologico", "Profesional", "Posgrado" };
-    bool esTemporal = Model.Dto.EmpresaTemporalId.HasValue;
+    bool esTemporal = Model.Dto.TipoVinculacion == "Temporal";
 }
 
 <div class="page-header">
@@ -130,7 +130,7 @@
 
         <div class="form-group">
           <label asp-for="Dto.ContactoEmergenciaNombre" class="form-label">
-            Nombre del contacto <span class="required" aria-hidden="true">*</span>
+            Nombre del contacto
           </label>
           <input asp-for="Dto.ContactoEmergenciaNombre" type="text" class="form-input"
                  autocomplete="off" placeholder="Nombre completo del contacto…" />
@@ -139,7 +139,7 @@
 
         <div class="form-group">
           <label asp-for="Dto.ContactoEmergenciaTelefono" class="form-label">
-            Teléfono del contacto <span class="required" aria-hidden="true">*</span>
+            Teléfono del contacto
           </label>
           <input asp-for="Dto.ContactoEmergenciaTelefono" type="tel" class="form-input"
                  inputmode="tel" autocomplete="off" placeholder="Número de contacto…" />
@@ -192,7 +192,7 @@
 
         <div class="form-group">
           <label asp-for="Dto.Eps" class="form-label">
-            EPS <span class="required" aria-hidden="true">*</span>
+            EPS
           </label>
           <input asp-for="Dto.Eps" type="text" class="form-input"
                  autocomplete="off" placeholder="Nombre de la EPS…" />
@@ -254,6 +254,15 @@
         </div>
 
         <div class="form-group">
+          <label asp-for="Dto.TipoVinculacion" class="form-label">Tipo de vinculación</label>
+          <select asp-for="Dto.TipoVinculacion" id="TipoVinculacion" class="form-select">
+            <option value="Directo">Directo</option>
+            <option value="Temporal">Empresa temporal</option>
+          </select>
+          <span asp-validation-for="Dto.TipoVinculacion" class="form-error"></span>
+        </div>
+
+        <div class="form-group">
           <label asp-for="Dto.JefeInmediatoId" class="form-label">Jefe inmediato</label>
           <select asp-for="Dto.JefeInmediatoId" class="form-select">
             <option value="">Sin jefe inmediato</option>
@@ -270,6 +279,11 @@
           <input asp-for="Dto.DiasVacacionesPrevios" type="number" step="0.5" min="0"
                  class="form-input" placeholder="0" style="max-width:10rem" />
           <span asp-validation-for="Dto.DiasVacacionesPrevios" class="form-error"></span>
+        </div>
+
+        <div class="form-group">
+          <label asp-for="Dto.FechaInicioContrato" class="form-label">Inicio del contrato</label>
+          <input asp-for="Dto.FechaInicioContrato" type="date" class="form-input" />
         </div>
 
       </div>
@@ -304,11 +318,6 @@
         </div>
 
         <div class="form-group">
-          <label asp-for="Dto.FechaInicioContrato" class="form-label">Inicio del contrato</label>
-          <input asp-for="Dto.FechaInicioContrato" type="date" class="form-input" />
-        </div>
-
-        <div class="form-group">
           <label asp-for="Dto.FechaFinContrato" class="form-label">Fin del contrato</label>
           <input asp-for="Dto.FechaFinContrato" type="date" class="form-input" />
         </div>
@@ -330,3 +339,33 @@
   </div>
 
 </form>
+
+@section Scripts {
+<script>
+(function () {
+    const sel = document.getElementById('TipoVinculacion');
+    const sec = document.getElementById('seccion-temporal');
+    const secIngreso   = document.getElementById('seccion-fecha-ingreso');
+    const inputIngreso = document.querySelector("input[name='Dto.FechaIngreso']");
+    if (!sel || !sec) return;
+
+    function toggle() {
+        const esTemporal = sel.value === 'Temporal';
+        if (esTemporal) {
+            sec.removeAttribute('hidden');
+        } else {
+            sec.setAttribute('hidden', '');
+            const empSelect = sec.querySelector('select[name$="EmpresaTemporalId"]');
+            const fechaFin   = sec.querySelector('input[name$="FechaFinContrato"]');
+            if (empSelect) empSelect.value = '';
+            if (fechaFin)   fechaFin.value  = '';
+        }
+        if (secIngreso) secIngreso.hidden = esTemporal;
+        if (esTemporal && inputIngreso) inputIngreso.value = '';
+    }
+
+    sel.addEventListener('change', toggle);
+    toggle();
+})();
+</script>
+}

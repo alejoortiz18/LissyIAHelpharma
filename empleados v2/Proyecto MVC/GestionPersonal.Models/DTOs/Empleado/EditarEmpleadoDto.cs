@@ -38,20 +38,17 @@ public class EditarEmpleadoDto
     public string Departamento { get; set; } = null!;
 
     // Contacto de emergencia
-    [Required(ErrorMessage = "El nombre del contacto de emergencia es obligatorio.")]
     [StringLength(200)]
-    public string ContactoEmergenciaNombre { get; set; } = null!;
+    public string? ContactoEmergenciaNombre { get; set; }
 
-    [Required(ErrorMessage = "El teléfono del contacto de emergencia es obligatorio.")]
     [StringLength(20)]
-    public string ContactoEmergenciaTelefono { get; set; } = null!;
+    public string? ContactoEmergenciaTelefono { get; set; }
 
     // Formación y seguridad social
     public NivelEscolaridad? NivelEscolaridad { get; set; }
 
-    [Required(ErrorMessage = "La EPS es obligatoria.")]
     [StringLength(200)]
-    public string Eps { get; set; } = null!;
+    public string? Eps { get; set; }
 
     [StringLength(200)]
     public string? Arl { get; set; }
@@ -69,6 +66,9 @@ public class EditarEmpleadoDto
 
     [Range(0, 9999.9, ErrorMessage = "Los días deben ser un valor positivo.")]
     public decimal DiasVacacionesPrevios { get; set; }
+
+    [Required(ErrorMessage = "El tipo de vinculación es obligatorio.")]
+    public string TipoVinculacion { get; set; } = "Directo";
 
     // Contrato temporal
     public int? EmpresaTemporalId { get; set; }

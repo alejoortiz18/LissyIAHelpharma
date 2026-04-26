@@ -59,6 +59,17 @@ public class EmpleadoService : IEmpleadoService
         if (await _repo.ExisteCedulaAsync(dto.Cedula, ct: ct))
             return ResultadoOperacion.Fail(EmpleadoConstant.CedulaDuplicada);
 
+        if (await _repo.ExisteCorreoAsync(dto.CorreoElectronico, ct: ct))
+            return ResultadoOperacion.Fail(EmpleadoConstant.CorreoElectronicoDuplicado);
+
+        // Validación condicional de FechaIngreso según TipoVinculacion
+        if (dto.TipoVinculacion == TipoVinculacion.Directo && dto.FechaIngreso is null)
+            return ResultadoOperacion.Fail("La fecha de ingreso es obligatoria para contrato directo.");
+
+        var fechaIngreso = dto.TipoVinculacion == TipoVinculacion.Directo
+            ? dto.FechaIngreso!.Value
+            : (dto.FechaInicioContrato ?? DateOnly.FromDateTime(DateTime.UtcNow));
+
         // Crear usuario de acceso
         var resultadoUsuario = await _usuarioService.CrearParaEmpleadoAsync(
             dto.CorreoElectronico, dto.Rol, dto.SedeId, ct);
@@ -84,7 +95,7 @@ public class EmpleadoService : IEmpleadoService
             UsuarioId              = resultadoUsuario.Datos,
             JefeInmediatoId        = dto.JefeInmediatoId,
             TipoVinculacion        = dto.TipoVinculacion,
-            FechaIngreso           = dto.FechaIngreso,
+            FechaIngreso           = fechaIngreso,
             DiasVacacionesPrevios  = dto.DiasVacacionesPrevios,
             EmpresaTemporalId      = dto.EmpresaTemporalId,
             FechaInicioContrato    = dto.FechaInicioContrato,
@@ -92,11 +103,14 @@ public class EmpleadoService : IEmpleadoService
             Estado                 = EstadoEmpleado.Activo,
             FechaCreacion          = DateTime.UtcNow,
             CreadoPor              = creadoPorUsuarioId,
-            ContactoEmergencia     = new ContactoEmergencia
-            {
-                NombreContacto    = dto.ContactoEmergenciaNombre,
-                TelefonoContacto  = dto.ContactoEmergenciaTelefono
-            }
+            ContactoEmergencia     = !string.IsNullOrWhiteSpace(dto.ContactoEmergenciaNombre)
+                                     || !string.IsNullOrWhiteSpace(dto.ContactoEmergenciaTelefono)
+                ? new ContactoEmergencia
+                  {
+                      NombreContacto   = dto.ContactoEmergenciaNombre ?? string.Empty,
+                      TelefonoContacto = dto.ContactoEmergenciaTelefono ?? string.Empty
+                  }
+                : null
         };
 
         _repo.Agregar(emp);
@@ -125,26 +139,43 @@ public class EmpleadoService : IEmpleadoService
         emp.CargoId               = dto.CargoId;
         emp.JefeInmediatoId       = dto.JefeInmediatoId;
         emp.DiasVacacionesPrevios = dto.DiasVacacionesPrevios;
-        emp.EmpresaTemporalId     = dto.EmpresaTemporalId;
-        emp.FechaInicioContrato   = dto.FechaInicioContrato;
-        emp.FechaFinContrato      = dto.FechaFinContrato;
-        emp.FechaModificacion     = DateTime.UtcNow;
-        emp.ModificadoPor         = modificadoPorUsuarioId;
-
-        if (emp.ContactoEmergencia is not null)
+        emp.TipoVinculacion       = Enum.Parse<TipoVinculacion>(dto.TipoVinculacion);
+        if (dto.TipoVinculacion == "Directo")
         {
-            emp.ContactoEmergencia.NombreContacto   = dto.ContactoEmergenciaNombre;
-            emp.ContactoEmergencia.TelefonoContacto = dto.ContactoEmergenciaTelefono;
+            emp.EmpresaTemporalId   = null;
+            emp.FechaInicioContrato = dto.FechaInicioContrato;
+            emp.FechaFinContrato    = null;
         }
         else
         {
-            emp.ContactoEmergencia = new ContactoEmergencia
-            {
-                EmpleadoId       = emp.Id,
-                NombreContacto   = dto.ContactoEmergenciaNombre,
-                TelefonoContacto = dto.ContactoEmergenciaTelefono
-            };
+            emp.EmpresaTemporalId   = dto.EmpresaTemporalId;
+            emp.FechaInicioContrato = dto.FechaInicioContrato;
+            emp.FechaFinContrato    = dto.FechaFinContrato;
         }
+        emp.FechaModificacion     = DateTime.UtcNow;
+        emp.ModificadoPor         = modificadoPorUsuarioId;
+
+        bool tieneContacto = !string.IsNullOrWhiteSpace(dto.ContactoEmergenciaNombre)
+                             || !string.IsNullOrWhiteSpace(dto.ContactoEmergenciaTelefono);
+
+        if (tieneContacto)
+        {
+            if (emp.ContactoEmergencia is not null)
+            {
+                emp.ContactoEmergencia.NombreContacto   = dto.ContactoEmergenciaNombre ?? string.Empty;
+                emp.ContactoEmergencia.TelefonoContacto = dto.ContactoEmergenciaTelefono ?? string.Empty;
+            }
+            else
+            {
+                emp.ContactoEmergencia = new ContactoEmergencia
+                {
+                    EmpleadoId       = emp.Id,
+                    NombreContacto   = dto.ContactoEmergenciaNombre ?? string.Empty,
+                    TelefonoContacto = dto.ContactoEmergenciaTelefono ?? string.Empty
+                };
+            }
+        }
+        // Si ambos están vacíos, se preserva el contacto existente sin modificarlo
 
         _repo.Actualizar(emp);
         await _repo.GuardarCambiosAsync(ct);

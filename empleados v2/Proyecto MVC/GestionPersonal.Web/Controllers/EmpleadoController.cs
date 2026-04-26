@@ -54,8 +54,8 @@ public class EmpleadoController : Controller
         }
 
         IReadOnlyList<EmpleadoListaDto> todos;
-        // Administrador y Analista: acceso total sin filtro de sede
-        if (rol == RolUsuario.Administrador || rol == RolUsuario.Analista)
+        // Administrador, Analista y DirectorTecnico: acceso total sin filtro de sede
+        if (rol == RolUsuario.Administrador || rol == RolUsuario.Analista || rol == RolUsuario.DirectorTecnico)
             todos = await _empleadoService.ObtenerTodosAsync();
         else
             todos = await _empleadoService.ObtenerPorSedeAsync(miSede);

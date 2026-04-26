@@ -40,6 +40,10 @@ public class CrearEventoLaboralDto
     [StringLength(200)]
     public string? NombreDocumento { get; set; }
 
+    /// <summary>Días explícitamente solicitados (solo Vacaciones). Validado contra saldo disponible.</summary>
+    [Range(1, 365, ErrorMessage = "Los días a disfrutar deben ser entre 1 y 365.")]
+    public int? DiasDisfrutar { get; set; }
+
     /// <summary>
     /// Estado inicial del evento. Por defecto <see cref="EstadoEvento.Activo"/> (flujo clásico de supervisor).
     /// Las solicitudes de autogestión usan <see cref="EstadoEvento.Pendiente"/>.
