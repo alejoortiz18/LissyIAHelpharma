@@ -25,12 +25,15 @@ public interface IEventoLaboralService
     /// <summary>
     /// Aprueba, rechaza o reversa una solicitud. El nombre del responsable se guarda en AutorizadoPor.
     /// La observación es obligatoria al rechazar o reversar; se persiste en MotivoAnulacion.
+    /// Si se provee <paramref name="aprobadorEmpleadoId"/>, se dispara la notificación por correo
+    /// al solicitante y (solo en aprobaciones) al jefe del aprobador.
     /// </summary>
     Task<ResultadoOperacion> CambiarEstadoAsync(
         int eventoId,
         EstadoEvento nuevoEstado,
         string nombreResponsable,
         string? observacion,
+        int? aprobadorEmpleadoId = null,
         CancellationToken ct = default);
 
     Task<SaldoVacacionesDto?> ObtenerSaldoVacacionesAsync(int empleadoId, CancellationToken ct = default);

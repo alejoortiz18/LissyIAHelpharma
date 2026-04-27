@@ -28,4 +28,5 @@ public interface INotificationService
     // ── Cambios de personal ───────────────────────────────────────────────────
     Task NotificarCambioCargoAsync(NotificacionCambioPersonalDto datos, CancellationToken ct = default);
     Task NotificarCambioSedeAsync(NotificacionCambioPersonalDto datos, CancellationToken ct = default);
-}
+    // ── Gestión de solicitudes (cambio de estado) ─────────────────────────────
+    Task NotificarCambioEstadoSolicitudAsync(NotificacionCambioEstadoDto datos, CancellationToken ct = default);}

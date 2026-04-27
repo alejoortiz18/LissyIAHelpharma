@@ -67,7 +67,8 @@ public class NotificationService : INotificationService
                Asunto($"Nueva {d.TipoSolicitud}", d.NombreEmpleadoSolicitante),
                d.CorreoJefeInmediato, d.CorreoJefeApoyo,
                SolicitudEmailTemplate.SolicitudCreadaParaJefe(
-                   d.NombreJefeInmediato, d.NombreEmpleadoSolicitante, d.TipoSolicitud, d.FechaEvento),
+                   d.NombreJefeInmediato, d.NombreEmpleadoSolicitante, d.TipoSolicitud,
+                   d.FechaEvento, d.FechaFin ?? "", d.Descripcion),
                ct);
 
     public Task NotificarSolicitudAprobadaAsync(
@@ -150,6 +151,31 @@ public class NotificationService : INotificationService
                PersonalEmailTemplate.CambioSede(
                    d.NombreEmpleado, d.ValorAnterior, d.ValorNuevo, d.NombreQuienGenera),
                ct);
+
+    public async Task NotificarCambioEstadoSolicitudAsync(
+        NotificacionCambioEstadoDto d, CancellationToken ct = default)
+    {
+        // Siempre: correo al solicitante
+        await Enviar("CambioEstadoSolicitud",
+               Asunto($"Solicitud {d.NuevoEstado}", d.AprobadorNombre),
+               d.SolicitanteCorreo, null,
+               CambioEstadoEmailTemplate.ParaSolicitante(
+                   d.SolicitanteNombre, d.TipoEvento, d.FechaInicio, d.FechaFin,
+                   d.Descripcion, d.NuevoEstado, d.AprobadorNombre, d.Observacion),
+               ct);
+
+        // Solo en aprobación con jefe por encima del aprobador
+        if (d.NuevoEstado == "Aprobado" && !string.IsNullOrWhiteSpace(d.JefeAprobadorCorreo))
+        {
+            await Enviar("CambioEstadoSolicitudJefeAprobador",
+                   Asunto("Aprobación bajo tu autoridad", d.AprobadorNombre),
+                   d.JefeAprobadorCorreo, null,
+                   CambioEstadoEmailTemplate.ParaJefeAprobador(
+                       d.JefeAprobadorNombre!, d.AprobadorNombre, d.SolicitanteNombre,
+                       d.TipoEvento, d.FechaInicio, d.FechaFin, d.Descripcion, d.Observacion),
+                   ct);
+        }
+    }
 
   
     private static string Asunto(string tipo, string quien)

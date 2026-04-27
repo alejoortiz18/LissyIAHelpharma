@@ -2,9 +2,11 @@ using GestionPersonal.Application.Interfaces;
 using GestionPersonal.Constants.Messages;
 using GestionPersonal.Domain.Interfaces;
 using GestionPersonal.Models.DTOs.EventoLaboral;
+using GestionPersonal.Models.DTOs.Notificaciones;
 using GestionPersonal.Models.Entities.GestionPersonalEntities;
 using GestionPersonal.Models.Enums;
 using GestionPersonal.Models.Models;
+using Microsoft.Extensions.Logging;
 
 namespace GestionPersonal.Application.Services;
 
@@ -12,11 +14,19 @@ public class EventoLaboralService : IEventoLaboralService
 {
     private readonly IEventoLaboralRepository _repo;
     private readonly IEmpleadoRepository _empleadoRepo;
+    private readonly INotificationService _notificationService;
+    private readonly ILogger<EventoLaboralService> _logger;
 
-    public EventoLaboralService(IEventoLaboralRepository repo, IEmpleadoRepository empleadoRepo)
+    public EventoLaboralService(
+        IEventoLaboralRepository repo,
+        IEmpleadoRepository empleadoRepo,
+        INotificationService notificationService,
+        ILogger<EventoLaboralService> logger)
     {
-        _repo         = repo;
-        _empleadoRepo = empleadoRepo;
+        _repo                = repo;
+        _empleadoRepo        = empleadoRepo;
+        _notificationService = notificationService;
+        _logger              = logger;
     }
 
     public async Task<IReadOnlyList<EventoLaboralDto>> ObtenerPorSedeAsync(int sedeId, CancellationToken ct = default)
@@ -87,6 +97,17 @@ public class EventoLaboralService : IEventoLaboralService
         _repo.Agregar(evento);
         await _repo.GuardarCambiosAsync(ct);
 
+        // Notificación al jefe inmediato (no bloquea ni propaga errores)
+        try
+        {
+            await EnviarNotificacionSolicitudCreadaAsync(evento, dto.EmpleadoId, ct);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex,
+                "Error al notificar nueva solicitud para evento {EventoId}", evento.Id);
+        }
+
         return ResultadoOperacion.Ok(EventoLaboralConstant.EventoCreado);
     }
 
@@ -142,6 +163,7 @@ public class EventoLaboralService : IEventoLaboralService
         EstadoEvento nuevoEstado,
         string nombreResponsable,
         string? observacion,
+        int? aprobadorEmpleadoId = null,
         CancellationToken ct = default)
     {
         var evento = await _repo.ObtenerPorIdAsync(eventoId, ct);
@@ -177,8 +199,111 @@ public class EventoLaboralService : IEventoLaboralService
             _                      => nuevoEstado.ToString().ToLower()
         };
 
+        // Notificación por correo (no bloquea ni propaga errores)
+        if (aprobadorEmpleadoId.HasValue)
+        {
+            try
+            {
+                await EnviarNotificacionCambioEstadoAsync(
+                    evento, nuevoEstado, nombreResponsable, aprobadorEmpleadoId.Value, observacion, ct);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex,
+                    "Error al preparar notificación de cambio de estado para evento {EventoId}", eventoId);
+            }
+        }
+
         return ResultadoOperacion.Ok($"La solicitud fue {etiqueta} correctamente.");
     }
+
+    private async Task EnviarNotificacionSolicitudCreadaAsync(
+        EventoLaboral evento,
+        int solicitanteEmpleadoId,
+        CancellationToken ct)
+    {
+        var solicitante = await _empleadoRepo.ObtenerPorIdConDetallesAsync(solicitanteEmpleadoId, ct);
+        if (solicitante is null) return;
+
+        if (!solicitante.JefeInmediatoId.HasValue) return;
+
+        var jefe = await _empleadoRepo.ObtenerPorIdConDetallesAsync(solicitante.JefeInmediatoId.Value, ct);
+        if (jefe is null) return;
+
+        var correoJefe = ResolverCorreo(jefe);
+        if (string.IsNullOrWhiteSpace(correoJefe)) return;
+
+        var dto = new NotificacionSolicitudDto(
+            TipoEvento                : evento.TipoEvento.ToString(),
+            TipoSolicitud             : evento.TipoEvento.ToString(),
+            FechaEvento               : evento.FechaInicio.ToString("dd/MM/yyyy"),
+            NombreEmpleadoSolicitante : solicitante.NombreCompleto,
+            CorreoEmpleadoSolicitante : ResolverCorreo(solicitante) ?? "",
+            NombreJefeInmediato       : jefe.NombreCompleto,
+            CorreoJefeInmediato       : correoJefe,
+            NombreJefeApoyo           : null,
+            CorreoJefeApoyo           : null,
+            NombreAprobador           : null,
+            Observacion               : null,
+            NombreQuienGenera         : solicitante.NombreCompleto,
+            FechaFin                  : evento.FechaFin.ToString("dd/MM/yyyy"),
+            Descripcion               : evento.Descripcion);
+
+        await _notificationService.NotificarSolicitudCreadaAsync(dto, ct);
+    }
+
+    private async Task EnviarNotificacionCambioEstadoAsync(
+        EventoLaboral evento,
+        EstadoEvento nuevoEstado,
+        string aprobadorNombre,
+        int aprobadorEmpleadoId,
+        string? observacion,
+        CancellationToken ct)
+    {
+        var solicitante = await _empleadoRepo.ObtenerPorIdConDetallesAsync(evento.EmpleadoId, ct);
+        if (solicitante is null) return;
+
+        var correoSolicitante = ResolverCorreo(solicitante);
+        if (string.IsNullOrWhiteSpace(correoSolicitante)) return;
+
+        string? nombreJefeAprobador = null;
+        string? correoJefeAprobador = null;
+
+        if (nuevoEstado == EstadoEvento.Aprobado)
+        {
+            var aprobador = await _empleadoRepo.ObtenerPorIdConDetallesAsync(aprobadorEmpleadoId, ct);
+            if (aprobador?.JefeInmediatoId.HasValue == true)
+            {
+                var jefeAprobador = await _empleadoRepo.ObtenerPorIdConDetallesAsync(
+                    aprobador.JefeInmediatoId.Value, ct);
+                if (jefeAprobador is not null)
+                {
+                    nombreJefeAprobador = jefeAprobador.NombreCompleto;
+                    correoJefeAprobador = ResolverCorreo(jefeAprobador);
+                }
+            }
+        }
+
+        var dto = new NotificacionCambioEstadoDto(
+            TipoEvento          : evento.TipoEvento.ToString(),
+            FechaInicio         : evento.FechaInicio.ToString("dd/MM/yyyy"),
+            FechaFin            : evento.FechaFin.ToString("dd/MM/yyyy"),
+            Descripcion         : evento.Descripcion,
+            NuevoEstado         : nuevoEstado.ToString(),
+            AprobadorNombre     : aprobadorNombre,
+            SolicitanteNombre   : solicitante.NombreCompleto,
+            SolicitanteCorreo   : correoSolicitante,
+            JefeAprobadorNombre : nombreJefeAprobador,
+            JefeAprobadorCorreo : correoJefeAprobador,
+            Observacion         : observacion);
+
+        await _notificationService.NotificarCambioEstadoSolicitudAsync(dto, ct);
+    }
+
+    private static string? ResolverCorreo(Empleado emp) =>
+        !string.IsNullOrWhiteSpace(emp.CorreoElectronico)
+            ? emp.CorreoElectronico
+            : emp.Usuario?.CorreoAcceso;
 
     public async Task<SaldoVacacionesDto?> ObtenerSaldoVacacionesAsync(int empleadoId, CancellationToken ct = default)
     {

@@ -12,4 +12,6 @@ public record NotificacionSolicitudDto(
     string? CorreoJefeApoyo,
     string? NombreAprobador,
     string? Observacion,
-    string  NombreQuienGenera);
+    string  NombreQuienGenera,
+    string? FechaFin     = null,
+    string? Descripcion  = null);

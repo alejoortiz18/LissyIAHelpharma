@@ -261,7 +261,7 @@ public class EventoLaboralController : Controller
         // DirectorTecnico: puede gestionar cualquier solicitud de su sede (ya filtrada)
         // Analista: puede gestionar cualquier solicitud sin restricción de sede
 
-        var resultado = await _eventoService.CambiarEstadoAsync(id, estado, nombreResp, observacion);
+        var resultado = await _eventoService.CambiarEstadoAsync(id, estado, nombreResp, observacion, empId);
         return Json(new { exito = resultado.Exito, mensaje = resultado.Mensaje });
     }
 

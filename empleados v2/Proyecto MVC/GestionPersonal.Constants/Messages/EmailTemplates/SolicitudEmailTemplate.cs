@@ -16,27 +16,34 @@ public static class SolicitudEmailTemplate
         string nombreJefe,
         string nombreSolicitante,
         string tipoSolicitud,
-        string fechaEvento,
-        string detalle = "")
+        string fechaInicio,
+        string fechaFin,
+        string? descripcion = null)
     {
-        var filaDetalle = string.IsNullOrWhiteSpace(detalle)
+        var filaFechaFin = string.IsNullOrWhiteSpace(fechaFin)
             ? ""
-            : EmailBase.FilaDato("Detalle", detalle, true);
+            : EmailBase.FilaDato("Fecha fin", fechaFin, false);
+
+        var filaDescripcion = string.IsNullOrWhiteSpace(descripcion)
+            ? ""
+            : EmailBase.FilaDato("Descripción", descripcion, true);
 
         var cuerpo = $"""
             <p style="margin:0 0 20px;font-size:15px;color:#1e293b;line-height:1.7;">
               Hola <strong>{EmailBase.EscapeHtml(nombreJefe)}</strong>,
             </p>
             <p style="margin:0 0 20px;font-size:14px;color:#475569;line-height:1.7;">
-              Se ha registrado una nueva solicitud de <strong>{EmailBase.EscapeHtml(tipoSolicitud)}</strong>
-              que requiere tu revisión:
+              Un empleado a tu cargo ha creado una nueva solicitud de
+              <strong>{EmailBase.EscapeHtml(tipoSolicitud)}</strong> que requiere tu revisión:
             </p>
 
             {EmailBase.TablaInfo(
-                EmailBase.FilaDato("Solicitante", nombreSolicitante, false) +
-                EmailBase.FilaDato("Tipo",        tipoSolicitud,     true)  +
-                EmailBase.FilaDato("Fecha",       fechaEvento,       false) +
-                filaDetalle
+                EmailBase.FilaDato("Empleado",     nombreSolicitante, false) +
+                EmailBase.FilaDato("Tipo",         tipoSolicitud,     true)  +
+                EmailBase.FilaDato("Fecha inicio", fechaInicio,       false) +
+                filaFechaFin +
+                EmailBase.FilaDato("Estado",       "Pendiente",       false) +
+                filaDescripcion
             )}
 
             {EmailBase.Banner("Esta solicitud está pendiente de tu aprobación. Ingresa al sistema para revisarla.", "info")}
