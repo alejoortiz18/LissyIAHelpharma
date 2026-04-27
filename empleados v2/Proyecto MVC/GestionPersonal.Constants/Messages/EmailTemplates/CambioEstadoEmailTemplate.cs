@@ -67,6 +67,64 @@ public static class CambioEstadoEmailTemplate
             tipoEvento      : "Cambio de estado — Solicitud");
     }
 
+    // ── Correo informativo a jefe inmediato o aprobador (cualquier estado) ──
+
+    public static string ParaJefeNotificado(
+        string nombreJefe,
+        string aprobadorNombre,
+        string solicitanteNombre,
+        string tipoEvento,
+        string fechaInicio,
+        string fechaFin,
+        string? descripcion,
+        string nuevoEstado,
+        string? observacion = null)
+    {
+        var filaObs = string.IsNullOrWhiteSpace(observacion)
+            ? ""
+            : EmailBase.FilaDato("Observación", observacion, true);
+
+        var filaDescripcion = string.IsNullOrWhiteSpace(descripcion)
+            ? ""
+            : EmailBase.FilaDato("Descripción", descripcion, false);
+
+        var (bannerTipo, accion) = nuevoEstado switch
+        {
+            "Aprobado"  => ("exito",       "aprobada"),
+            "Rechazado" => ("peligro",     "rechazada"),
+            _           => ("advertencia", "devuelta a revisión"),
+        };
+
+        var cuerpo = $"""
+            <p style="margin:0 0 20px;font-size:15px;color:#1e293b;line-height:1.7;">
+              Hola <strong>{EmailBase.EscapeHtml(nombreJefe)}</strong>,
+            </p>
+
+            {EmailBase.Banner($"La solicitud de {EmailBase.EscapeHtml(solicitanteNombre)} fue {accion} por {EmailBase.EscapeHtml(aprobadorNombre)}.", bannerTipo)}
+
+            {EmailBase.TablaInfo(
+                EmailBase.FilaDato("Gestionada por",   aprobadorNombre,    false) +
+                EmailBase.FilaDato("Empleado",         solicitanteNombre,  true)  +
+                EmailBase.FilaDato("Tipo",             tipoEvento,         false) +
+                EmailBase.FilaDato("Fecha inicio",     fechaInicio,        true)  +
+                EmailBase.FilaDato("Fecha fin",        fechaFin,           false) +
+                filaDescripcion                                                    +
+                filaObs
+            )}
+
+            {EmailBase.Banner("Este correo es solo informativo. No se requiere acción de tu parte.", "info")}
+            """;
+
+        return EmailBase.Construir(
+            tituloVentana   : $"Solicitud de {tipoEvento} {accion}",
+            badgeColor      : "Informativo",
+            badgeTexto      : $"Solicitud {nuevoEstado}",
+            tituloPrincipal : $"Solicitud de {EmailBase.EscapeHtml(solicitanteNombre)} {accion}",
+            cuerpoHtml      : cuerpo,
+            generadoPor     : aprobadorNombre,
+            tipoEvento      : "Cambio de estado — Solicitud");
+    }
+
     // ── Correo al jefe del aprobador (solo en aprobación) ────────────────────
 
     public static string ParaJefeAprobador(

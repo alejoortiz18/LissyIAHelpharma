@@ -155,7 +155,7 @@ public class NotificationService : INotificationService
     public async Task NotificarCambioEstadoSolicitudAsync(
         NotificacionCambioEstadoDto d, CancellationToken ct = default)
     {
-        // Siempre: correo al solicitante
+        // 1. Siempre: correo al solicitante
         await Enviar("CambioEstadoSolicitud",
                Asunto($"Solicitud {d.NuevoEstado}", d.AprobadorNombre),
                d.SolicitanteCorreo, null,
@@ -164,7 +164,43 @@ public class NotificationService : INotificationService
                    d.Descripcion, d.NuevoEstado, d.AprobadorNombre, d.Observacion),
                ct);
 
-        // Solo en aprobación con jefe por encima del aprobador
+        // 2. Correo al jefe inmediato del solicitante cuando NO es quien aprobó
+        //    (evita auto-notificación cuando el jefe inmediato es el propio aprobador)
+        bool notificarJefeInm =
+            !string.IsNullOrWhiteSpace(d.JefeInmediatoDeSolicitanteCorreo) &&
+            d.JefeInmediatoDeSolicitanteCorreo != d.SolicitanteCorreo &&
+            d.JefeInmediatoDeSolicitanteCorreo != d.AprobadorCorreo;
+
+        if (notificarJefeInm)
+        {
+            await Enviar("CambioEstadoSolicitudJefeInmediato",
+                   Asunto($"Solicitud {d.NuevoEstado}", d.AprobadorNombre),
+                   d.JefeInmediatoDeSolicitanteCorreo!, null,
+                   CambioEstadoEmailTemplate.ParaJefeNotificado(
+                       d.JefeInmediatoDeSolicitanteNombre!, d.AprobadorNombre, d.SolicitanteNombre,
+                       d.TipoEvento, d.FechaInicio, d.FechaFin, d.Descripcion, d.NuevoEstado, d.Observacion),
+                   ct);
+        }
+
+        // 3. Confirmación al aprobador cuando es distinto al jefe inmediato del solicitante
+        //    (cubre el caso en que el jefe principal cambia el estado)
+        bool notificarAprobador =
+            !string.IsNullOrWhiteSpace(d.AprobadorCorreo) &&
+            d.AprobadorCorreo != d.SolicitanteCorreo &&
+            d.AprobadorCorreo != d.JefeInmediatoDeSolicitanteCorreo;
+
+        if (notificarAprobador)
+        {
+            await Enviar("CambioEstadoSolicitudAprobador",
+                   Asunto($"Solicitud {d.NuevoEstado}", d.AprobadorNombre),
+                   d.AprobadorCorreo!, null,
+                   CambioEstadoEmailTemplate.ParaJefeNotificado(
+                       d.AprobadorNombre, d.AprobadorNombre, d.SolicitanteNombre,
+                       d.TipoEvento, d.FechaInicio, d.FechaFin, d.Descripcion, d.NuevoEstado, d.Observacion),
+                   ct);
+        }
+
+        // 4. Solo en aprobación con jefe por encima del aprobador (lógica existente)
         if (d.NuevoEstado == "Aprobado" && !string.IsNullOrWhiteSpace(d.JefeAprobadorCorreo))
         {
             await Enviar("CambioEstadoSolicitudJefeAprobador",

@@ -15,4 +15,7 @@ public record NotificacionCambioEstadoDto(
     string  SolicitanteCorreo,
     string? JefeAprobadorNombre,    // null si el aprobador no tiene jefe (ej. Analista)
     string? JefeAprobadorCorreo,    // null si el aprobador no tiene jefe
-    string? Observacion);
+    string? Observacion,
+    string? JefeInmediatoDeSolicitanteNombre = null,  // jefe directo del empleado solicitante
+    string? JefeInmediatoDeSolicitanteCorreo = null,
+    string? AprobadorCorreo                  = null); // correo de quien ejecutó la acción

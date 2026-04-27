@@ -266,13 +266,31 @@ public class EventoLaboralService : IEventoLaboralService
         var correoSolicitante = ResolverCorreo(solicitante);
         if (string.IsNullOrWhiteSpace(correoSolicitante)) return;
 
+        // Jefe inmediato del solicitante (siempre se resuelve para poder notificarlo)
+        string? nombreJefeInmSolicitante = null;
+        string? correoJefeInmSolicitante = null;
+        if (solicitante.JefeInmediatoId.HasValue)
+        {
+            var jefeInm = await _empleadoRepo.ObtenerPorIdConDetallesAsync(
+                solicitante.JefeInmediatoId.Value, ct);
+            if (jefeInm is not null)
+            {
+                nombreJefeInmSolicitante = jefeInm.NombreCompleto;
+                correoJefeInmSolicitante = ResolverCorreo(jefeInm);
+            }
+        }
+
+        // Aprobador y su jefe (para la lógica existente de Aprobado)
         string? nombreJefeAprobador = null;
         string? correoJefeAprobador = null;
+        string? correoAprobador     = null;
 
-        if (nuevoEstado == EstadoEvento.Aprobado)
+        var aprobador = await _empleadoRepo.ObtenerPorIdConDetallesAsync(aprobadorEmpleadoId, ct);
+        if (aprobador is not null)
         {
-            var aprobador = await _empleadoRepo.ObtenerPorIdConDetallesAsync(aprobadorEmpleadoId, ct);
-            if (aprobador?.JefeInmediatoId.HasValue == true)
+            correoAprobador = ResolverCorreo(aprobador);
+
+            if (nuevoEstado == EstadoEvento.Aprobado && aprobador.JefeInmediatoId.HasValue)
             {
                 var jefeAprobador = await _empleadoRepo.ObtenerPorIdConDetallesAsync(
                     aprobador.JefeInmediatoId.Value, ct);
@@ -285,17 +303,20 @@ public class EventoLaboralService : IEventoLaboralService
         }
 
         var dto = new NotificacionCambioEstadoDto(
-            TipoEvento          : evento.TipoEvento.ToString(),
-            FechaInicio         : evento.FechaInicio.ToString("dd/MM/yyyy"),
-            FechaFin            : evento.FechaFin.ToString("dd/MM/yyyy"),
-            Descripcion         : evento.Descripcion,
-            NuevoEstado         : nuevoEstado.ToString(),
-            AprobadorNombre     : aprobadorNombre,
-            SolicitanteNombre   : solicitante.NombreCompleto,
-            SolicitanteCorreo   : correoSolicitante,
-            JefeAprobadorNombre : nombreJefeAprobador,
-            JefeAprobadorCorreo : correoJefeAprobador,
-            Observacion         : observacion);
+            TipoEvento                       : evento.TipoEvento.ToString(),
+            FechaInicio                      : evento.FechaInicio.ToString("dd/MM/yyyy"),
+            FechaFin                         : evento.FechaFin.ToString("dd/MM/yyyy"),
+            Descripcion                      : evento.Descripcion,
+            NuevoEstado                      : nuevoEstado.ToString(),
+            AprobadorNombre                  : aprobadorNombre,
+            SolicitanteNombre                : solicitante.NombreCompleto,
+            SolicitanteCorreo                : correoSolicitante,
+            JefeAprobadorNombre              : nombreJefeAprobador,
+            JefeAprobadorCorreo              : correoJefeAprobador,
+            Observacion                      : observacion,
+            JefeInmediatoDeSolicitanteNombre : nombreJefeInmSolicitante,
+            JefeInmediatoDeSolicitanteCorreo : correoJefeInmSolicitante,
+            AprobadorCorreo                  : correoAprobador);
 
         await _notificationService.NotificarCambioEstadoSolicitudAsync(dto, ct);
     }
