@@ -42,8 +42,9 @@
 
   <select name="estado" class="form-select" aria-label="Filtrar por estado">
     <option value="">Todos los estados</option>
-    <option value="Activo"   selected="@(Model.Estado == "Activo")">Activo</option>
-    <option value="Inactivo" selected="@(Model.Estado == "Inactivo")">Inactivo</option>
+    <option value="Activo"         selected="@(Model.Estado == "Activo")">Activo</option>
+    <option value="NoDisponible"   selected="@(Model.Estado == "NoDisponible")">No disponible</option>
+    <option value="Inactivo"       selected="@(Model.Estado == "Inactivo")">Inactivo</option>
   </select>
 
   <select name="tipoVinculacion" class="form-select" aria-label="Filtrar por tipo de vinculación">
@@ -122,6 +123,8 @@
               <td>
                 @if (e.Estado == "Activo")
                 { <span class="badge badge--activo"><span class="badge-dot"></span>Activo</span> }
+                else if (e.Estado == "NoDisponible")
+                { <span class="badge badge--no-disponible"><span class="badge-dot"></span>No disponible</span> }
                 else
                 { <span class="badge badge--inactivo"><span class="badge-dot"></span>Inactivo</span> }
               </td>

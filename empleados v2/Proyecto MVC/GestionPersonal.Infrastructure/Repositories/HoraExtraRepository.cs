@@ -69,6 +69,46 @@ public class HoraExtraRepository : IHoraExtraRepository
             .SumAsync(h => h.CantidadHoras, ct);
     }
 
+    public async Task<IReadOnlyList<HoraExtra>> ObtenerPendientesAsync(
+        IReadOnlySet<int>? empleadoIds, CancellationToken ct = default)
+    {
+        var q = _context.HorasExtras
+            .Include(h => h.Empleado)
+                .ThenInclude(emp => emp.Sede)
+            .Where(h => h.Estado == EstadoHoraExtra.Pendiente);
+        if (empleadoIds is not null)
+            q = q.Where(h => empleadoIds.Contains(h.EmpleadoId));
+        return await q.AsNoTracking().OrderBy(h => h.FechaTrabajada).ToListAsync(ct);
+    }
+
+    public async Task<int> ContarAprobadasEsteMesAsync(
+        IReadOnlySet<int>? empleadoIds, int anio, int mes, CancellationToken ct = default)
+    {
+        var desde = new DateOnly(anio, mes, 1);
+        var hasta = desde.AddMonths(1).AddDays(-1);
+        var q = _context.HorasExtras
+            .Where(h => h.Estado == EstadoHoraExtra.Aprobado
+                     && h.FechaTrabajada >= desde
+                     && h.FechaTrabajada <= hasta);
+        if (empleadoIds is not null)
+            q = q.Where(h => empleadoIds.Contains(h.EmpleadoId));
+        return await q.CountAsync(ct);
+    }
+
+    public async Task<decimal> SumarHorasAprobadasEsteMesAsync(
+        IReadOnlySet<int>? empleadoIds, int anio, int mes, CancellationToken ct = default)
+    {
+        var desde = new DateOnly(anio, mes, 1);
+        var hasta = desde.AddMonths(1).AddDays(-1);
+        var q = _context.HorasExtras
+            .Where(h => h.Estado == EstadoHoraExtra.Aprobado
+                     && h.FechaTrabajada >= desde
+                     && h.FechaTrabajada <= hasta);
+        if (empleadoIds is not null)
+            q = q.Where(h => empleadoIds.Contains(h.EmpleadoId));
+        return await q.SumAsync(h => h.CantidadHoras, ct);
+    }
+
     public void Agregar(HoraExtra horaExtra) => _context.HorasExtras.Add(horaExtra);
 
     public void Actualizar(HoraExtra horaExtra) => _context.HorasExtras.Update(horaExtra);

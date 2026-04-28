@@ -20,4 +20,7 @@ public class DashboardKpiDto
     public int HorasExtrasPendientes { get; init; }
     public int HorasExtrasAprobadasEsteMes { get; init; }
     public decimal TotalHorasAprobadasEsteMes { get; init; }
+
+    // Solicitudes
+    public int SolicitudesPendientes { get; init; }
 }

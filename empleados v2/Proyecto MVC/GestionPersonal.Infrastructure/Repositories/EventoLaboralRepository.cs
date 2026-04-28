@@ -72,6 +72,27 @@ public class EventoLaboralRepository : IEventoLaboralRepository
             .AsNoTracking()
             .ToListAsync(ct);
 
+    public async Task<IReadOnlyList<EventoLaboral>> ObtenerActivosHoyGlobalAsync(
+        DateOnly hoy, CancellationToken ct = default)
+        => await _context.EventosLaborales
+            .Include(e => e.Empleado)
+                .ThenInclude(emp => emp.Sede)
+            .Where(e => (e.Estado == EstadoEvento.Activo || e.Estado == EstadoEvento.Aprobado)
+                     && e.FechaInicio <= hoy
+                     && e.FechaFin >= hoy)
+            .AsNoTracking()
+            .ToListAsync(ct);
+
+    public async Task<int> ContarPendientesAsync(
+        IReadOnlySet<int>? empleadoIds, CancellationToken ct = default)
+    {
+        var q = _context.EventosLaborales
+            .Where(e => e.Estado == EstadoEvento.Pendiente);
+        if (empleadoIds is not null)
+            q = q.Where(e => empleadoIds.Contains(e.EmpleadoId));
+        return await q.CountAsync(ct);
+    }
+
     public async Task<IReadOnlyList<EventoLaboral>> ObtenerPorEmpleadoConFiltroAsync(
         int empleadoId, DateOnly? desde, DateOnly? hasta, CancellationToken ct = default)
         => await _context.EventosLaborales

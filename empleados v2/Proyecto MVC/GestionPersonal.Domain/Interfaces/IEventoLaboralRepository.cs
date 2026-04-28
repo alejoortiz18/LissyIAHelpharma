@@ -25,6 +25,12 @@ public interface IEventoLaboralRepository
     // Dashboard: eventos activos hoy
     Task<IReadOnlyList<EventoLaboral>> ObtenerActivosHoyPorSedeAsync(int sedeId, DateOnly hoy, CancellationToken ct = default);
 
+    /// <summary>Dashboard Analista: eventos activos hoy en todas las sedes.</summary>
+    Task<IReadOnlyList<EventoLaboral>> ObtenerActivosHoyGlobalAsync(DateOnly hoy, CancellationToken ct = default);
+
+    /// <summary>Dashboard: cuenta eventos con estado Pendiente en el conjunto de empleados dado (null = todos).</summary>
+    Task<int> ContarPendientesAsync(IReadOnlySet<int>? empleadoIds, CancellationToken ct = default);
+
     void Agregar(EventoLaboral evento);
     void Actualizar(EventoLaboral evento);
 

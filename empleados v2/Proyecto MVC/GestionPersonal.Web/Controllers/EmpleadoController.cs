@@ -394,9 +394,11 @@ public class EmpleadoController : Controller
 
         if (!ModelState.IsValid)
         {
-            var empR = await _empleadoService.ObtenerPerfilAsync(vm.Dto.EmpleadoId);
-            var vmRecarga = new DesvincularEmpleadoViewModel { Dto = vm.Dto, Empleado = empR.Datos! };
-            return View(vmRecarga);
+            var errores = ModelState.Values
+                .SelectMany(v => v.Errors)
+                .Select(e => e.ErrorMessage);
+            TempData["DesvincularError"] = string.Join(" ", errores);
+            return RedirectToAction("Perfil", new { id = vm.Dto.EmpleadoId });
         }
 
         var usuarioId = SesionHelper.GetUsuarioId(User);
@@ -404,10 +406,8 @@ public class EmpleadoController : Controller
 
         if (!resultado.Exito)
         {
-            ModelState.AddModelError(string.Empty, resultado.Mensaje ?? "No se pudo desvincular el empleado.");
-            var empR2 = await _empleadoService.ObtenerPerfilAsync(vm.Dto.EmpleadoId);
-            var vmRecarga2 = new DesvincularEmpleadoViewModel { Dto = vm.Dto, Empleado = empR2.Datos! };
-            return View(vmRecarga2);
+            TempData["DesvincularError"] = resultado.Mensaje ?? "No se pudo desvincular el empleado.";
+            return RedirectToAction("Perfil", new { id = vm.Dto.EmpleadoId });
         }
 
         TempData["Exito"] = "Empleado desvinculado correctamente.";

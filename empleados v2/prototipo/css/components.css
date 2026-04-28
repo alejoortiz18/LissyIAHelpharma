@@ -409,6 +409,7 @@ tbody tr:hover td { background: var(--c-gray-50); }
 /* Status */
 .badge--activo   { background: var(--c-success-100); color: var(--c-success-700); }
 .badge--inactivo { background: var(--c-gray-100);    color: var(--c-gray-500); }
+.badge--no-disponible { background: var(--c-warning-100); color: var(--c-warning-700); }
 .badge--pendiente{ background: var(--c-warning-100); color: var(--c-warning-600); }
 .badge--aprobado { background: var(--c-success-100); color: var(--c-success-700); }
 .badge--rechazado{ background: var(--c-error-100);   color: var(--c-error-700); }

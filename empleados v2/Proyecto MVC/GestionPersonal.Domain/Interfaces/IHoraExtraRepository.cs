@@ -10,10 +10,15 @@ public interface IHoraExtraRepository
     Task<IReadOnlyList<HoraExtra>> ObtenerPorSedeAsync(int sedeId, CancellationToken ct = default);
     Task<IReadOnlyList<HoraExtra>> ObtenerPendientesPorSedeAsync(int sedeId, CancellationToken ct = default);
 
-    // Dashboard stats
+    // Dashboard stats — por sede
     Task<int> ContarPendientesPorSedeAsync(int sedeId, CancellationToken ct = default);
     Task<int> ContarAprobadasEsteMesPorSedeAsync(int sedeId, int anio, int mes, CancellationToken ct = default);
     Task<decimal> SumarHorasAprobadasEsteMesPorSedeAsync(int sedeId, int anio, int mes, CancellationToken ct = default);
+
+    // Dashboard stats — globales (empleadoIds = null → todos)
+    Task<IReadOnlyList<HoraExtra>> ObtenerPendientesAsync(IReadOnlySet<int>? empleadoIds, CancellationToken ct = default);
+    Task<int> ContarAprobadasEsteMesAsync(IReadOnlySet<int>? empleadoIds, int anio, int mes, CancellationToken ct = default);
+    Task<decimal> SumarHorasAprobadasEsteMesAsync(IReadOnlySet<int>? empleadoIds, int anio, int mes, CancellationToken ct = default);
 
     void Agregar(HoraExtra horaExtra);
     void Actualizar(HoraExtra horaExtra);

@@ -1,5 +1,6 @@
 using GestionPersonal.Application.Interfaces;
 using GestionPersonal.Models.DTOs.Dashboard;
+using GestionPersonal.Models.Enums;
 using GestionPersonal.Web.Helpers;
 using GestionPersonal.Web.ViewModels.Dashboard;
 using Microsoft.AspNetCore.Authorization;
@@ -20,10 +21,17 @@ public class DashboardController : Controller
     // GET /Dashboard
     public async Task<IActionResult> Index()
     {
-        var sedeId = SesionHelper.GetSedeId(User);
-        var kpisResult   = await _dashboardService.ObtenerKpisAsync(sedeId);
-        var novedades    = await _dashboardService.ObtenerNovedadesHoyAsync(sedeId);
-        var horasExtras  = await _dashboardService.ObtenerHorasExtrasPendientesAsync(sedeId);
+        var rol = SesionHelper.GetRol(User);
+
+        // Analista y Administrador ven datos globales (null = sin filtro de jerarquía).
+        // Todos los demás roles ven únicamente su propia línea jerárquica.
+        int? filtrarPorJefeId = rol is RolUsuario.Analista or RolUsuario.Administrador
+            ? null
+            : SesionHelper.GetEmpleadoId(User);
+
+        var kpisResult   = await _dashboardService.ObtenerKpisAsync(filtrarPorJefeId);
+        var novedades    = await _dashboardService.ObtenerNovedadesHoyAsync(filtrarPorJefeId);
+        var horasExtras  = await _dashboardService.ObtenerHorasExtrasPendientesAsync(filtrarPorJefeId);
 
         var vm = new DashboardViewModel
         {

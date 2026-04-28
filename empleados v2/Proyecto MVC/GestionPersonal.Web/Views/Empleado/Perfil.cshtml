@@ -23,6 +23,15 @@
 {
   <div class="alert alert--success" role="alert" style="margin-bottom:var(--sp-4)">@TempData["Exito"]</div>
 }
+@if (TempData["DesvincularError"] != null)
+{
+  <div class="alert alert--error" role="alert" style="margin-bottom:var(--sp-4)">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+    </svg>
+    <div class="alert-body"><p>@TempData["DesvincularError"]</p></div>
+  </div>
+}
 
 <!-- Perfil header -->
 <div class="profile-header">
@@ -56,13 +65,13 @@
     }
     @if (puedeDesvincular && !estaInactivo)
     {
-      <a asp-action="Desvincular" asp-route-id="@e.Id" class="btn btn-danger-outline">
+      <button type="button" class="btn btn-danger-outline" data-modal-open="modal-desvincular">
         <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="8.5" cy="7" r="4"/>
           <line x1="18" y1="8" x2="23" y2="13"/><line x1="23" y1="8" x2="18" y2="13"/>
         </svg>
         Desvincular
-      </a>
+      </button>
     }
   </div>
 </div>
@@ -673,5 +682,63 @@
 
 })();
 </script>
+}
+
+@if (puedeDesvincular && !estaInactivo)
+{
+<!-- ═══════════════════════════════════════════════════════════
+     Modal: Desvincular empleado
+     ═══════════════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="modal-desvincular" hidden aria-modal="true"
+     aria-labelledby="modal-desv-title" role="dialog">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 class="modal-title" id="modal-desv-title">Desvincular empleado</h2>
+      <button class="modal-close btn" data-modal-close aria-label="Cerrar">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+    <div class="modal-body">
+
+      <div class="alert alert--warning" role="alert" style="margin-bottom:var(--sp-4)">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+          <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+        </svg>
+        <div class="alert-body">
+          <p class="alert-title">Acción irreversible</p>
+          <p>El empleado <strong>@e.NombreCompleto</strong> pasará a estado <strong>Inactivo</strong> y no podrá iniciar sesión.</p>
+        </div>
+      </div>
+
+      <form id="form-desvincular" asp-action="Desvincular" method="post" novalidate>
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="Dto.EmpleadoId" value="@e.Id" />
+
+        <div class="form-field" style="margin-bottom:var(--sp-4)">
+          <label class="form-label" for="desv-fecha">Fecha de desvinculación <span aria-hidden="true">*</span></label>
+          <input class="form-control" type="date" id="desv-fecha" name="Dto.FechaDesvinculacion"
+                 value="@DateTime.Today.ToString("yyyy-MM-dd")" required />
+        </div>
+
+        <div class="form-field">
+          <label class="form-label" for="desv-motivo">Motivo de retiro <span aria-hidden="true">*</span></label>
+          <textarea class="form-control" id="desv-motivo" name="Dto.MotivoRetiro" rows="4"
+                    placeholder="Describe el motivo de la desvinculación…" required maxlength="500"></textarea>
+        </div>
+      </form>
+
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-ghost" data-modal-close>Cancelar</button>
+      <button type="submit" form="form-desvincular" class="btn btn-danger" id="btn-confirmar-desv">
+        Confirmar desvinculación
+      </button>
+    </div>
+  </div>
+</div>
 }
 }

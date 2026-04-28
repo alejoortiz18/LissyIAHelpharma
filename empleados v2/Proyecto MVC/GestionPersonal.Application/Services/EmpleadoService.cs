@@ -13,27 +13,36 @@ public class EmpleadoService : IEmpleadoService
     private readonly IEmpleadoRepository _repo;
     private readonly IUsuarioService _usuarioService;
     private readonly IHistorialDesvinculacionRepository _historialRepo;
+    private readonly IEventoLaboralRepository _eventoRepo;
 
     public EmpleadoService(
         IEmpleadoRepository repo,
         IUsuarioService usuarioService,
-        IHistorialDesvinculacionRepository historialRepo)
+        IHistorialDesvinculacionRepository historialRepo,
+        IEventoLaboralRepository eventoRepo)
     {
         _repo            = repo;
         _usuarioService  = usuarioService;
         _historialRepo   = historialRepo;
+        _eventoRepo      = eventoRepo;
     }
 
     public async Task<IReadOnlyList<EmpleadoListaDto>> ObtenerPorSedeAsync(int sedeId, CancellationToken ct = default)
     {
-        var lista = await _repo.ObtenerPorSedeAsync(sedeId, ct);
-        return lista.Select(MapToListaDto).ToList();
+        var hoy           = DateOnly.FromDateTime(DateTime.Today);
+        var lista         = await _repo.ObtenerPorSedeAsync(sedeId, ct);
+        var noDisponibles = (await _eventoRepo.ObtenerActivosHoyGlobalAsync(hoy, ct))
+                                .Select(e => e.EmpleadoId).ToHashSet();
+        return lista.Select(e => MapToListaDto(e, noDisponibles)).ToList();
     }
 
     public async Task<IReadOnlyList<EmpleadoListaDto>> ObtenerTodosAsync(CancellationToken ct = default)
     {
-        var lista = await _repo.ObtenerTodosAsync(ct);
-        return lista.Select(MapToListaDto).ToList();
+        var hoy           = DateOnly.FromDateTime(DateTime.Today);
+        var lista         = await _repo.ObtenerTodosAsync(ct);
+        var noDisponibles = (await _eventoRepo.ObtenerActivosHoyGlobalAsync(hoy, ct))
+                                .Select(e => e.EmpleadoId).ToHashSet();
+        return lista.Select(e => MapToListaDto(e, noDisponibles)).ToList();
     }
 
     public async Task<ResultadoOperacion<EmpleadoDto>> ObtenerPerfilAsync(int id, CancellationToken ct = default)
@@ -224,7 +233,7 @@ public class EmpleadoService : IEmpleadoService
     }
 
     // ── Mappers privados ──────────────────────────────────────────
-    private static EmpleadoListaDto MapToListaDto(Empleado e) => new()
+    private static EmpleadoListaDto MapToListaDto(Empleado e, HashSet<int>? noDisponibles = null) => new()
     {
         Id              = e.Id,
         JefeInmediatoId = e.JefeInmediatoId,
@@ -234,7 +243,11 @@ public class EmpleadoService : IEmpleadoService
         SedeNombre      = e.Sede?.Nombre  ?? string.Empty,
         TipoVinculacion = e.TipoVinculacion.ToString(),
         Rol             = e.Usuario?.Rol.ToString() ?? string.Empty,
-        Estado          = e.Estado.ToString(),
+        Estado          = (noDisponibles is not null
+                           && noDisponibles.Contains(e.Id)
+                           && e.Estado == EstadoEmpleado.Activo)
+                          ? "NoDisponible"
+                          : e.Estado.ToString(),
         FechaIngreso    = e.FechaIngreso.ToString("dd/MM/yyyy")
     };
 
