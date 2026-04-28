@@ -14,4 +14,6 @@ public record NotificacionSolicitudDto(
     string? Observacion,
     string  NombreQuienGenera,
     string? FechaFin     = null,
-    string? Descripcion  = null);
+    string? Descripcion  = null,
+    string? RutaDocumentoAdjunto   = null,   // ruta física del archivo en servidor
+    string? NombreDocumentoAdjunto = null);  // nombre original para el adjunto

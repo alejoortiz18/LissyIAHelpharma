@@ -18,4 +18,13 @@ public interface IEmailHelper
         string asunto,
         string cuerpoHtml,
         CancellationToken ct = default);
+
+    /// <summary>Envía un correo con un archivo adjunto.</summary>
+    Task EnviarConAdjuntoAsync(
+        string destinatario,
+        string asunto,
+        string cuerpoHtml,
+        string rutaAdjunto,
+        string nombreAdjunto,
+        CancellationToken ct = default);
 }

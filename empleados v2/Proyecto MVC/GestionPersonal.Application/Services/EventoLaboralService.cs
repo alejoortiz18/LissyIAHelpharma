@@ -227,29 +227,43 @@ public class EventoLaboralService : IEventoLaboralService
 
         if (!solicitante.JefeInmediatoId.HasValue) return;
 
-        var jefe = await _empleadoRepo.ObtenerPorIdConDetallesAsync(solicitante.JefeInmediatoId.Value, ct);
-        if (jefe is null) return;
+        // Recorrer toda la cadena jerárquica hacia arriba (jefe → jefe del jefe → …)
+        // para notificar a cada nivel. Se usa un set de visitados para evitar ciclos.
+        var visitados    = new HashSet<int> { solicitanteEmpleadoId };
+        var jefeActualId = solicitante.JefeInmediatoId;
 
-        var correoJefe = ResolverCorreo(jefe);
-        if (string.IsNullOrWhiteSpace(correoJefe)) return;
+        while (jefeActualId.HasValue && visitados.Add(jefeActualId.Value))
+        {
+            var jefe = await _empleadoRepo.ObtenerPorIdConDetallesAsync(jefeActualId.Value, ct);
+            if (jefe is null) break;
 
-        var dto = new NotificacionSolicitudDto(
-            TipoEvento                : evento.TipoEvento.ToString(),
-            TipoSolicitud             : evento.TipoEvento.ToString(),
-            FechaEvento               : evento.FechaInicio.ToString("dd/MM/yyyy"),
-            NombreEmpleadoSolicitante : solicitante.NombreCompleto,
-            CorreoEmpleadoSolicitante : ResolverCorreo(solicitante) ?? "",
-            NombreJefeInmediato       : jefe.NombreCompleto,
-            CorreoJefeInmediato       : correoJefe,
-            NombreJefeApoyo           : null,
-            CorreoJefeApoyo           : null,
-            NombreAprobador           : null,
-            Observacion               : null,
-            NombreQuienGenera         : solicitante.NombreCompleto,
-            FechaFin                  : evento.FechaFin.ToString("dd/MM/yyyy"),
-            Descripcion               : evento.Descripcion);
+            var correoJefe = ResolverCorreo(jefe);
+            if (!string.IsNullOrWhiteSpace(correoJefe))
+            {
+                var dto = new NotificacionSolicitudDto(
+                    TipoEvento                : evento.TipoEvento.ToString(),
+                    TipoSolicitud             : evento.TipoEvento.ToString(),
+                    FechaEvento               : evento.FechaInicio.ToString("dd/MM/yyyy"),
+                    NombreEmpleadoSolicitante : solicitante.NombreCompleto,
+                    CorreoEmpleadoSolicitante : ResolverCorreo(solicitante) ?? "",
+                    NombreJefeInmediato       : jefe.NombreCompleto,
+                    CorreoJefeInmediato       : correoJefe,
+                    NombreJefeApoyo           : null,
+                    CorreoJefeApoyo           : null,
+                    NombreAprobador           : null,
+                    Observacion               : null,
+                    NombreQuienGenera         : solicitante.NombreCompleto,
+                    FechaFin                  : evento.FechaFin.ToString("dd/MM/yyyy"),
+                    Descripcion               : evento.Descripcion,
+                    RutaDocumentoAdjunto      : evento.RutaDocumento,
+                    NombreDocumentoAdjunto    : evento.NombreDocumento);
 
-        await _notificationService.NotificarSolicitudCreadaAsync(dto, ct);
+                await _notificationService.NotificarSolicitudCreadaAsync(dto, ct);
+            }
+
+            // Subir al siguiente nivel de la jerarquía
+            jefeActualId = jefe.JefeInmediatoId;
+        }
     }
 
     private async Task EnviarNotificacionCambioEstadoAsync(

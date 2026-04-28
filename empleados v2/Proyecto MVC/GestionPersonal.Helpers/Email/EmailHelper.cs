@@ -31,6 +31,23 @@ public class EmailHelper : IEmailHelper
         => EnviarInternoAsync(
                ConstruirMensaje([destinatario], copia, asunto, cuerpoHtml), ct);
 
+    public Task EnviarConAdjuntoAsync(
+        string destinatario, string asunto, string cuerpoHtml,
+        string rutaAdjunto, string nombreAdjunto,
+        CancellationToken ct = default)
+    {
+        var builder = new BodyBuilder { HtmlBody = cuerpoHtml };
+        builder.Attachments.Add(nombreAdjunto, File.ReadAllBytes(rutaAdjunto));
+
+        var msg = new MimeMessage();
+        msg.From.Add(new MailboxAddress(_settings.FromName, _settings.FromAddress));
+        msg.To.Add(MailboxAddress.Parse(destinatario));
+        msg.Subject = asunto;
+        msg.Body    = builder.ToMessageBody();
+
+        return EnviarInternoAsync(msg, ct);
+    }
+
     // ── Privados ────────────────────────────────────────────────────────────────────
 
     private MimeMessage ConstruirMensaje(

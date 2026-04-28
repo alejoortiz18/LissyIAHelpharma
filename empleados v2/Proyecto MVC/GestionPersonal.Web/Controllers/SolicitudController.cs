@@ -4,6 +4,7 @@ using GestionPersonal.Models.Enums;
 using GestionPersonal.Web.Helpers;
 using GestionPersonal.Web.ViewModels.Solicitud;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 
 namespace GestionPersonal.Web.Controllers;
@@ -12,10 +13,16 @@ namespace GestionPersonal.Web.Controllers;
 public class SolicitudController : Controller
 {
     private readonly ISolicitudService _solicitudService;
+    private readonly IWebHostEnvironment _env;
 
-    public SolicitudController(ISolicitudService solicitudService)
+    private static readonly HashSet<string> _extensionesPermitidas =
+        new(StringComparer.OrdinalIgnoreCase) { ".pdf", ".jpg", ".jpeg", ".png" };
+    private const long _maxTamanoBytes = 5 * 1024 * 1024; // 5 MB
+
+    public SolicitudController(ISolicitudService solicitudService, IWebHostEnvironment env)
     {
         _solicitudService = solicitudService;
+        _env = env;
     }
 
     // GET /Solicitud
@@ -66,7 +73,8 @@ public class SolicitudController : Controller
         string fechaFin,
         string? descripcion,
         string? observaciones,
-        int? diasDisfrutar)
+        int? diasDisfrutar,
+        IFormFile? Documento = null)
     {
         var empId      = SesionHelper.GetEmpleadoId(User);
         var usuarioId  = SesionHelper.GetUsuarioId(User);
@@ -106,6 +114,35 @@ public class SolicitudController : Controller
             // AutorizadoPor y EstadoInicial son forzados por SolicitudService
             AutorizadoPor = string.Empty
         };
+
+        // Guardar archivo adjunto si se proporcionó
+        if (Documento is { Length: > 0 })
+        {
+            if (Documento.Length > _maxTamanoBytes)
+            {
+                TempData["Error"] = "El archivo no puede superar 5 MB.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            var ext = Path.GetExtension(Documento.FileName);
+            if (!_extensionesPermitidas.Contains(ext))
+            {
+                TempData["Error"] = "Solo se permiten archivos PDF, JPG o PNG.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            var carpeta = Path.Combine(_env.WebRootPath, "uploads", "eventos");
+            Directory.CreateDirectory(carpeta);
+
+            var nombreGuardado = $"{Guid.NewGuid()}{ext}";
+            var rutaFisica     = Path.Combine(carpeta, nombreGuardado);
+
+            using (var stream = new FileStream(rutaFisica, FileMode.Create))
+                await Documento.CopyToAsync(stream);
+
+            dto.RutaDocumento   = rutaFisica;
+            dto.NombreDocumento = Documento.FileName;
+        }
 
         var resultado = await _solicitudService.CrearSolicitudAsync(dto, usuarioId);
 

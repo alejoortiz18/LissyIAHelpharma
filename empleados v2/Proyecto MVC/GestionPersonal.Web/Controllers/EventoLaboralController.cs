@@ -5,6 +5,7 @@ using GestionPersonal.Web.Helpers;
 using GestionPersonal.Web.ViewModels.EventoLaboral;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Hosting;
 
 namespace GestionPersonal.Web.Controllers;
 
@@ -13,13 +14,20 @@ public class EventoLaboralController : Controller
 {
     private readonly IEventoLaboralService _eventoService;
     private readonly IEmpleadoService      _empleadoService;
+    private readonly IWebHostEnvironment   _env;
+
+    private static readonly HashSet<string> _extensionesPermitidas =
+        new(StringComparer.OrdinalIgnoreCase) { ".pdf", ".jpg", ".jpeg", ".png" };
+    private const long _maxTamanoBytes = 5 * 1024 * 1024; // 5 MB
 
     public EventoLaboralController(
         IEventoLaboralService eventoService,
-        IEmpleadoService      empleadoService)
+        IEmpleadoService      empleadoService,
+        IWebHostEnvironment   env)
     {
         _eventoService   = eventoService;
         _empleadoService = empleadoService;
+        _env             = env;
     }
 
     // GET /EventoLaboral?buscar=&tipo=&estado=&desde=&hasta=
@@ -151,7 +159,7 @@ public class EventoLaboralController : Controller
     // POST /EventoLaboral/RegistrarAjax  (called by modal)
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> RegistrarAjax([FromForm] CrearEventoLaboralDto dto)
+    public async Task<IActionResult> RegistrarAjax([FromForm] CrearEventoLaboralDto dto, IFormFile? Documento = null)
     {
         if (!ModelState.IsValid)
         {
@@ -178,6 +186,29 @@ public class EventoLaboralController : Controller
             var esSubordinado = empObjetivo.Datos.JefeInmediatoId == empId.Value;
             if (!esPropio && !esSubordinado)
                 return Json(new { exito = false, mensaje = "No puedes registrar eventos para este empleado." });
+        }
+
+        // Guardar archivo adjunto si se proporcionó
+        if (Documento is { Length: > 0 })
+        {
+            if (Documento.Length > _maxTamanoBytes)
+                return Json(new { exito = false, mensaje = "El archivo no puede superar 5 MB." });
+
+            var ext = Path.GetExtension(Documento.FileName);
+            if (!_extensionesPermitidas.Contains(ext))
+                return Json(new { exito = false, mensaje = "Solo se permiten archivos PDF, JPG o PNG." });
+
+            var carpeta = Path.Combine(_env.WebRootPath, "uploads", "eventos");
+            Directory.CreateDirectory(carpeta);
+
+            var nombreGuardado = $"{Guid.NewGuid()}{ext}";
+            var rutaFisica     = Path.Combine(carpeta, nombreGuardado);
+
+            using (var stream = new FileStream(rutaFisica, FileMode.Create))
+                await Documento.CopyToAsync(stream);
+
+            dto.RutaDocumento   = rutaFisica;
+            dto.NombreDocumento = Documento.FileName;
         }
 
         var usuarioId = SesionHelper.GetUsuarioId(User);
@@ -286,7 +317,7 @@ public class EventoLaboralController : Controller
     // POST /EventoLaboral/Registrar  (kept for Crear.cshtml form submit)
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Registrar(CrearEventoViewModel vm)
+    public async Task<IActionResult> Registrar(CrearEventoViewModel vm, IFormFile? Documento = null)
     {
         if (!ModelState.IsValid)
         {
@@ -298,6 +329,37 @@ public class EventoLaboralController : Controller
                 EmpleadoPreSeleccionado = vm.EmpleadoPreSeleccionado,
             };
             return View("Crear", vmRecarga);
+        }
+
+        // Guardar archivo adjunto si se proporcionó
+        if (Documento is { Length: > 0 })
+        {
+            if (Documento.Length > _maxTamanoBytes)
+            {
+                ModelState.AddModelError(string.Empty, "El archivo no puede superar 5 MB.");
+                var empleadosErr = await _empleadoService.ObtenerTodosAsync();
+                return View("Crear", new CrearEventoViewModel { Dto = vm.Dto, Empleados = empleadosErr, EmpleadoPreSeleccionado = vm.EmpleadoPreSeleccionado });
+            }
+
+            var ext = Path.GetExtension(Documento.FileName);
+            if (!_extensionesPermitidas.Contains(ext))
+            {
+                ModelState.AddModelError(string.Empty, "Solo se permiten archivos PDF, JPG o PNG.");
+                var empleadosErr = await _empleadoService.ObtenerTodosAsync();
+                return View("Crear", new CrearEventoViewModel { Dto = vm.Dto, Empleados = empleadosErr, EmpleadoPreSeleccionado = vm.EmpleadoPreSeleccionado });
+            }
+
+            var carpeta = Path.Combine(_env.WebRootPath, "uploads", "eventos");
+            Directory.CreateDirectory(carpeta);
+
+            var nombreGuardado = $"{Guid.NewGuid()}{ext}";
+            var rutaFisica     = Path.Combine(carpeta, nombreGuardado);
+
+            using (var stream = new FileStream(rutaFisica, FileMode.Create))
+                await Documento.CopyToAsync(stream);
+
+            vm.Dto.RutaDocumento   = rutaFisica;
+            vm.Dto.NombreDocumento = Documento.FileName;
         }
 
         var usuarioId = SesionHelper.GetUsuarioId(User);

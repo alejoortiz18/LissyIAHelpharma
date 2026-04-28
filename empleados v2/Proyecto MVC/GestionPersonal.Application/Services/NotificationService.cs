@@ -61,15 +61,36 @@ public class NotificationService : INotificationService
                SeguridadEmailTemplate.CambioContrasenaExitoso(d.NombreEmpleado, d.DestinatarioCorreo),
                ct);
 
-    public Task NotificarSolicitudCreadaAsync(
+    public async Task NotificarSolicitudCreadaAsync(
         NotificacionSolicitudDto d, CancellationToken ct = default)
-        => Enviar("SolicitudCreada",
-               Asunto($"Nueva {d.TipoSolicitud}", d.NombreEmpleadoSolicitante),
-               d.CorreoJefeInmediato, d.CorreoJefeApoyo,
-               SolicitudEmailTemplate.SolicitudCreadaParaJefe(
-                   d.NombreJefeInmediato, d.NombreEmpleadoSolicitante, d.TipoSolicitud,
-                   d.FechaEvento, d.FechaFin ?? "", d.Descripcion),
-               ct);
+    {
+        var asunto = Asunto($"Nueva {d.TipoSolicitud}", d.NombreEmpleadoSolicitante);
+        var cuerpo = SolicitudEmailTemplate.SolicitudCreadaParaJefe(
+                         d.NombreJefeInmediato, d.NombreEmpleadoSolicitante, d.TipoSolicitud,
+                         d.FechaEvento, d.FechaFin ?? "", d.Descripcion);
+
+        bool tieneAdjunto = !string.IsNullOrWhiteSpace(d.RutaDocumentoAdjunto)
+                         && !string.IsNullOrWhiteSpace(d.NombreDocumentoAdjunto)
+                         && File.Exists(d.RutaDocumentoAdjunto);
+
+        if (tieneAdjunto)
+        {
+            await EnviarConAdjunto("SolicitudCreada", asunto,
+                d.CorreoJefeInmediato, cuerpo,
+                d.RutaDocumentoAdjunto!, d.NombreDocumentoAdjunto!, ct);
+
+            if (!string.IsNullOrWhiteSpace(d.CorreoJefeApoyo) &&
+                d.CorreoJefeApoyo != d.CorreoJefeInmediato)
+                await EnviarConAdjunto("SolicitudCreada", asunto,
+                    d.CorreoJefeApoyo, cuerpo,
+                    d.RutaDocumentoAdjunto!, d.NombreDocumentoAdjunto!, ct);
+        }
+        else
+        {
+            await Enviar("SolicitudCreada", asunto,
+                d.CorreoJefeInmediato, d.CorreoJefeApoyo, cuerpo, ct);
+        }
+    }
 
     public Task NotificarSolicitudAprobadaAsync(
         NotificacionSolicitudDto d, CancellationToken ct = default)
@@ -246,6 +267,40 @@ public class NotificationService : INotificationService
             reg.ErrorMensaje = ex.Message.Length > 950 ? ex.Message[..950] : ex.Message;
             _logger.LogError(ex,
                 "Fallo al enviar notificación {TipoEvento} a {Destinatario}", tipoEvento, destinatario);
+        }
+        finally
+        {
+            _notificacionRepo.Agregar(reg);
+            await _notificacionRepo.GuardarCambiosAsync(ct);
+        }
+    }
+
+    private async Task EnviarConAdjunto(
+        string tipoEvento, string asunto,
+        string destinatario, string html,
+        string rutaAdjunto, string nombreAdjunto,
+        CancellationToken ct)
+    {
+        var reg = new RegistroNotificacion
+        {
+            TipoEvento   = tipoEvento,
+            Destinatario = destinatario,
+            Copia        = null,
+            Asunto       = asunto,
+            FechaIntento = DateTime.UtcNow,
+            Exitoso      = false
+        };
+
+        try
+        {
+            await _email.EnviarConAdjuntoAsync(destinatario, asunto, html, rutaAdjunto, nombreAdjunto, ct);
+            reg.Exitoso = true;
+        }
+        catch (Exception ex)
+        {
+            reg.ErrorMensaje = ex.Message.Length > 950 ? ex.Message[..950] : ex.Message;
+            _logger.LogError(ex,
+                "Fallo al enviar notificación {TipoEvento} con adjunto a {Destinatario}", tipoEvento, destinatario);
         }
         finally
         {

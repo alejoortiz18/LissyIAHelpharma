@@ -9,7 +9,7 @@
   </div>
 </div>
 
-<form asp-action="Registrar" method="post" novalidate style="max-width:42rem">
+<form asp-action="Registrar" method="post" enctype="multipart/form-data" novalidate style="max-width:42rem">
   @Html.AntiForgeryToken()
 
   <div asp-validation-summary="ModelOnly" class="alert alert--error" style="margin-bottom:var(--sp-4)"></div>
@@ -80,6 +80,13 @@
       <div class="form-field">
         <label asp-for="Dto.Descripcion" class="form-label">Descripción / motivo del permiso</label>
         <textarea asp-for="Dto.Descripcion" class="form-control" rows="3"></textarea>
+      </div>
+
+      <div class="form-field">
+        <label class="form-label" for="Documento">Documento de soporte</label>
+        <input class="form-control" type="file" id="Documento" name="Documento"
+               accept=".pdf,.jpg,.jpeg,.png" style="padding-top:.375rem">
+        <small class="form-text text-muted">Opcional — PDF, JPG o PNG (máx. 5 MB).</small>
       </div>
 
       <div style="display:flex;gap:var(--sp-3);margin-top:var(--sp-2)">

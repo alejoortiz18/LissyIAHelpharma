@@ -162,7 +162,7 @@ else
       </button>
     </div>
     <div class="modal-body">
-      <form id="form-solicitud" method="post" asp-action="Crear" novalidate>
+      <form id="form-solicitud" method="post" enctype="multipart/form-data" asp-action="Crear" novalidate>
 
         <div class="form-grid form-grid-2" style="margin-bottom:var(--sp-4)">
           <!-- Tipo -->
@@ -251,6 +251,14 @@ else
           <textarea class="form-input" id="sol-observaciones" name="observaciones"
                     rows="2" maxlength="300"
                     placeholder="Información adicional (opcional)…"></textarea>
+        </div>
+
+        <!-- Documento adjunto -->
+        <div class="form-group">
+          <label class="form-label" for="sol-documento">Documento de soporte</label>
+          <input class="form-input" type="file" id="sol-documento" name="Documento"
+                 accept=".pdf,.jpg,.jpeg,.png" style="padding-top:.375rem">
+          <span class="form-hint">Opcional — PDF, JPG o PNG (máx. 5 MB).</span>
         </div>
 
         <div id="sol-error" class="alert alert--error" hidden role="alert"></div>
