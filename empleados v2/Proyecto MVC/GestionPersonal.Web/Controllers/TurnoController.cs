@@ -32,7 +32,9 @@ public class TurnoController : Controller
         if (rol == RolUsuario.Operario || rol == RolUsuario.Direccionador)
             return Forbid();
 
-        var plantillas   = await _turnoService.ObtenerPlantillasActivasAsync();
+        var plantillas   = empId.HasValue
+            ? await _turnoService.ObtenerPlantillasActivasPorCreadorAsync(empId.Value)
+            : await _turnoService.ObtenerPlantillasActivasAsync();
         var asignaciones = await _turnoService.ObtenerAsignacionesPorSedeAsync(sedeId);
 
         // Regente / AuxiliarRegente: solo ven asignaciones propias y de subordinados
@@ -60,7 +62,8 @@ public class TurnoController : Controller
         if (!ModelState.IsValid)
             return Json(new { exito = false, mensaje = "Datos inválidos." });
 
-        var resultado = await _turnoService.CrearPlantillaAsync(dto);
+        var empId = SesionHelper.GetEmpleadoId(User);
+        var resultado = await _turnoService.CrearPlantillaAsync(dto, creadoPorEmpleadoId: empId);
         return Json(new { exito = resultado.Exito, mensaje = resultado.Mensaje });
     }
 
@@ -141,20 +144,31 @@ public class TurnoController : Controller
         if (rol == RolUsuario.Operario || rol == RolUsuario.Direccionador)
             return Json(new { exito = false, mensaje = "No tienes permisos para asignar turnos." });
 
+        // Bloquear autoasignación para todos los roles
+        if (empId.HasValue && dto.EmpleadoId == empId.Value)
+            return Json(new { exito = false, mensaje = "No puedes asignarte un turno a ti mismo." });
+
+        // Validar que la plantilla seleccionada pertenece al jefe en sesión
+        if (empId.HasValue && rol != RolUsuario.Administrador)
+        {
+            var plantillasDelJefe = await _turnoService.ObtenerPlantillasActivasPorCreadorAsync(empId.Value);
+            if (!plantillasDelJefe.Any(p => p.Id == dto.PlantillaTurnoId))
+                return Json(new { exito = false, mensaje = "No puedes usar una plantilla que no te pertenece." });
+        }
+
         if (rol == RolUsuario.Regente || rol == RolUsuario.AuxiliarRegente)
         {
             if (!empId.HasValue) return Json(new { exito = false, mensaje = "Sin permisos." });
             var empObjetivo = await _empleadoService.ObtenerPerfilAsync(dto.EmpleadoId);
             if (!empObjetivo.Exito || empObjetivo.Datos is null)
                 return Json(new { exito = false, mensaje = "Empleado no encontrado." });
-            var esPropio      = empObjetivo.Datos.Id == empId.Value;
             var esSubordinado = empObjetivo.Datos.JefeInmediatoId == empId.Value;
-            if (!esPropio && !esSubordinado)
+            if (!esSubordinado)
                 return Json(new { exito = false, mensaje = "No puedes asignar turnos a este empleado." });
         }
 
         var usuarioId = SesionHelper.GetUsuarioId(User);
-        var resultado = await _turnoService.AsignarTurnoAsync(dto, usuarioId);
+        var resultado = await _turnoService.AsignarTurnoAsync(dto, usuarioId, jefeEmpleadoId: empId);
         return Json(new { exito = resultado.Exito, mensaje = resultado.Mensaje });
     }
 

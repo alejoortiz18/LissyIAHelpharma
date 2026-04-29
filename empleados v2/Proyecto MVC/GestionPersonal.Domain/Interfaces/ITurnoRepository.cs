@@ -7,6 +7,10 @@ public interface ITurnoRepository
     Task<PlantillaTurno?> ObtenerPorIdAsync(int id, CancellationToken ct = default);
     Task<PlantillaTurno?> ObtenerPorIdConDetallesAsync(int id, CancellationToken ct = default);
     Task<IReadOnlyList<PlantillaTurno>> ObtenerActivasAsync(CancellationToken ct = default);
+
+    /// <summary>Devuelve solo las plantillas activas creadas por el empleado indicado.</summary>
+    Task<IReadOnlyList<PlantillaTurno>> ObtenerActivasPorCreadorAsync(int creadorEmpleadoId, CancellationToken ct = default);
+
     Task<bool> ExisteNombreAsync(string nombre, int? excluirId = null, CancellationToken ct = default);
 
     /// <summary>Asignación de turno vigente para un empleado en una fecha dada.</summary>

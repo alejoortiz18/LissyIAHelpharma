@@ -28,4 +28,7 @@ public class PerfilEmpleadoViewModel
 
     /// <summary>Valor del filtro Hasta en formato yyyy-MM-dd (para el input type=date).</summary>
     public string? FiltroHasta { get; init; }
+
+    /// <summary>True si el empleado está en la jerarquía (directa o indirecta) del usuario en sesión.</summary>
+    public bool EsSubordinadoDelJefeEnSesion { get; init; }
 }

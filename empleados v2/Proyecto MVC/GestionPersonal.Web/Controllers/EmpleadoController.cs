@@ -269,8 +269,10 @@ public class EmpleadoController : Controller
         var empleado = empleadoResult.Datos;
 
         // El DTO del empleado incluye el nombre del turno actual si existe
-        // Para el detalle del turno (detalles por día), buscamos en las plantillas activas
-        var todasPlantillas = await _turnoService.ObtenerPlantillasActivasAsync();
+        // Para el detalle del turno (detalles por día), buscamos en las plantillas activas del jefe en sesión
+        var todasPlantillas = empId.HasValue
+            ? await _turnoService.ObtenerPlantillasActivasPorCreadorAsync(empId.Value)
+            : await _turnoService.ObtenerPlantillasActivasAsync();
         var historialTurnos = await _turnoService.ObtenerHistorialPorEmpleadoAsync(id);
 
         PlantillaTurnoDto? turnoActual = null;
@@ -333,6 +335,10 @@ public class EmpleadoController : Controller
 
         var horasExtras = await ObtenerHorasExtrasAsync(id);
 
+        // Verificar si el empleado es subordinado transitivo del jefe en sesión
+        bool esSubordinadoTransitivo = empId.HasValue
+            && await _empleadoService.EsSubordinadoTransitivoAsync(id, empId.Value);
+
         var vm = new PerfilEmpleadoViewModel
         {
             Empleado              = empleado,
@@ -346,6 +352,7 @@ public class EmpleadoController : Controller
             VacacionesDisponibles = vacacionesDisponibles,
             FiltroDesde           = desde?.ToString("yyyy-MM-dd"),
             FiltroHasta           = hasta?.ToString("yyyy-MM-dd"),
+            EsSubordinadoDelJefeEnSesion = esSubordinadoTransitivo,
         };
 
         ViewData["Title"] = empleado.NombreCompleto;

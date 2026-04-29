@@ -232,6 +232,10 @@ public class EmpleadoService : IEmpleadoService
         return ResultadoOperacion.Ok(EmpleadoConstant.EmpleadoDesactivado);
     }
 
+    public Task<bool> EsSubordinadoTransitivoAsync(
+        int empleadoId, int jefeEmpleadoId, CancellationToken ct = default)
+        => _repo.EsSubordinadoTransitivoAsync(empleadoId, jefeEmpleadoId, ct);
+
     // ── Mappers privados ──────────────────────────────────────────
     private static EmpleadoListaDto MapToListaDto(Empleado e, HashSet<int>? noDisponibles = null) => new()
     {

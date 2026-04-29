@@ -12,4 +12,7 @@ public interface IEmpleadoService
     Task<ResultadoOperacion> CrearAsync(CrearEmpleadoDto dto, int creadoPorUsuarioId, CancellationToken ct = default);
     Task<ResultadoOperacion> EditarAsync(EditarEmpleadoDto dto, int modificadoPorUsuarioId, CancellationToken ct = default);
     Task<ResultadoOperacion> DesvincularAsync(DesvincularEmpleadoDto dto, int registradoPorUsuarioId, CancellationToken ct = default);
+
+    /// <summary>Devuelve true si el empleado está en la jerarquía descendente (directa o indirecta) del jefe.</summary>
+    Task<bool> EsSubordinadoTransitivoAsync(int empleadoId, int jefeEmpleadoId, CancellationToken ct = default);
 }

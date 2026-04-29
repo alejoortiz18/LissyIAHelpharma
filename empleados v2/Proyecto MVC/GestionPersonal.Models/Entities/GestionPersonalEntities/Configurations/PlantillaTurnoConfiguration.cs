@@ -18,5 +18,10 @@ public class PlantillaTurnoConfiguration : IEntityTypeConfiguration<PlantillaTur
         builder.Property(e => e.Estado).IsRequired().HasMaxLength(20).HasDefaultValue("Activa");
         builder.Property(e => e.FechaCreacion).HasColumnType("datetime2(0)").HasDefaultValueSql("(getutcdate())");
         builder.Property(e => e.FechaModificacion).HasColumnType("datetime2(0)");
+
+        builder.HasOne(e => e.CreadoPor)
+            .WithMany()
+            .HasForeignKey(e => e.CreadoPorId)
+            .OnDelete(DeleteBehavior.SetNull);
     }
 }

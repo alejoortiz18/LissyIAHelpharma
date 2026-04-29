@@ -27,6 +27,15 @@ public class TurnoRepository : ITurnoRepository
             .OrderBy(p => p.Nombre)
             .ToListAsync(ct);
 
+    public async Task<IReadOnlyList<PlantillaTurno>> ObtenerActivasPorCreadorAsync(
+        int creadorEmpleadoId, CancellationToken ct = default)
+        => await _context.PlantillasTurno
+            .Include(p => p.PlantillaTurnoDetalles)
+            .Where(p => p.Estado == "Activa" && p.CreadoPorId == creadorEmpleadoId)
+            .AsNoTracking()
+            .OrderBy(p => p.Nombre)
+            .ToListAsync(ct);
+
     public async Task<bool> ExisteNombreAsync(string nombre, int? excluirId = null, CancellationToken ct = default)
         => await _context.PlantillasTurno
             .AnyAsync(p => p.Nombre == nombre && (excluirId == null || p.Id != excluirId), ct);

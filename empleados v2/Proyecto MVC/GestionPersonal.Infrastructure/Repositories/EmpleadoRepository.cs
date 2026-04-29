@@ -61,6 +61,30 @@ public class EmpleadoRepository : IEmpleadoRepository
 
     public void Actualizar(Empleado empleado) => _context.Empleados.Update(empleado);
 
+    public async Task<bool> EsSubordinadoTransitivoAsync(
+        int empleadoId, int jefeEmpleadoId, CancellationToken ct = default)
+    {
+        // Recorre la cadena JefeInmediatoId hacia arriba desde empleadoId
+        // hasta llegar a jefeEmpleadoId o al tope de la jerarquía
+        var jefeId = await _context.Empleados
+            .Where(e => e.Id == empleadoId)
+            .Select(e => e.JefeInmediatoId)
+            .FirstOrDefaultAsync(ct);
+
+        const int maxNiveles = 20; // protección contra ciclos inesperados
+        int nivel = 0;
+        while (jefeId.HasValue && nivel < maxNiveles)
+        {
+            if (jefeId.Value == jefeEmpleadoId) return true;
+            jefeId = await _context.Empleados
+                .Where(e => e.Id == jefeId.Value)
+                .Select(e => e.JefeInmediatoId)
+                .FirstOrDefaultAsync(ct);
+            nivel++;
+        }
+        return false;
+    }
+
     public Task<int> GuardarCambiosAsync(CancellationToken ct = default)
         => _context.SaveChangesAsync(ct);
 }

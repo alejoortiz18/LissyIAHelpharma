@@ -14,6 +14,9 @@
     var currentUsuarioId  = SesionHelper.GetUsuarioId(User);
     var currentEmpleadoId = SesionHelper.GetEmpleadoId(User);
     bool esJefeInmediatoDelEmpleado = currentEmpleadoId.HasValue && currentEmpleadoId.Value == e.JefeInmediatoId;
+    // El jefe solo puede asignar turno a colaboradores de los que es jefe inmediato (no a sí mismo)
+    bool puedeAsignarTurno = Model.EsSubordinadoDelJefeEnSesion
+                          && rol != RolUsuario.Operario && rol != RolUsuario.Direccionador;
     var antiforgery = ViewContext.HttpContext.RequestServices
         .GetRequiredService<Microsoft.AspNetCore.Antiforgery.IAntiforgery>()
         .GetAndStoreTokens(ViewContext.HttpContext).RequestToken;
@@ -384,7 +387,7 @@
       <!-- ── Encabezado ── -->
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--sp-5)">
         <h2 style="font-size:.9375rem;font-weight:600;color:var(--c-gray-800)">Turno asignado</h2>
-        @if (!estaInactivo && puedeEditar)
+        @if (!estaInactivo && puedeAsignarTurno)
         {
           <button type="button" class="btn btn-secondary btn-sm" onclick="abrirAsignarTurno()">
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -510,7 +513,7 @@
 <!-- ═══════════════════════════════════════════════════════════
      Modal: Asignar / Editar turno
      ═══════════════════════════════════════════════════════════ -->
-@if (!estaInactivo && puedeEditar)
+@if (!estaInactivo && puedeAsignarTurno)
 {
 <div class="modal-overlay" id="modal-turno" hidden aria-modal="true"
      aria-labelledby="turno-title" role="dialog">

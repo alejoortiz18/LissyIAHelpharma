@@ -19,6 +19,13 @@ public class TurnoService : ITurnoService
         return lista.Select(MapToDto).ToList();
     }
 
+    public async Task<IReadOnlyList<PlantillaTurnoDto>> ObtenerPlantillasActivasPorCreadorAsync(
+        int creadorEmpleadoId, CancellationToken ct = default)
+    {
+        var lista = await _repo.ObtenerActivasPorCreadorAsync(creadorEmpleadoId, ct);
+        return lista.Select(MapToDto).ToList();
+    }
+
     public async Task<ResultadoOperacion<PlantillaTurnoDto>> ObtenerPlantillaConDetallesAsync(int id, CancellationToken ct = default)
     {
         var plantilla = await _repo.ObtenerPorIdConDetallesAsync(id, ct);
@@ -73,7 +80,7 @@ public class TurnoService : ITurnoService
             .ToList();
     }
 
-    public async Task<ResultadoOperacion> CrearPlantillaAsync(CrearPlantillaTurnoDto dto, CancellationToken ct = default)
+    public async Task<ResultadoOperacion> CrearPlantillaAsync(CrearPlantillaTurnoDto dto, int? creadoPorEmpleadoId = null, CancellationToken ct = default)
     {
         if (await _repo.ExisteNombreAsync(dto.Nombre, ct: ct))
             return ResultadoOperacion.Fail("Ya existe una plantilla con ese nombre.");
@@ -83,6 +90,7 @@ public class TurnoService : ITurnoService
             Nombre        = dto.Nombre,
             Estado        = "Activa",
             FechaCreacion = DateTime.UtcNow,
+            CreadoPorId   = creadoPorEmpleadoId,
             PlantillaTurnoDetalles = dto.Detalles.Select(d => new PlantillaTurnoDetalle
             {
                 DiaSemana  = d.DiaSemana,
@@ -97,11 +105,17 @@ public class TurnoService : ITurnoService
         return ResultadoOperacion.Ok(TurnoConstant.TurnoCreado);
     }
 
-    public async Task<ResultadoOperacion> AsignarTurnoAsync(AsignarTurnoDto dto, int programadoPorUsuarioId, CancellationToken ct = default)
+    public async Task<ResultadoOperacion> AsignarTurnoAsync(AsignarTurnoDto dto, int programadoPorUsuarioId, int? jefeEmpleadoId = null, CancellationToken ct = default)
     {
         var plantilla = await _repo.ObtenerPorIdAsync(dto.PlantillaTurnoId, ct);
         if (plantilla is null)
             return ResultadoOperacion.Fail(TurnoConstant.TurnoNoEncontrado);
+
+        // Validar que la plantilla pertenece al jefe en sesión
+        if (jefeEmpleadoId.HasValue
+            && plantilla.CreadoPorId.HasValue
+            && plantilla.CreadoPorId.Value != jefeEmpleadoId.Value)
+            return ResultadoOperacion.Fail("No puedes asignar una plantilla que no te pertenece.");
 
         var asignacion = new AsignacionTurno
         {
