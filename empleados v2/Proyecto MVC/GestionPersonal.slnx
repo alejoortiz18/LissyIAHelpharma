@@ -5,5 +5,6 @@
   <Project Path="GestionPersonal.Helpers/GestionPersonal.Helpers.csproj" />
   <Project Path="GestionPersonal.Infrastructure/GestionPersonal.Infrastructure.csproj" />
   <Project Path="GestionPersonal.Models/GestionPersonal.Models.csproj" />
+  <Project Path="GestionPersonal.Tests/GestionPersonal.Tests.csproj" />
   <Project Path="GestionPersonal.Web/GestionPersonal.Web.csproj" />
 </Solution>

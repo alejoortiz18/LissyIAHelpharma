@@ -410,6 +410,7 @@ tbody tr:hover td { background: var(--c-gray-50); }
 .badge--activo   { background: var(--c-success-100); color: var(--c-success-700); }
 .badge--inactivo { background: var(--c-gray-100);    color: var(--c-gray-500); }
 .badge--no-disponible { background: var(--c-warning-100); color: var(--c-warning-700); }
+.badge--danger   { background: var(--c-error-50);    color: var(--c-error-700); border: 1px solid var(--c-error-100); }
 .badge--pendiente{ background: var(--c-warning-100); color: var(--c-warning-600); }
 .badge--aprobado { background: var(--c-success-100); color: var(--c-success-700); }
 .badge--rechazado{ background: var(--c-error-100);   color: var(--c-error-700); }
@@ -531,6 +532,99 @@ tbody tr:hover td { background: var(--c-gray-50); }
   flex-shrink: 0;
   flex-wrap: wrap;
 }
+
+/* ── Modal — danger-confirm variant ─────────────────────────── */
+.modal--danger-confirm {
+  border-top: 3px solid var(--c-error-600);
+}
+.modal--danger-confirm .modal-header {
+  background: var(--c-error-50);
+  border-bottom-color: var(--c-error-100);
+}
+.modal--danger-confirm .modal-title {
+  color: var(--c-error-800, #991b1b);
+}
+.modal-header-inner {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-3);
+  flex: 1;
+  min-width: 0;
+}
+.modal-danger-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: var(--r-full);
+  background: var(--c-error-100);
+  color: var(--c-error-700);
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.modal-danger-icon svg { width: 1.125rem; height: 1.125rem; }
+.modal-subtitle {
+  font-size: 0.75rem;
+  color: var(--c-error-600);
+  margin-top: 2px;
+  font-weight: 500;
+}
+
+/* ── Desvincular — employee summary card ────────────────────── */
+.desv-employee-card {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4);
+  background: var(--c-gray-50);
+  border: 1px solid var(--c-gray-200);
+  border-radius: var(--r-lg);
+  margin-bottom: var(--sp-5);
+}
+.desv-avatar {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: var(--r-full);
+  background: var(--c-error-100);
+  color: var(--c-error-700);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  letter-spacing: 0.03em;
+}
+.desv-employee-info { flex: 1; min-width: 0; }
+.desv-employee-name {
+  font-weight: 600;
+  color: var(--c-gray-900);
+  font-size: 0.875rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.desv-employee-meta {
+  font-size: 0.75rem;
+  color: var(--c-gray-500);
+  margin-top: 1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Desvincular — char counter ─────────────────────────────── */
+.desv-char-counter {
+  display: flex;
+  justify-content: flex-end;
+  font-size: 0.75rem;
+  color: var(--c-gray-400);
+  margin-top: var(--sp-1);
+  transition: color var(--t-fast);
+}
+.desv-char-counter.is-near   { color: var(--c-warning-600); }
+.desv-char-counter.is-limit  { color: var(--c-error-600); font-weight: 600; }
 
 /* ── Alert ──────────────────────────────────────────────────── */
 .alert {

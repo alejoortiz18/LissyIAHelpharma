@@ -578,6 +578,27 @@
 (function () {
   'use strict';
 
+  /* ── Contador de caracteres — modal desvincular ─────────── */
+  const motivo  = document.getElementById('desv-motivo');
+  const counter = document.getElementById('desv-chars');
+  const counterWrap = document.getElementById('desv-motivo-counter');
+  if (motivo && counter && counterWrap) {
+    function updateCounter() {
+      const len = motivo.value.length;
+      counter.textContent = len;
+      counterWrap.classList.toggle('is-near',  len >= 400 && len < 480);
+      counterWrap.classList.toggle('is-limit', len >= 480);
+    }
+    motivo.addEventListener('input', updateCounter);
+    /* Auto-focus la fecha cuando el modal se abre */
+    document.querySelector('[data-modal-open="modal-desvincular"]')
+      ?.addEventListener('click', function () {
+        setTimeout(function () {
+          document.getElementById('desv-fecha')?.focus();
+        }, 50);
+      });
+  }
+
   const TOKEN      = '@antiforgery';
   const EMPLEADO_ID = @e.Id;
   let turnoEditId  = null;
@@ -691,53 +712,91 @@
      ═══════════════════════════════════════════════════════════ -->
 <div class="modal-overlay" id="modal-desvincular" hidden aria-modal="true"
      aria-labelledby="modal-desv-title" role="dialog">
-  <div class="modal">
+  <div class="modal modal--danger-confirm">
+
+    <!-- Header -->
     <div class="modal-header">
-      <h2 class="modal-title" id="modal-desv-title">Desvincular empleado</h2>
-      <button class="modal-close btn" data-modal-close aria-label="Cerrar">
+      <div class="modal-header-inner">
+        <span class="modal-danger-icon" aria-hidden="true">
+          <!-- user-x icon -->
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
+            <circle cx="8.5" cy="7" r="4"/>
+            <line x1="18" y1="8" x2="23" y2="13"/>
+            <line x1="23" y1="8" x2="18" y2="13"/>
+          </svg>
+        </span>
+        <div>
+          <h2 class="modal-title" id="modal-desv-title">Desvincular empleado</h2>
+          <p class="modal-subtitle">Esta acción es irreversible</p>
+        </div>
+      </div>
+      <button class="modal-close btn" data-modal-close aria-label="Cerrar modal">
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
              stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true">
           <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
         </svg>
       </button>
     </div>
+
+    <!-- Body -->
     <div class="modal-body">
 
-      <div class="alert alert--warning" role="alert" style="margin-bottom:var(--sp-4)">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
-          <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
-        </svg>
-        <div class="alert-body">
-          <p class="alert-title">Acción irreversible</p>
-          <p>El empleado <strong>@e.NombreCompleto</strong> pasará a estado <strong>Inactivo</strong> y no podrá iniciar sesión.</p>
+      <!-- Tarjeta del empleado -->
+      <div class="desv-employee-card" aria-label="Empleado a desvincular">
+        <div class="desv-avatar" aria-hidden="true">@iniciales</div>
+        <div class="desv-employee-info">
+          <p class="desv-employee-name">@e.NombreCompleto</p>
+          <p class="desv-employee-meta">CC&nbsp;@e.Cedula · @e.CargoNombre · @e.SedeNombre</p>
         </div>
+        <span class="badge badge--danger" aria-label="Estado tras desvinculación: Inactivo">Será inactivado</span>
       </div>
 
-      <form id="form-desvincular" asp-action="Desvincular" method="post" novalidate>
+      <!-- Formulario -->
+      <form id="form-desvincular" asp-action="Desvincular" method="post" autocomplete="off" novalidate>
         @Html.AntiForgeryToken()
         <input type="hidden" name="Dto.EmpleadoId" value="@e.Id" />
 
-        <div class="form-field" style="margin-bottom:var(--sp-4)">
-          <label class="form-label" for="desv-fecha">Fecha de desvinculación <span aria-hidden="true">*</span></label>
-          <input class="form-control" type="date" id="desv-fecha" name="Dto.FechaDesvinculacion"
-                 value="@DateTime.Today.ToString("yyyy-MM-dd")" required />
+        <div class="form-group">
+          <label class="form-label" for="desv-fecha">
+            Fecha de desvinculación <span class="required" aria-hidden="true">*</span>
+          </label>
+          <input class="form-input" type="date" id="desv-fecha" name="Dto.FechaDesvinculacion"
+                 value="@DateTime.Today.ToString("yyyy-MM-dd")" required aria-required="true" />
         </div>
 
-        <div class="form-field">
-          <label class="form-label" for="desv-motivo">Motivo de retiro <span aria-hidden="true">*</span></label>
-          <textarea class="form-control" id="desv-motivo" name="Dto.MotivoRetiro" rows="4"
-                    placeholder="Describe el motivo de la desvinculación…" required maxlength="500"></textarea>
+        <div class="form-group" style="margin-top:var(--sp-4)">
+          <label class="form-label" for="desv-motivo">
+            Motivo de retiro <span class="required" aria-hidden="true">*</span>
+          </label>
+          <textarea class="form-textarea" id="desv-motivo" name="Dto.MotivoRetiro" rows="4"
+                    placeholder="Describe el motivo de la desvinculación…"
+                    required aria-required="true" maxlength="500"
+                    aria-describedby="desv-motivo-counter"></textarea>
+          <div class="desv-char-counter" id="desv-motivo-counter" aria-live="polite" aria-atomic="true">
+            <span id="desv-chars">0</span>/500
+          </div>
         </div>
       </form>
 
     </div>
+
+    <!-- Footer -->
     <div class="modal-footer">
       <button type="button" class="btn btn-ghost" data-modal-close>Cancelar</button>
       <button type="submit" form="form-desvincular" class="btn btn-danger" id="btn-confirmar-desv">
+        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+             aria-hidden="true" style="flex-shrink:0">
+          <path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/>
+          <path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/>
+          <line x1="4" y1="4" x2="20" y2="20"/>
+        </svg>
         Confirmar desvinculación
       </button>
     </div>
+
   </div>
 </div>
 }
