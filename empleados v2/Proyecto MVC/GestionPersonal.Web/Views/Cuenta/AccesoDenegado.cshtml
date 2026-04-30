@@ -1,0 +1,31 @@
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Acceso denegado";
+}
+
+<div class="page-header">
+  <div class="page-header-info">
+    <h1 class="page-title">Acceso denegado</h1>
+    <p class="page-desc">No tienes permisos para acceder a esta sección.</p>
+  </div>
+</div>
+
+<div class="card" style="max-width:36rem">
+  <div class="card-body" style="text-align:center; padding:var(--sp-8)">
+    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24"
+         fill="none" stroke="var(--color-danger, #dc2626)" stroke-width="1.5"
+         stroke-linecap="round" stroke-linejoin="round"
+         style="margin-bottom:var(--sp-4)" aria-hidden="true">
+      <circle cx="12" cy="12" r="10"/>
+      <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>
+    </svg>
+    <h2 style="margin-bottom:var(--sp-2)">Sin permisos</h2>
+    <p style="color:var(--color-text-muted, #6b7280); margin-bottom:var(--sp-6)">
+      Tu rol no tiene permiso para acceder a la página solicitada.
+      Si crees que es un error, contacta al administrador del sistema.
+    </p>
+    <a href="@Url.Action("Index", "Dashboard")" class="btn btn--primary">
+      Volver al Dashboard
+    </a>
+  </div>
+</div>

@@ -134,6 +134,11 @@ public class CuentaController : Controller
         return RedirectToAction("Login");
     }
 
+    // GET /Cuenta/Acceso-Denegado
+    [HttpGet]
+    [Route("Cuenta/Acceso-Denegado")]
+    public IActionResult AccesoDenegado() => View();
+
     // GET /Cuenta/CambiarPassword
     [Authorize]
     [HttpGet]
