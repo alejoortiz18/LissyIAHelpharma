@@ -1,0 +1,13 @@
+{
+  "name": "pruebas-imagenes-playwright",
+  "private": true,
+  "scripts": {
+    "smoke:login": "playwright test tests/smoke-inicio-sesion.spec.ts --headed --project=chrome",
+    "report:login": "node scripts/generar-informe-inicio-sesion.mjs"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.52.0",
+    "@types/node": "^22.0.0",
+    "typescript": "^5.8.0"
+  }
+}

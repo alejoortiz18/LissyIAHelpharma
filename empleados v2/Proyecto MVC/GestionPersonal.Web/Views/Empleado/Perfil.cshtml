@@ -1,4 +1,7 @@
 ﻿@model PerfilEmpleadoViewModel
+@using GestionPersonal.Constants
+@using GestionPersonal.Models.Enums
+@using GestionPersonal.Web.Helpers
 @{
     ViewData["Title"] = "Perfil de empleado";
     ViewData["BreadcrumbCurrent"] = Model.Empleado.NombreCompleto;
@@ -6,9 +9,8 @@
     var iniciales = string.Join("", e.NombreCompleto.Split(' ', StringSplitOptions.RemoveEmptyEntries)
                                     .Take(2).Select(w => char.ToUpper(w[0])));
     var rol       = SesionHelper.GetRol(User);
-    bool puedeEditar      = rol == RolUsuario.DirectorTecnico || rol == RolUsuario.Regente || rol == RolUsuario.AuxiliarRegente
-                         || rol == RolUsuario.Administrador || rol == RolUsuario.Analista;
-    bool puedeDesvincular = rol == RolUsuario.DirectorTecnico || rol == RolUsuario.Administrador || rol == RolUsuario.Analista;
+    bool puedeEditar      = PermisoHelper.TienePermiso(User, PermisosCodigo.EmpleadosEditar);
+    bool puedeDesvincular = PermisoHelper.TienePermiso(User, PermisosCodigo.EmpleadosDesvincular);
     bool esTemporal  = e.TipoVinculacion == "Temporal";
     bool estaInactivo = e.Estado == "Inactivo";
     var currentUsuarioId  = SesionHelper.GetUsuarioId(User);
@@ -16,7 +18,7 @@
     bool esJefeInmediatoDelEmpleado = currentEmpleadoId.HasValue && currentEmpleadoId.Value == e.JefeInmediatoId;
     // El jefe solo puede asignar turno a colaboradores de los que es jefe inmediato (no a sí mismo)
     bool puedeAsignarTurno = Model.EsSubordinadoDelJefeEnSesion
-                          && rol != RolUsuario.Operario && rol != RolUsuario.Direccionador;
+                          && PermisoHelper.TienePermiso(User, PermisosCodigo.TurnosAsignar);
     var antiforgery = ViewContext.HttpContext.RequestServices
         .GetRequiredService<Microsoft.AspNetCore.Antiforgery.IAntiforgery>()
         .GetAndStoreTokens(ViewContext.HttpContext).RequestToken;
@@ -47,7 +49,7 @@
       { <span class="badge badge--inactivo"><span class="badge-dot"></span>Inactivo</span> }
       else
       { <span class="badge badge--activo"><span class="badge-dot"></span>Activo</span> }
-      <span class="badge">@e.Rol</span>
+      <span class="badge">@e.CargoNombre</span>
       @if (esTemporal)
       { <span class="badge badge--temporal">Temporal</span> }
       else
@@ -104,6 +106,12 @@
     <a asp-action="Perfil" asp-route-id="@e.Id" asp-route-tab="horario"
        class="tab-btn @(Model.Tab == "horario" ? "is-active" : "")"
        role="tab" aria-selected="@(Model.Tab == "horario" ? "true" : "false")">Horario</a>
+    @if (Model.EsJefeConPersonalACargo)
+    {
+      <a asp-action="Perfil" asp-route-id="@e.Id" asp-route-tab="personal-a-cargo"
+         class="tab-btn @(Model.Tab == "personal-a-cargo" ? "is-active" : "")"
+         role="tab" aria-selected="@(Model.Tab == "personal-a-cargo" ? "true" : "false")">Personal a cargo</a>
+    }
   </div>
 
   <!-- TAB: Datos -->
@@ -504,6 +512,137 @@
           </div>
         </div>
       }
+
+    </div>
+  }
+
+  <!-- TAB: Personal a cargo -->
+  @if (Model.Tab == "personal-a-cargo" && Model.EsJefeConPersonalACargo)
+  {
+    <div class="tab-panel is-active" role="tabpanel" tabindex="0">
+
+      <form method="get" asp-action="Perfil" asp-route-id="@e.Id"
+            class="filter-bar" role="search" aria-label="Filtrar personal a cargo">
+        <input type="hidden" name="tab" value="personal-a-cargo" />
+        <input name="buscar" type="search" class="form-input filter-search"
+               placeholder="Buscar por nombre o cédula…" autocomplete="off"
+               aria-label="Buscar colaborador" value="@Model.FiltroBuscarPersonal" />
+
+        <select name="estado" class="form-select" aria-label="Filtrar por estado">
+          <option value="">Todos los estados</option>
+          <option value="Activo" selected="@(Model.FiltroEstadoPersonal == "Activo")">Activo</option>
+          <option value="NoDisponible" selected="@(Model.FiltroEstadoPersonal == "NoDisponible")">No disponible</option>
+          <option value="Inactivo" selected="@(Model.FiltroEstadoPersonal == "Inactivo")">Inactivo</option>
+        </select>
+
+        <select name="tipoVinculacion" class="form-select" aria-label="Filtrar por tipo de vinculación">
+          <option value="">Tipo de vinculación</option>
+          <option value="Directo" selected="@(Model.FiltroTipoVinculacionPersonal == "Directo")">Directo</option>
+          <option value="Temporal" selected="@(Model.FiltroTipoVinculacionPersonal == "Temporal")">Temporal</option>
+        </select>
+
+        <button type="submit" class="btn btn-secondary btn-sm">Filtrar</button>
+
+        @if (!string.IsNullOrEmpty(Model.FiltroBuscarPersonal)
+             || !string.IsNullOrEmpty(Model.FiltroEstadoPersonal)
+             || !string.IsNullOrEmpty(Model.FiltroTipoVinculacionPersonal))
+        {
+          <a asp-action="Perfil" asp-route-id="@e.Id" asp-route-tab="personal-a-cargo"
+             class="btn btn-ghost btn-sm">Limpiar filtros</a>
+        }
+      </form>
+
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--sp-5)">
+        <h2 style="font-size:.9375rem;font-weight:600;color:var(--c-gray-800)">Personal a cargo</h2>
+        <p class="page-desc" style="margin:0">@Model.PersonalACargo.Count colaborador@(Model.PersonalACargo.Count != 1 ? "es" : "")</p>
+      </div>
+
+      <div class="table-wrapper">
+        <div class="table-scroll">
+          <table aria-label="Personal a cargo de @e.NombreCompleto">
+            <thead>
+              <tr>
+                <th scope="col">Empleado</th>
+                <th scope="col">Cédula</th>
+                <th scope="col">Cargo</th>
+                <th scope="col">Sede</th>
+                <th scope="col">Tipo</th>
+                <th scope="col">Rol en el sistema</th>
+                <th scope="col">Estado</th>
+                <th scope="col">Ingreso</th>
+                <th scope="col"><span class="sr-only">Acciones</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              @if (Model.PersonalACargo.Count == 0)
+              {
+                <tr><td colspan="9">
+                  <div class="empty-state">
+                    <div class="empty-icon" aria-hidden="true">
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                           stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
+                        <circle cx="9" cy="7" r="4"/>
+                        <path d="M23 21v-2a4 4 0 00-3-3.87"/>
+                        <path d="M16 3.13a4 4 0 010 7.75"/>
+                      </svg>
+                    </div>
+                    <p class="empty-title">Sin personal a cargo</p>
+                    <p class="empty-desc">No hay colaboradores en la jerarquía con los filtros aplicados.</p>
+                  </div>
+                </td></tr>
+              }
+              else
+              {
+                @foreach (var p in Model.PersonalACargo)
+                {
+                  var inicialesP = string.Join("", p.NombreCompleto.Split(' ', StringSplitOptions.RemoveEmptyEntries)
+                                              .Take(2).Select(w => char.ToUpper(w[0])));
+                  <tr>
+                    <td>
+                      <div style="display:flex;align-items:center;gap:var(--sp-3)">
+                        <div class="avatar avatar--sm" aria-hidden="true">@inicialesP</div>
+                        <a asp-action="Perfil" asp-route-id="@p.Id" class="table-link">@p.NombreCompleto</a>
+                      </div>
+                    </td>
+                    <td class="tabular-nums" style="font-size:.8125rem">@p.Cedula</td>
+                    <td>@p.CargoNombre</td>
+                    <td>@p.SedeNombre</td>
+                    <td>
+                      @if (p.TipoVinculacion == "Temporal")
+                      { <span class="badge badge--temporal">Temporal</span> }
+                      else
+                      { <span class="badge badge--directo">Directo</span> }
+                    </td>
+                    <td><span class="badge">@RolesSistemaTextos.Nombre(p.Rol, p.Rol)</span></td>
+                    <td>
+                      @if (p.Estado == "Activo")
+                      { <span class="badge badge--activo"><span class="badge-dot"></span>Activo</span> }
+                      else if (p.Estado == "NoDisponible")
+                      { <span class="badge badge--no-disponible"><span class="badge-dot"></span>No disponible</span> }
+                      else
+                      { <span class="badge badge--inactivo"><span class="badge-dot"></span>Inactivo</span> }
+                    </td>
+                    <td class="tabular-nums" style="font-size:.8125rem">@p.FechaIngreso</td>
+                    <td>
+                      <div class="table-actions">
+                        <a asp-action="Perfil" asp-route-id="@p.Id"
+                           class="btn btn-ghost btn-sm btn-icon" aria-label="Ver perfil de @p.NombreCompleto">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24"
+                               fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                            <circle cx="12" cy="12" r="3"/>
+                          </svg>
+                        </a>
+                      </div>
+                    </td>
+                  </tr>
+                }
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
 
     </div>
   }

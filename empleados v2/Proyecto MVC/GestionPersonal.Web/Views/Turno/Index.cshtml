@@ -1,13 +1,13 @@
 @model TurnosViewModel
-@using GestionPersonal.Models.Enums
+@using GestionPersonal.Constants
 @using GestionPersonal.Web.Helpers
 @using System.Text.Json
 @{
     ViewData["Title"] = "Horarios y turnos";
     ViewData["BreadcrumbCurrent"] = "Horarios";
-    var rol = SesionHelper.GetRol(User);
-    bool puedeGestionar = rol == RolUsuario.DirectorTecnico || rol == RolUsuario.Regente || rol == RolUsuario.AuxiliarRegente
-                       || rol == RolUsuario.Administrador || rol == RolUsuario.Analista;
+    bool puedeGestionar = PermisoHelper.TieneAlgunPermiso(User,
+        PermisosCodigo.TurnosAsignar,
+        PermisosCodigo.TurnosPlantillas);
     var antiforgery = ViewContext.HttpContext.RequestServices
         .GetRequiredService<Microsoft.AspNetCore.Antiforgery.IAntiforgery>()
         .GetAndStoreTokens(ViewContext.HttpContext).RequestToken;

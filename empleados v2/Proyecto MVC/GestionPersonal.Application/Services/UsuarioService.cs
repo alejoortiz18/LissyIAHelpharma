@@ -55,4 +55,29 @@ public class UsuarioService : IUsuarioService
 
         return ResultadoOperacion<int>.Ok(usuario.Id);
     }
+
+    public async Task<ResultadoOperacion> ActualizarParaEmpleadoAsync(
+        int usuarioId, string correo, string rolCodigo, int sedeId, CancellationToken ct = default)
+    {
+        var usuario = await _repo.ObtenerPorIdAsync(usuarioId, ct);
+        if (usuario is null)
+            return ResultadoOperacion.Fail("Usuario de acceso no encontrado.");
+
+        correo = correo.Trim();
+        if (await _repo.ExisteCorreoAsync(correo, usuarioId, ct))
+            return ResultadoOperacion.Fail("Ya existe otro usuario con ese correo electrónico.");
+
+        if (!Enum.TryParse<RolUsuario>(rolCodigo, ignoreCase: true, out var rol))
+            return ResultadoOperacion.Fail("El rol del sistema no es válido. Selecciona un rol de la lista.");
+
+        usuario.CorreoAcceso        = correo;
+        usuario.Rol                 = rol;
+        usuario.SedeId              = sedeId;
+        usuario.FechaModificacion   = DateTime.UtcNow;
+
+        _repo.Actualizar(usuario);
+        await _repo.GuardarCambiosAsync(ct);
+
+        return ResultadoOperacion.Ok("Datos de acceso actualizados.");
+    }
 }

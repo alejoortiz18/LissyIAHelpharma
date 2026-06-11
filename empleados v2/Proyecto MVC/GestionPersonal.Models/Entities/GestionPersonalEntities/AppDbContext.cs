@@ -10,6 +10,10 @@ public class AppDbContext : DbContext
     public DbSet<Sede> Sedes => Set<Sede>();
     public DbSet<Cargo> Cargos => Set<Cargo>();
     public DbSet<EmpresaTemporal> EmpresasTemporales => Set<EmpresaTemporal>();
+    public DbSet<TipoSolicitud> TiposSolicitud => Set<TipoSolicitud>();
+    public DbSet<RolSistema> RolesSistema => Set<RolSistema>();
+    public DbSet<PermisoPlataforma> PermisosPlataforma => Set<PermisoPlataforma>();
+    public DbSet<RolSistemaPermiso> RolesSistemaPermisos => Set<RolSistemaPermiso>();
 
     // ── Turnos ──────────────────────────────────────────────
     public DbSet<PlantillaTurno> PlantillasTurno => Set<PlantillaTurno>();

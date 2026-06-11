@@ -5,6 +5,7 @@ namespace GestionPersonal.Application.Interfaces;
 
 public interface IHoraExtraService
 {
+    Task<IReadOnlyList<HoraExtraDto>> ObtenerTodosAsync(CancellationToken ct = default);
     Task<IReadOnlyList<HoraExtraDto>> ObtenerPorSedeAsync(int sedeId, CancellationToken ct = default);
     Task<IReadOnlyList<HoraExtraDto>> ObtenerPorEmpleadoAsync(int empleadoId, CancellationToken ct = default);
     Task<IReadOnlyList<HoraExtraDto>> ObtenerPendientesPorSedeAsync(int sedeId, CancellationToken ct = default);

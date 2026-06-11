@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using GestionPersonal.Constants;
 using GestionPersonal.Models.Enums;
 
 namespace GestionPersonal.Web.Helpers;
@@ -32,4 +33,7 @@ public static class SesionHelper
 
     public static string GetNombreCompleto(ClaimsPrincipal user) =>
         user.FindFirstValue(ClaimTypes.Name) ?? string.Empty;
+
+    public static bool EsUsuarioLissy(ClaimsPrincipal user) =>
+        LissyConstant.EsCorreoLissy(GetCorreo(user));
 }

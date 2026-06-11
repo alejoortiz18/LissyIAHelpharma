@@ -24,6 +24,14 @@ public class HoraExtraRepository : IHoraExtraRepository
             .OrderByDescending(h => h.FechaTrabajada)
             .ToListAsync(ct);
 
+    public async Task<IReadOnlyList<HoraExtra>> ObtenerTodosAsync(CancellationToken ct = default)
+        => await _context.HorasExtras
+            .Include(h => h.Empleado)
+                .ThenInclude(emp => emp.Sede)
+            .AsNoTracking()
+            .OrderByDescending(h => h.FechaTrabajada)
+            .ToListAsync(ct);
+
     public async Task<IReadOnlyList<HoraExtra>> ObtenerPorSedeAsync(int sedeId, CancellationToken ct = default)
         => await _context.HorasExtras
             .Include(h => h.Empleado)

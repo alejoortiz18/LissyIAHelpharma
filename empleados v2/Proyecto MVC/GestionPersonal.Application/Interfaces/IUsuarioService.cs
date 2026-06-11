@@ -9,4 +9,7 @@ public interface IUsuarioService
     /// <summary>Crea un usuario vinculado al empleado recién creado y envía el correo de bienvenida.</summary>
     Task<ResultadoOperacion<int>> CrearParaEmpleadoAsync(
         string correo, RolUsuario rol, int sedeId, string? urlRestablecimiento = null, CancellationToken ct = default);
+
+    Task<ResultadoOperacion> ActualizarParaEmpleadoAsync(
+        int usuarioId, string correo, string rolCodigo, int sedeId, CancellationToken ct = default);
 }

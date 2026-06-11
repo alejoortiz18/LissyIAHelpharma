@@ -1,13 +1,12 @@
 ﻿@model HorasExtrasViewModel
-@using GestionPersonal.Models.Enums
 @using GestionPersonal.Web.Helpers
 @{
     ViewData["Title"] = "Horas extras";
     ViewData["BreadcrumbCurrent"] = "Horas extras";
-    var rol          = SesionHelper.GetRol(User);
-    var empId        = SesionHelper.GetEmpleadoId(User);
-    bool puedeAprobar = rol == RolUsuario.DirectorTecnico || rol == RolUsuario.Regente || rol == RolUsuario.AuxiliarRegente
-                     || rol == RolUsuario.Administrador || rol == RolUsuario.Analista;
+    var empId         = Model.EmpleadoIdSesion;
+    bool puedeCrear   = Model.PuedeCrear;
+    bool puedeAprobar = Model.PuedeAprobar;
+    bool crearSoloPropias = Model.CrearSoloPropias;
     var antiforgery  = ViewContext.HttpContext.RequestServices
         .GetRequiredService<Microsoft.AspNetCore.Antiforgery.IAntiforgery>()
         .GetAndStoreTokens(ViewContext.HttpContext).RequestToken;
@@ -18,7 +17,7 @@
     <h1 class="page-title">Horas Extras</h1>
     <p class="page-desc">Registro y aprobación de horas extras de los empleados.</p>
   </div>
-  @if (puedeAprobar)
+  @if (puedeCrear)
   {
     <div class="page-actions">
       <button class="btn btn-primary" data-modal-open="modal-nueva-he" id="btn-nueva-he">
@@ -182,7 +181,7 @@
 <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
      Modal: Nueva solicitud
      â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
-@if (puedeAprobar)
+@if (puedeCrear)
 {
 <div class="modal-overlay" id="modal-nueva-he" hidden aria-modal="true"
      aria-labelledby="he-title" role="dialog">
@@ -197,6 +196,13 @@
     </div>
     <div class="modal-body">
       <form id="form-he" novalidate>
+        @if (crearSoloPropias && empId.HasValue)
+        {
+          <input type="hidden" id="he-empleado" name="EmpleadoId" value="@empId.Value" />
+          <p class="form-hint" style="margin-bottom:var(--sp-4)">La solicitud se registrará a tu nombre.</p>
+        }
+        else if (puedeCrear && !crearSoloPropias)
+        {
         <div class="form-group">
           <label class="form-label" for="he-empleado">Empleado <span class="required" aria-hidden="true">*</span></label>
           <select class="form-select" id="he-empleado" name="EmpleadoId" required>
@@ -207,6 +213,7 @@
             }
           </select>
         </div>
+        }
         <div class="form-grid form-grid-2">
           <div class="form-group">
             <label class="form-label" for="he-fecha">Fecha <span class="required" aria-hidden="true">*</span></label>
@@ -425,7 +432,8 @@
     const btnGuardar = document.getElementById('btn-guardar-he');
     if (btnGuardar) {
       btnGuardar.addEventListener('click', function () {
-        const empId  = document.getElementById('he-empleado').value;
+        const empEl  = document.getElementById('he-empleado');
+        const empId  = empEl ? empEl.value : '';
         const fecha  = document.getElementById('he-fecha').value;
         const horas  = document.getElementById('he-horas').value;
         const motivo = document.getElementById('he-motivo').value.trim();

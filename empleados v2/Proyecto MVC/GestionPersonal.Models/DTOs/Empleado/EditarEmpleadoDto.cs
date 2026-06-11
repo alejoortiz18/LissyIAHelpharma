@@ -74,4 +74,7 @@ public class EditarEmpleadoDto
     public int? EmpresaTemporalId { get; set; }
     public DateOnly? FechaInicioContrato { get; set; }
     public DateOnly? FechaFinContrato { get; set; }
+
+    [Required(ErrorMessage = "El rol en el sistema es obligatorio.")]
+    public string Rol { get; set; } = string.Empty;
 }

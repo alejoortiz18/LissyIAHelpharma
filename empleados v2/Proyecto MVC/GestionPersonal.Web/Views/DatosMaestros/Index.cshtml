@@ -1,0 +1,9 @@
+@model CatalogosViewModel
+@{
+    ViewData["Title"] = "Datos maestros";
+    ViewData["BreadcrumbCurrent"] = "Datos maestros";
+    ViewData["MaestrosController"] = "DatosMaestros";
+    ViewData["MaestrosTitulo"] = "Datos maestros";
+    ViewData["MaestrosDesc"] = "Configura sedes, cargos, empresas temporales, tipos de solicitud y roles con permisos.";
+}
+@await Html.PartialAsync("_GestionDatosMaestros", Model)

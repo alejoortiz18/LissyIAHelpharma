@@ -1,4 +1,5 @@
 using GestionPersonal.Application.Interfaces;
+using GestionPersonal.Constants;
 using GestionPersonal.Constants.Messages;
 using GestionPersonal.Domain.Interfaces;
 using GestionPersonal.Models.DTOs.EventoLaboral;
@@ -14,17 +15,20 @@ public class EventoLaboralService : IEventoLaboralService
 {
     private readonly IEventoLaboralRepository _repo;
     private readonly IEmpleadoRepository _empleadoRepo;
+    private readonly ICatalogoService _catalogoService;
     private readonly INotificationService _notificationService;
     private readonly ILogger<EventoLaboralService> _logger;
 
     public EventoLaboralService(
         IEventoLaboralRepository repo,
         IEmpleadoRepository empleadoRepo,
+        ICatalogoService catalogoService,
         INotificationService notificationService,
         ILogger<EventoLaboralService> logger)
     {
         _repo                = repo;
         _empleadoRepo        = empleadoRepo;
+        _catalogoService     = catalogoService;
         _notificationService = notificationService;
         _logger              = logger;
     }
@@ -61,8 +65,12 @@ public class EventoLaboralService : IEventoLaboralService
         if (solapados.Any())
             return ResultadoOperacion.Fail(EventoLaboralConstant.SolapamientoFechas);
 
+        var tipoCatalog = await _catalogoService.ObtenerTipoSolicitudActivoPorCodigoAsync(dto.TipoEvento, ct);
+        if (tipoCatalog is null)
+            return ResultadoOperacion.Fail("El tipo de solicitud seleccionado no es válido o está inactivo.");
+
         // Validación de saldo de vacaciones
-        if (dto.TipoEvento == TipoEvento.Vacaciones && dto.DiasDisfrutar.HasValue)
+        if (tipoCatalog.EsVacaciones && dto.DiasDisfrutar.HasValue)
         {
             var saldo = await ObtenerSaldoVacacionesAsync(dto.EmpleadoId, ct);
             if (saldo is null)
@@ -86,7 +94,7 @@ public class EventoLaboralService : IEventoLaboralService
             TipoIncapacidad = dto.TipoIncapacidad,
             EntidadExpide   = dto.EntidadExpide,
             Descripcion     = dto.Descripcion,
-            DiasDisfrutar   = dto.TipoEvento == TipoEvento.Vacaciones ? dto.DiasDisfrutar : null,
+            DiasDisfrutar   = tipoCatalog.EsVacaciones ? dto.DiasDisfrutar : null,
             AutorizadoPor   = dto.AutorizadoPor,
             RutaDocumento   = dto.RutaDocumento,
             NombreDocumento = dto.NombreDocumento,
@@ -227,10 +235,15 @@ public class EventoLaboralService : IEventoLaboralService
 
         if (!solicitante.JefeInmediatoId.HasValue) return;
 
-        // Recorrer toda la cadena jerárquica hacia arriba (jefe → jefe del jefe → …)
-        // para notificar a cada nivel. Se usa un set de visitados para evitar ciclos.
+        // Recorrer toda la cadena jerárquica hacia arriba (jefe -> jefe del jefe -> ...)
+        // y notificar a cada superior con saludo y cuerpo personalizados (+ adjunto si existe).
         var visitados    = new HashSet<int> { solicitanteEmpleadoId };
         var jefeActualId = solicitante.JefeInmediatoId;
+        var destinatariosJerarquia = new List<DestinatarioJerarquiaSolicitud>();
+        var correosJerarquia = new List<string>();
+        string? nombreJefeInmediatoSolicitante = null;
+        string? correoJefeInmediato = null;
+        var esPrimerJefeEnCadena = true;
 
         while (jefeActualId.HasValue && visitados.Add(jefeActualId.Value))
         {
@@ -240,30 +253,52 @@ public class EventoLaboralService : IEventoLaboralService
             var correoJefe = ResolverCorreo(jefe);
             if (!string.IsNullOrWhiteSpace(correoJefe))
             {
-                var dto = new NotificacionSolicitudDto(
-                    TipoEvento                : evento.TipoEvento.ToString(),
-                    TipoSolicitud             : evento.TipoEvento.ToString(),
-                    FechaEvento               : evento.FechaInicio.ToString("dd/MM/yyyy"),
-                    NombreEmpleadoSolicitante : solicitante.NombreCompleto,
-                    CorreoEmpleadoSolicitante : ResolverCorreo(solicitante) ?? "",
-                    NombreJefeInmediato       : jefe.NombreCompleto,
-                    CorreoJefeInmediato       : correoJefe,
-                    NombreJefeApoyo           : null,
-                    CorreoJefeApoyo           : null,
-                    NombreAprobador           : null,
-                    Observacion               : null,
-                    NombreQuienGenera         : solicitante.NombreCompleto,
-                    FechaFin                  : evento.FechaFin.ToString("dd/MM/yyyy"),
-                    Descripcion               : evento.Descripcion,
-                    RutaDocumentoAdjunto      : evento.RutaDocumento,
-                    NombreDocumentoAdjunto    : evento.NombreDocumento);
+                var esJefeInmediato = esPrimerJefeEnCadena;
+                if (esJefeInmediato)
+                {
+                    nombreJefeInmediatoSolicitante = jefe.NombreCompleto;
+                    correoJefeInmediato = correoJefe;
+                    esPrimerJefeEnCadena = false;
+                }
 
-                await _notificationService.NotificarSolicitudCreadaAsync(dto, ct);
+                if (!correosJerarquia.Any(c => c.Equals(correoJefe, StringComparison.OrdinalIgnoreCase)))
+                {
+                    correosJerarquia.Add(correoJefe);
+                    destinatariosJerarquia.Add(new DestinatarioJerarquiaSolicitud(
+                        correoJefe,
+                        jefe.NombreCompleto,
+                        esJefeInmediato,
+                        CargoJefeSede.EsCargoAnalistaServiciosFarmaceuticos(jefe.Cargo?.Nombre)));
+                }
             }
 
-            // Subir al siguiente nivel de la jerarquía
             jefeActualId = jefe.JefeInmediatoId;
         }
+
+        if (destinatariosJerarquia.Count == 0 || string.IsNullOrWhiteSpace(correoJefeInmediato))
+            return;
+
+        var dto = new NotificacionSolicitudDto(
+            TipoEvento                : evento.TipoEvento,
+            TipoSolicitud             : evento.TipoEvento,
+            FechaEvento               : evento.FechaInicio.ToString("dd/MM/yyyy"),
+            NombreEmpleadoSolicitante : solicitante.NombreCompleto,
+            CorreoEmpleadoSolicitante : ResolverCorreo(solicitante) ?? "",
+            NombreJefeInmediato       : nombreJefeInmediatoSolicitante ?? "Jefe inmediato",
+            CorreoJefeInmediato       : correoJefeInmediato,
+            NombreJefeApoyo           : null,
+            CorreoJefeApoyo           : null,
+            NombreAprobador           : null,
+            Observacion               : null,
+            NombreQuienGenera         : solicitante.NombreCompleto,
+            FechaFin                  : evento.FechaFin.ToString("dd/MM/yyyy"),
+            Descripcion               : evento.Descripcion,
+            RutaDocumentoAdjunto      : evento.RutaDocumento,
+            NombreDocumentoAdjunto    : evento.NombreDocumento,
+            CorreosLineaJerarquica    : correosJerarquia,
+            DestinatariosJerarquia    : destinatariosJerarquia);
+
+        await _notificationService.NotificarSolicitudCreadaAsync(dto, ct);
     }
 
     private async Task EnviarNotificacionCambioEstadoAsync(
@@ -317,7 +352,7 @@ public class EventoLaboralService : IEventoLaboralService
         }
 
         var dto = new NotificacionCambioEstadoDto(
-            TipoEvento                       : evento.TipoEvento.ToString(),
+            TipoEvento                       : evento.TipoEvento,
             FechaInicio                      : evento.FechaInicio.ToString("dd/MM/yyyy"),
             FechaFin                         : evento.FechaFin.ToString("dd/MM/yyyy"),
             Descripcion                      : evento.Descripcion,
@@ -359,7 +394,9 @@ public class EventoLaboralService : IEventoLaboralService
 
         var causadas = (int)(meses * 1.25m);
 
-        var vacaciones = await _repo.ObtenerPorEmpleadoYTipoAsync(empleadoId, TipoEvento.Vacaciones, ct);
+        var tiposActivos = await _catalogoService.ObtenerTiposSolicitudActivosAsync(ct);
+        var codigoVacaciones = tiposActivos.FirstOrDefault(t => t.EsVacaciones)?.Codigo ?? "Vacaciones";
+        var vacaciones = await _repo.ObtenerPorEmpleadoYTipoAsync(empleadoId, codigoVacaciones, ct);
         var tomados = vacaciones
             .Where(e => e.Estado != EstadoEvento.Anulado && e.FechaInicio >= inicio)
             .Sum(e => e.FechaFin.DayNumber - e.FechaInicio.DayNumber + 1);
@@ -391,7 +428,7 @@ public class EventoLaboralService : IEventoLaboralService
         JefeInmediatoId = e.Empleado?.JefeInmediatoId,
         EmpleadoNombre  = e.Empleado?.NombreCompleto ?? string.Empty,
         SedeNombre      = e.Empleado?.Sede?.Nombre   ?? string.Empty,
-        TipoEvento      = e.TipoEvento.ToString(),
+        TipoEvento      = e.TipoEvento,
         FechaInicio     = e.FechaInicio.ToString("dd/MM/yyyy"),
         FechaFin        = e.FechaFin.ToString("dd/MM/yyyy"),
         DiasSolicitados = e.FechaInicio.DayNumber > e.FechaFin.DayNumber

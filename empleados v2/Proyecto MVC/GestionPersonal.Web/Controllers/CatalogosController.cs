@@ -1,34 +1,43 @@
 using GestionPersonal.Application.Interfaces;
 using GestionPersonal.Models.DTOs.Catalogos;
+using GestionPersonal.Web.Authorization;
 using GestionPersonal.Web.ViewModels.Catalogos;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace GestionPersonal.Web.Controllers;
 
-[Authorize(Roles = "DirectorTecnico,Administrador")]
+[Authorize]
+[PuedeGestionarCatalogos]
 public class CatalogosController : Controller
 {
     private readonly ICatalogoService _catalogoService;
+    private readonly IRolSistemaService _rolSistemaService;
 
-    public CatalogosController(ICatalogoService catalogoService)
+    public CatalogosController(ICatalogoService catalogoService, IRolSistemaService rolSistemaService)
     {
         _catalogoService = catalogoService;
+        _rolSistemaService = rolSistemaService;
     }
 
     // GET /Catalogos?tab=sedes
     [HttpGet]
     public async Task<IActionResult> Index(string tab = "sedes")
     {
-        var sedes    = await _catalogoService.ObtenerSedesActivasAsync();
-        var cargos   = await _catalogoService.ObtenerCargosActivosAsync();
-        var empresas = await _catalogoService.ObtenerEmpresasTemporalesActivasAsync();
+        var sedes    = await _catalogoService.ObtenerTodasSedesAsync();
+        var cargos   = await _catalogoService.ObtenerTodosCargosAsync();
+        var empresas = await _catalogoService.ObtenerTodasEmpresasTemporalesAsync();
+
+        var tipos = await _catalogoService.ObtenerTodosTiposSolicitudAsync();
 
         var vm = new CatalogosViewModel
         {
             Sedes              = sedes,
             Cargos             = cargos,
             EmpresasTemporales = empresas,
+            TiposSolicitud     = tipos,
+            RolesSistema       = await _rolSistemaService.ObtenerRolesAsync(),
+            PermisosPlataforma = await _rolSistemaService.ObtenerPermisosAsync(),
             Tab                = tab,
         };
 
@@ -106,6 +115,139 @@ public class CatalogosController : Controller
             return Json(new { exito = false, mensaje = "Datos inválidos. Revisa los campos obligatorios." });
 
         var resultado = await _catalogoService.EditarEmpresaTemporalAsync(dto);
+        return Json(new { exito = resultado.Exito, mensaje = resultado.Mensaje });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> DarDeBajaSedeAjax(int id)
+    {
+        var resultado = await _catalogoService.DarDeBajaSedeAsync(id);
+        return Json(new { exito = resultado.Exito, mensaje = resultado.Mensaje });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ActivarSedeAjax(int id)
+    {
+        var resultado = await _catalogoService.ActivarSedeAsync(id);
+        return Json(new { exito = resultado.Exito, mensaje = resultado.Mensaje });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> DarDeBajaCargoAjax(int id)
+    {
+        var resultado = await _catalogoService.DarDeBajaCargoAsync(id);
+        return Json(new { exito = resultado.Exito, mensaje = resultado.Mensaje });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ActivarCargoAjax(int id)
+    {
+        var resultado = await _catalogoService.ActivarCargoAsync(id);
+        return Json(new { exito = resultado.Exito, mensaje = resultado.Mensaje });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> DarDeBajaEmpresaAjax(int id)
+    {
+        var resultado = await _catalogoService.DarDeBajaEmpresaTemporalAsync(id);
+        return Json(new { exito = resultado.Exito, mensaje = resultado.Mensaje });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ActivarEmpresaAjax(int id)
+    {
+        var resultado = await _catalogoService.ActivarEmpresaTemporalAsync(id);
+        return Json(new { exito = resultado.Exito, mensaje = resultado.Mensaje });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> CrearTipoSolicitudAjax([FromForm] CrearTipoSolicitudDto dto)
+    {
+        if (!ModelState.IsValid)
+            return Json(new { exito = false, mensaje = "Datos inválidos. Revisa nombre y código." });
+
+        var resultado = await _catalogoService.CrearTipoSolicitudAsync(dto);
+        return Json(new { exito = resultado.Exito, mensaje = resultado.Mensaje });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> EditarTipoSolicitudAjax([FromForm] EditarTipoSolicitudDto dto)
+    {
+        if (!ModelState.IsValid)
+            return Json(new { exito = false, mensaje = "Datos inválidos." });
+
+        var resultado = await _catalogoService.EditarTipoSolicitudAsync(dto);
+        return Json(new { exito = resultado.Exito, mensaje = resultado.Mensaje });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> DarDeBajaTipoSolicitudAjax(int id)
+    {
+        var resultado = await _catalogoService.DarDeBajaTipoSolicitudAsync(id);
+        return Json(new { exito = resultado.Exito, mensaje = resultado.Mensaje });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ActivarTipoSolicitudAjax(int id)
+    {
+        var resultado = await _catalogoService.ActivarTipoSolicitudAsync(id);
+        return Json(new { exito = resultado.Exito, mensaje = resultado.Mensaje });
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> ObtenerRolAjax(int id)
+    {
+        var detalle = await _rolSistemaService.ObtenerDetalleAsync(id);
+        if (detalle is null)
+            return Json(new { exito = false, mensaje = "Rol no encontrado." });
+        return Json(new { exito = true, datos = detalle });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> CrearRolAjax([FromForm] CrearRolSistemaDto dto)
+    {
+        if (!ModelState.IsValid)
+            return Json(new { exito = false, mensaje = "Datos inválidos. Revisa código, nombre y permisos." });
+
+        var resultado = await _rolSistemaService.CrearRolAsync(dto);
+        return Json(new { exito = resultado.Exito, mensaje = resultado.Mensaje });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> EditarRolAjax([FromForm] EditarRolSistemaDto dto)
+    {
+        if (!ModelState.IsValid)
+            return Json(new { exito = false, mensaje = "Datos inválidos." });
+
+        var resultado = await _rolSistemaService.EditarRolAsync(dto);
+        return Json(new { exito = resultado.Exito, mensaje = resultado.Mensaje });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> DarDeBajaRolAjax(int id)
+    {
+        var resultado = await _rolSistemaService.DarDeBajaRolAsync(id);
+        return Json(new { exito = resultado.Exito, mensaje = resultado.Mensaje });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ActivarRolAjax(int id)
+    {
+        var resultado = await _rolSistemaService.ActivarRolAsync(id);
         return Json(new { exito = resultado.Exito, mensaje = resultado.Mensaje });
     }
 }

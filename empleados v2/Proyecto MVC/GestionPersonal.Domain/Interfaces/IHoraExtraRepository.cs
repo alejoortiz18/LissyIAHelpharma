@@ -7,6 +7,7 @@ public interface IHoraExtraRepository
 {
     Task<HoraExtra?> ObtenerPorIdAsync(int id, CancellationToken ct = default);
     Task<IReadOnlyList<HoraExtra>> ObtenerPorEmpleadoAsync(int empleadoId, CancellationToken ct = default);
+    Task<IReadOnlyList<HoraExtra>> ObtenerTodosAsync(CancellationToken ct = default);
     Task<IReadOnlyList<HoraExtra>> ObtenerPorSedeAsync(int sedeId, CancellationToken ct = default);
     Task<IReadOnlyList<HoraExtra>> ObtenerPendientesPorSedeAsync(int sedeId, CancellationToken ct = default);
 

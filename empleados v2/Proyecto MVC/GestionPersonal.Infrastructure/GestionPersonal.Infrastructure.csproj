@@ -3,6 +3,7 @@
   <ItemGroup>
     <ProjectReference Include="..\GestionPersonal.Domain\GestionPersonal.Domain.csproj" />
     <ProjectReference Include="..\GestionPersonal.Models\GestionPersonal.Models.csproj" />
+    <ProjectReference Include="..\GestionPersonal.Constants\GestionPersonal.Constants.csproj" />
   </ItemGroup>
 
   <ItemGroup>

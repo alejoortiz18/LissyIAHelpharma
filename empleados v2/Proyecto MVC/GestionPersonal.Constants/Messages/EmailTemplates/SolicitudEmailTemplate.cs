@@ -59,6 +59,98 @@ public static class SolicitudEmailTemplate
             tipoEvento      : "Solicitud Creada");
     }
 
+    /// <summary>Superior en la cadena (no es el jefe inmediato del solicitante).</summary>
+    public static string SolicitudCreadaParaSuperiorEnJerarquia(
+        string nombreDestinatario,
+        string nombreJefeInmediatoDelSolicitante,
+        string nombreSolicitante,
+        string tipoSolicitud,
+        string fechaInicio,
+        string fechaFin,
+        string? descripcion = null)
+    {
+        var cuerpoIntro = $"""
+            <p style="margin:0 0 20px;font-size:14px;color:#475569;line-height:1.7;">
+              Un empleado a cargo de <strong>{EmailBase.EscapeHtml(nombreJefeInmediatoDelSolicitante)}</strong>
+              ha creado una nueva solicitud de
+              <strong>{EmailBase.EscapeHtml(tipoSolicitud)}</strong> que requiere revisión:
+            </p>
+            """;
+
+        return ConstruirCuerpoSolicitudCreada(
+            cuerpoIntro, nombreSolicitante, tipoSolicitud, fechaInicio, fechaFin, descripcion);
+    }
+
+    /// <summary>Analista de servicios farmacéuticos (visión global de la línea).</summary>
+    public static string SolicitudCreadaParaAnalista(
+        string nombreJefeInmediatoDelSolicitante,
+        string nombreSolicitante,
+        string tipoSolicitud,
+        string fechaInicio,
+        string fechaFin,
+        string? descripcion = null,
+        bool jefeInmediatoEsElAnalista = false)
+    {
+        var cuerpoIntro = jefeInmediatoEsElAnalista
+            ? $"""
+                <p style="margin:0 0 20px;font-size:14px;color:#475569;line-height:1.7;">
+                  El empleado <strong>{EmailBase.EscapeHtml(nombreSolicitante)}</strong>
+                  ha creado una nueva solicitud de
+                  <strong>{EmailBase.EscapeHtml(tipoSolicitud)}</strong> que requiere revisión:
+                </p>
+                """
+            : $"""
+                <p style="margin:0 0 20px;font-size:14px;color:#475569;line-height:1.7;">
+                  Un empleado a cargo de <strong>{EmailBase.EscapeHtml(nombreJefeInmediatoDelSolicitante)}</strong>
+                  ha creado una nueva solicitud de
+                  <strong>{EmailBase.EscapeHtml(tipoSolicitud)}</strong> que requiere revisión:
+                </p>
+                """;
+
+        return ConstruirCuerpoSolicitudCreada(
+            cuerpoIntro, nombreSolicitante, tipoSolicitud, fechaInicio, fechaFin, descripcion);
+    }
+
+    private static string ConstruirCuerpoSolicitudCreada(
+        string cuerpoIntro,
+        string nombreSolicitante,
+        string tipoSolicitud,
+        string fechaInicio,
+        string fechaFin,
+        string? descripcion)
+    {
+        var filaFechaFin = string.IsNullOrWhiteSpace(fechaFin)
+            ? ""
+            : EmailBase.FilaDato("Fecha fin", fechaFin, false);
+
+        var filaDescripcion = string.IsNullOrWhiteSpace(descripcion)
+            ? ""
+            : EmailBase.FilaDato("Descripción", descripcion, true);
+
+        var cuerpo = cuerpoIntro + $"""
+
+            {EmailBase.TablaInfo(
+                EmailBase.FilaDato("Empleado",     nombreSolicitante, false) +
+                EmailBase.FilaDato("Tipo",         tipoSolicitud,     true)  +
+                EmailBase.FilaDato("Fecha inicio", fechaInicio,       false) +
+                filaFechaFin +
+                EmailBase.FilaDato("Estado",       "Pendiente",       false) +
+                filaDescripcion
+            )}
+
+            {EmailBase.Banner("Esta solicitud está pendiente de revisión. Ingresa al sistema para consultar el detalle y los soportes adjuntos.", "info")}
+            """;
+
+        return EmailBase.Construir(
+            tituloVentana   : $"Nueva solicitud de {tipoSolicitud}",
+            badgeColor      : "Pendiente",
+            badgeTexto      : "Solicitud en espera de revisión",
+            tituloPrincipal : $"Nueva solicitud — {tipoSolicitud}",
+            cuerpoHtml      : cuerpo,
+            generadoPor     : nombreSolicitante,
+            tipoEvento      : "Solicitud Creada");
+    }
+
     // ── EVT-05: Solicitud aprobada ────────────────────────────────────────────
 
     public static string SolicitudAprobada(

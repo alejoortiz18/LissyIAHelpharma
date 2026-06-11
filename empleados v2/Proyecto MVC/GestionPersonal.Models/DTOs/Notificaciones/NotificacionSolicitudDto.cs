@@ -16,4 +16,6 @@ public record NotificacionSolicitudDto(
     string? FechaFin     = null,
     string? Descripcion  = null,
     string? RutaDocumentoAdjunto   = null,   // ruta física del archivo en servidor
-    string? NombreDocumentoAdjunto = null);  // nombre original para el adjunto
+    string? NombreDocumentoAdjunto = null,   // nombre original para el adjunto
+    IReadOnlyList<string>? CorreosLineaJerarquica = null, // legado: correos sin personalización
+    IReadOnlyList<DestinatarioJerarquiaSolicitud>? DestinatariosJerarquia = null);

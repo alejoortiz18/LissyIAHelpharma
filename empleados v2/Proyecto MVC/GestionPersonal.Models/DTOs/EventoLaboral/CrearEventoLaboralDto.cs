@@ -11,7 +11,8 @@ public class CrearEventoLaboralDto
     public int EmpleadoId { get; set; }
 
     [Required(ErrorMessage = "El tipo de evento es obligatorio.")]
-    public TipoEvento TipoEvento { get; set; }
+    [StringLength(50)]
+    public string TipoEvento { get; set; } = null!;
 
     [Required(ErrorMessage = "La fecha de inicio es obligatoria.")]
     public DateOnly FechaInicio { get; set; }

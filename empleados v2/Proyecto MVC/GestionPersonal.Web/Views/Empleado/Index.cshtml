@@ -1,9 +1,10 @@
 @model EmpleadosViewModel
+@using GestionPersonal.Constants
+@using GestionPersonal.Web.Helpers
 @{
     ViewData["Title"] = "Empleados";
     ViewData["BreadcrumbCurrent"] = "Empleados";
-    var rol = SesionHelper.GetRol(User);
-    bool puedeCrear = rol == RolUsuario.DirectorTecnico || rol == RolUsuario.Administrador || rol == RolUsuario.Analista;
+    bool puedeCrear = PermisoHelper.TienePermiso(User, PermisosCodigo.EmpleadosCrear);
 }
 
 <div class="page-header">

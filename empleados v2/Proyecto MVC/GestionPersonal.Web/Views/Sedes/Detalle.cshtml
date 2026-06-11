@@ -1,0 +1,173 @@
+@model GestionPersonal.Web.ViewModels.Sedes.SedeDetalleViewModel
+@{
+    ViewData["Title"] = $"Detalle sede {Model.Nombre}";
+    ViewData["BreadcrumbParent"] = "Sedes";
+    ViewData["BreadcrumbParentUrl"] = Url.Action("Index", "Sedes")!;
+    ViewData["BreadcrumbCurrent"] = Model.Nombre;
+}
+
+<div class="page-header">
+  <div class="page-header-info">
+    <h1 class="page-title">@Model.Nombre</h1>
+    <p class="page-desc">@Model.Ciudad · @Model.Direccion</p>
+  </div>
+</div>
+
+<div class="stats-grid" style="--cols:4;margin-bottom:var(--sp-5)">
+  <div class="stat-card">
+    <p class="stat-label">Total usuarios</p>
+    <p class="stat-value tabular-nums">@Model.TotalUsuarios</p>
+  </div>
+  <div class="stat-card">
+    <p class="stat-label">Activos</p>
+    <p class="stat-value tabular-nums">@Model.Activos</p>
+  </div>
+  <div class="stat-card">
+    <p class="stat-label">No disponibles</p>
+    <p class="stat-value tabular-nums">@Model.NoDisponibles</p>
+  </div>
+  <div class="stat-card">
+    <p class="stat-label">Inactivos</p>
+    <p class="stat-value tabular-nums">@Model.Inactivos</p>
+  </div>
+</div>
+
+<div class="card" style="margin-bottom:var(--sp-5)">
+  <div class="card-body">
+    <p style="margin:0 0 var(--sp-2);font-size:.8125rem;color:var(--c-gray-500);text-transform:uppercase;letter-spacing:.04em">Responsable de sede</p>
+    @if (Model.ResponsableNombre == "Sin responsable")
+    {
+      <span class="badge badge--inactivo"><span class="badge-dot"></span>Sin responsable</span>
+    }
+    else
+    {
+      <p style="margin:0;font-weight:600;color:var(--c-gray-900)">@Model.ResponsableNombre</p>
+      <p style="margin:0;font-size:.8125rem;color:var(--c-gray-600)">@Model.ResponsableCargo</p>
+    }
+  </div>
+</div>
+
+<form method="get" class="filter-bar" role="search" aria-label="Filtros de usuarios por sede">
+  <input type="hidden" name="id" value="@Model.SedeId" />
+  <input name="buscar" type="search" class="form-input filter-search"
+         placeholder="Buscar por nombre o cédula…" autocomplete="off"
+         aria-label="Buscar usuario" value="@Model.Buscar" />
+
+  <select name="estado" class="form-select" aria-label="Filtrar por estado">
+    <option value="">Todos los estados</option>
+    <option value="Activo" selected="@(Model.Estado == "Activo")">Activo</option>
+    <option value="NoDisponible" selected="@(Model.Estado == "NoDisponible")">No disponible</option>
+    <option value="Inactivo" selected="@(Model.Estado == "Inactivo")">Inactivo</option>
+  </select>
+
+  <select name="tipoVinculacion" class="form-select" aria-label="Filtrar por tipo de vinculación">
+    <option value="">Tipo de vinculación</option>
+    <option value="Directo" selected="@(Model.TipoVinculacion == "Directo")">Directo</option>
+    <option value="Temporal" selected="@(Model.TipoVinculacion == "Temporal")">Temporal</option>
+  </select>
+
+  <select name="rol" class="form-select" aria-label="Filtrar por permisos del sistema">
+    <option value="">Permisos (rol)</option>
+    <option value="Administrador" selected="@(Model.Rol == "Administrador")">Administrador</option>
+    <option value="Analista" selected="@(Model.Rol == "Analista")">Analista</option>
+    <option value="DirectorTecnico" selected="@(Model.Rol == "DirectorTecnico")">Director Técnico</option>
+    <option value="Regente" selected="@(Model.Rol == "Regente")">Regente</option>
+    <option value="AuxiliarRegente" selected="@(Model.Rol == "AuxiliarRegente")">Auxiliar de Regente</option>
+    <option value="Operario" selected="@(Model.Rol == "Operario")">Operario</option>
+    <option value="Direccionador" selected="@(Model.Rol == "Direccionador")">Direccionador</option>
+  </select>
+
+  <button type="submit" class="btn btn-secondary btn-sm">Filtrar</button>
+  @if (!string.IsNullOrEmpty(Model.Buscar) || !string.IsNullOrEmpty(Model.Estado) || !string.IsNullOrEmpty(Model.TipoVinculacion) || !string.IsNullOrEmpty(Model.Rol))
+  {
+    <a asp-action="Detalle" asp-route-id="@Model.SedeId" class="btn btn-ghost btn-sm">Limpiar filtros</a>
+  }
+</form>
+
+<div class="table-wrapper">
+  <div class="table-scroll">
+    <table aria-label="Usuarios de la sede @Model.Nombre">
+      <thead>
+        <tr>
+          <th scope="col">Empleado</th>
+          <th scope="col">Cédula</th>
+          <th scope="col">Cargo</th>
+          <th scope="col">Tipo</th>
+          <th scope="col">Permisos</th>
+          <th scope="col">Estado</th>
+          <th scope="col">Ingreso</th>
+          <th scope="col"><span class="sr-only">Acciones</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        @if (Model.Usuarios.Count == 0)
+        {
+          <tr><td colspan="8">
+            <div class="empty-state">
+              <div class="empty-icon" aria-hidden="true">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                     stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
+                  <circle cx="9" cy="7" r="4"/>
+                  <path d="M23 21v-2a4 4 0 00-3-3.87"/>
+                  <path d="M16 3.13a4 4 0 010 7.75"/>
+                </svg>
+              </div>
+              <p class="empty-title">Sin resultados</p>
+              <p class="empty-desc">No hay usuarios para esta sede con los filtros seleccionados.</p>
+            </div>
+          </td></tr>
+        }
+        else
+        {
+          @foreach (var u in Model.Usuarios)
+          {
+            var iniciales = string.Join("", u.NombreCompleto.Split(' ', StringSplitOptions.RemoveEmptyEntries)
+                                        .Take(2).Select(w => char.ToUpper(w[0])));
+            <tr>
+              <td>
+                <div style="display:flex;align-items:center;gap:var(--sp-3)">
+                  <div class="avatar avatar--sm" aria-hidden="true">@iniciales</div>
+                  <a asp-controller="Empleado" asp-action="Perfil" asp-route-id="@u.Id" class="table-link" target="_blank" rel="noopener">
+                    @u.NombreCompleto
+                  </a>
+                </div>
+              </td>
+              <td class="tabular-nums" style="font-size:.8125rem">@u.Cedula</td>
+              <td>@u.CargoNombre</td>
+              <td>
+                @if (u.TipoVinculacion == "Temporal")
+                { <span class="badge badge--temporal">Temporal</span> }
+                else
+                { <span class="badge badge--directo">Directo</span> }
+              </td>
+              <td><span class="badge">@RolesSistemaTextos.Nombre(u.Rol, u.Rol)</span></td>
+              <td>
+                @if (u.Estado == "Activo")
+                { <span class="badge badge--activo"><span class="badge-dot"></span>Activo</span> }
+                else if (u.Estado == "NoDisponible")
+                { <span class="badge badge--no-disponible"><span class="badge-dot"></span>No disponible</span> }
+                else
+                { <span class="badge badge--inactivo"><span class="badge-dot"></span>Inactivo</span> }
+              </td>
+              <td class="tabular-nums" style="font-size:.8125rem">@u.FechaIngreso</td>
+              <td>
+                <div class="table-actions">
+                  <a asp-controller="Empleado" asp-action="Perfil" asp-route-id="@u.Id"
+                     class="btn btn-ghost btn-sm btn-icon" aria-label="Ver perfil de @u.NombreCompleto"
+                     target="_blank" rel="noopener">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24"
+                         fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                      <circle cx="12" cy="12" r="3"/>
+                    </svg>
+                  </a>
+                </div>
+              </td>
+            </tr>
+          }
+        }
+      </tbody>
+    </table>
+  </div>
+</div>

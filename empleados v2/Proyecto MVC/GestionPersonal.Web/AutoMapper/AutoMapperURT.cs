@@ -1,4 +1,5 @@
 using AutoMapper;
+using GestionPersonal.Helpers;
 using GestionPersonal.Models.DTOs.Empleado;
 using GestionPersonal.Models.Enums;
 
@@ -10,16 +11,16 @@ public class AutoMapperURT : Profile
     {
         CreateMap<EmpleadoDto, EditarEmpleadoDto>()
             .ForMember(dest => dest.FechaNacimiento, opt => opt.MapFrom(src =>
-                string.IsNullOrEmpty(src.FechaNacimiento) ? (DateOnly?)null : DateOnly.Parse(src.FechaNacimiento)))
+                DateParseHelper.ParseFlexible(src.FechaNacimiento)))
             .ForMember(dest => dest.NivelEscolaridad, opt => opt.MapFrom(src =>
                 string.IsNullOrEmpty(src.NivelEscolaridad)
                     ? (NivelEscolaridad?)null
                     : Enum.Parse<NivelEscolaridad>(src.NivelEscolaridad)))
             .ForMember(dest => dest.FechaInicioContrato, opt => opt.MapFrom(src =>
-                string.IsNullOrEmpty(src.FechaInicioContrato) ? (DateOnly?)null : DateOnly.Parse(src.FechaInicioContrato)))
+                DateParseHelper.ParseFlexible(src.FechaInicioContrato)))
             .ForMember(dest => dest.FechaFinContrato, opt => opt.MapFrom(src =>
-                string.IsNullOrEmpty(src.FechaFinContrato) ? (DateOnly?)null : DateOnly.Parse(src.FechaFinContrato)))
-            .ForMember(dest => dest.EmpresaTemporalId, opt => opt.Ignore());
+                DateParseHelper.ParseFlexible(src.FechaFinContrato)))
+            .ForMember(dest => dest.Rol, opt => opt.MapFrom(src => src.Rol));
     }
 }
 

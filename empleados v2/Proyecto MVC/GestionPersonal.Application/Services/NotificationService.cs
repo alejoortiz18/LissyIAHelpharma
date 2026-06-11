@@ -65,31 +65,98 @@ public class NotificationService : INotificationService
         NotificacionSolicitudDto d, CancellationToken ct = default)
     {
         var asunto = Asunto($"Nueva {d.TipoSolicitud}", d.NombreEmpleadoSolicitante);
-        var cuerpo = SolicitudEmailTemplate.SolicitudCreadaParaJefe(
-                         d.NombreJefeInmediato, d.NombreEmpleadoSolicitante, d.TipoSolicitud,
-                         d.FechaEvento, d.FechaFin ?? "", d.Descripcion);
+
+        var destinatariosJerarquia = d.DestinatariosJerarquia?.ToList()
+            ?? ConstruirDestinatariosJerarquiaLegado(d);
+
+        if (destinatariosJerarquia.Count == 0)
+            return;
 
         bool tieneAdjunto = !string.IsNullOrWhiteSpace(d.RutaDocumentoAdjunto)
                          && !string.IsNullOrWhiteSpace(d.NombreDocumentoAdjunto)
                          && File.Exists(d.RutaDocumentoAdjunto);
 
-        if (tieneAdjunto)
-        {
-            await EnviarConAdjunto("SolicitudCreada", asunto,
-                d.CorreoJefeInmediato, cuerpo,
-                d.RutaDocumentoAdjunto!, d.NombreDocumentoAdjunto!, ct);
+        var nombreJefeInm = d.NombreJefeInmediato;
 
-            if (!string.IsNullOrWhiteSpace(d.CorreoJefeApoyo) &&
-                d.CorreoJefeApoyo != d.CorreoJefeInmediato)
-                await EnviarConAdjunto("SolicitudCreada", asunto,
-                    d.CorreoJefeApoyo, cuerpo,
-                    d.RutaDocumentoAdjunto!, d.NombreDocumentoAdjunto!, ct);
-        }
-        else
+        foreach (var dest in destinatariosJerarquia)
         {
-            await Enviar("SolicitudCreada", asunto,
-                d.CorreoJefeInmediato, d.CorreoJefeApoyo, cuerpo, ct);
+            var cuerpo = ConstruirCuerpoSolicitudCreada(d, dest, nombreJefeInm);
+
+            if (tieneAdjunto)
+            {
+                await EnviarConAdjunto("SolicitudCreada", asunto,
+                    dest.Correo, cuerpo,
+                    d.RutaDocumentoAdjunto!, d.NombreDocumentoAdjunto!, ct);
+            }
+            else
+            {
+                await Enviar("SolicitudCreada", asunto,
+                    dest.Correo, null, cuerpo, ct);
+            }
         }
+    }
+
+    private static List<DestinatarioJerarquiaSolicitud> ConstruirDestinatariosJerarquiaLegado(
+        NotificacionSolicitudDto d)
+    {
+        var lista = new List<DestinatarioJerarquiaSolicitud>();
+        var correosVistos = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        void Agregar(string? correo, string nombre, bool esJefeInmediato)
+        {
+            if (string.IsNullOrWhiteSpace(correo) || !correosVistos.Add(correo))
+                return;
+            lista.Add(new DestinatarioJerarquiaSolicitud(correo, nombre, esJefeInmediato, false));
+        }
+
+        Agregar(d.CorreoJefeInmediato, d.NombreJefeInmediato, esJefeInmediato: true);
+        Agregar(d.CorreoJefeApoyo, d.NombreJefeApoyo ?? "Jefe de apoyo", esJefeInmediato: false);
+
+        if (d.CorreosLineaJerarquica is not null)
+        {
+            foreach (var correo in d.CorreosLineaJerarquica)
+                Agregar(correo, d.NombreJefeInmediato, esJefeInmediato: false);
+        }
+
+        return lista;
+    }
+
+    private static string ConstruirCuerpoSolicitudCreada(
+        NotificacionSolicitudDto d,
+        DestinatarioJerarquiaSolicitud dest,
+        string nombreJefeInmediatoDelSolicitante)
+    {
+        if (dest.EsAnalistaServiciosFarmaceuticos)
+        {
+            return SolicitudEmailTemplate.SolicitudCreadaParaAnalista(
+                nombreJefeInmediatoDelSolicitante,
+                d.NombreEmpleadoSolicitante,
+                d.TipoSolicitud,
+                d.FechaEvento,
+                d.FechaFin ?? "",
+                d.Descripcion,
+                jefeInmediatoEsElAnalista: dest.EsJefeInmediatoDelSolicitante);
+        }
+
+        if (dest.EsJefeInmediatoDelSolicitante)
+        {
+            return SolicitudEmailTemplate.SolicitudCreadaParaJefe(
+                dest.Nombre,
+                d.NombreEmpleadoSolicitante,
+                d.TipoSolicitud,
+                d.FechaEvento,
+                d.FechaFin ?? "",
+                d.Descripcion);
+        }
+
+        return SolicitudEmailTemplate.SolicitudCreadaParaSuperiorEnJerarquia(
+            dest.Nombre,
+            nombreJefeInmediatoDelSolicitante,
+            d.NombreEmpleadoSolicitante,
+            d.TipoSolicitud,
+            d.FechaEvento,
+            d.FechaFin ?? "",
+            d.Descripcion);
     }
 
     public Task NotificarSolicitudAprobadaAsync(
@@ -237,6 +304,15 @@ public class NotificationService : INotificationService
   
     private static string Asunto(string tipo, string quien)
         => string.Format(FormatoAsunto, tipo, quien);
+
+    private static void AgregarDestinatario(List<string> destinatarios, string? correo)
+    {
+        if (string.IsNullOrWhiteSpace(correo))
+            return;
+        if (destinatarios.Any(x => x.Equals(correo, StringComparison.OrdinalIgnoreCase)))
+            return;
+        destinatarios.Add(correo.Trim());
+    }
 
     private async Task Enviar(
         string tipoEvento, string asunto,

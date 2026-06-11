@@ -1,6 +1,8 @@
 using GestionPersonal.Application.Interfaces;
+using GestionPersonal.Constants;
 using GestionPersonal.Models.DTOs.Dashboard;
 using GestionPersonal.Models.Enums;
+using GestionPersonal.Web.Authorization;
 using GestionPersonal.Web.Helpers;
 using GestionPersonal.Web.ViewModels.Dashboard;
 using Microsoft.AspNetCore.Authorization;
@@ -9,6 +11,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace GestionPersonal.Web.Controllers;
 
 [Authorize]
+[RequierePermiso(PermisosCodigo.DashboardVer)]
 public class DashboardController : Controller
 {
     private readonly IDashboardService _dashboardService;

@@ -1,5 +1,6 @@
 using GestionPersonal.Models.Enums;
 using Microsoft.EntityFrameworkCore;
+// EstadoEvento sigue como enum
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace GestionPersonal.Models.Entities.GestionPersonalEntities.Configurations;
@@ -17,11 +18,9 @@ public class EventoLaboralConfiguration : IEntityTypeConfiguration<EventoLaboral
         builder.HasIndex(e => new { e.FechaInicio, e.FechaFin, e.Estado })
             .HasDatabaseName("IX_EventosLaborales_Fechas_Estado");
 
-        // Enums → string
         builder.Property(e => e.TipoEvento)
-            .HasConversion<string>()
             .IsRequired()
-            .HasMaxLength(30);
+            .HasMaxLength(50);
 
         builder.Property(e => e.Estado)
             .HasConversion<string>()

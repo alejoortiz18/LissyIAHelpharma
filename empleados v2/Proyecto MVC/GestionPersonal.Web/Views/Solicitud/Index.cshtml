@@ -11,6 +11,8 @@
     <p class="page-desc">Vacaciones, incapacidades y permisos solicitados.</p>
   </div>
   <div class="page-actions">
+    @if (Model.TiposSolicitudActivos.Any())
+    {
     <button class="btn btn-primary" data-modal-open="modal-nueva-solicitud">
       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
            stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -18,6 +20,11 @@
       </svg>
       Nueva solicitud
     </button>
+    }
+    else
+    {
+    <span class="form-hint" style="align-self:center">No hay tipos de solicitud disponibles. Contacte al administrador.</span>
+    }
   </div>
 </div>
 
@@ -34,9 +41,10 @@
 <form method="get" class="filter-bar" role="search" aria-label="Filtros de solicitudes">
   <select name="tipo" class="form-select" aria-label="Tipo de solicitud">
     <option value="">Todos los tipos</option>
-    <option value="Vacaciones"  selected="@(Model.Tipo == "Vacaciones")">Vacaciones</option>
-    <option value="Incapacidad" selected="@(Model.Tipo == "Incapacidad")">Incapacidad</option>
-    <option value="Permiso"     selected="@(Model.Tipo == "Permiso")">Permiso</option>
+    @foreach (var t in Model.TiposSolicitudActivos)
+    {
+      <option value="@t.Codigo" selected="@(Model.Tipo == t.Codigo)">@t.Nombre</option>
+    }
   </select>
   <select name="estado" class="form-select" aria-label="Estado">
     <option value="">Todos los estados</option>
@@ -93,7 +101,7 @@ else
           {
             <tr>
               <td class="tabular-nums" style="color:var(--c-gray-400);font-size:.8125rem">@num</td>
-              <td>@Html.Raw(BadgeTipo(s.TipoEvento))</td>
+              <td>@Html.Raw(BadgeTipo(s.TipoEvento, Model.TiposSolicitudActivos))</td>
               <td class="tabular-nums" style="font-size:.8125rem;white-space:nowrap">
                 @* FechaCreacion no viene en el DTO, usamos FechaInicio como referencia — el DTO sí la tiene *@
                 —
@@ -172,9 +180,10 @@ else
             </label>
             <select class="form-select" id="sol-tipo" name="tipoEvento" required>
               <option value="">Selecciona tipo…</option>
-              <option value="Vacaciones">Vacaciones</option>
-              <option value="Incapacidad">Incapacidad</option>
-              <option value="Permiso">Permiso</option>
+              @foreach (var t in Model.TiposSolicitudActivos)
+              {
+                <option value="@t.Codigo" data-es-vacaciones="@(t.EsVacaciones ? "1" : "0")">@t.Nombre</option>
+              }
             </select>
           </div>
         </div>
@@ -295,8 +304,13 @@ else
   // ── Al cambiar el tipo de solicitud ───────────────────────────────
   tipoSel.addEventListener('change', onTipoChange);
 
+  function esTipoVacaciones() {
+    var opt = tipoSel.options[tipoSel.selectedIndex];
+    return opt && opt.dataset.esVacaciones === '1';
+  }
+
   function onTipoChange() {
-    if (tipoSel.value === 'Vacaciones') {
+    if (esTipoVacaciones()) {
       cargarSaldo();
     } else {
       balanceWgt.hidden = true;
@@ -381,7 +395,7 @@ else
     if (!document.getElementById('sol-descripcion').value.trim())
       errors.push('El motivo es obligatorio.');
 
-    if (tipoSel.value === 'Vacaciones') {
+    if (esTipoVacaciones()) {
       var dias = parseInt(inputDias.value, 10);
       if (!inputDias.value || isNaN(dias) || dias < 1)
         errors.push('Ingresa una cantidad válida de días a disfrutar (mínimo 1).');
@@ -424,11 +438,15 @@ else
         "anulado"     => "<span class=\"badge badge--anulado\"><span class=\"badge-dot\"></span>Anulado</span>",
         _             => $"<span class=\"badge\">{System.Net.WebUtility.HtmlEncode(estado)}</span>",
     };
-    string BadgeTipo(string tipo) => tipo.ToLower() switch
+    string BadgeTipo(string codigo, IReadOnlyList<GestionPersonal.Models.Entities.GestionPersonalEntities.TipoSolicitud> tipos)
     {
-        "vacaciones"  => "<span class=\"badge badge--vacaciones\">Vacaciones</span>",
-        "incapacidad" => "<span class=\"badge badge--incapacidad\">Incapacidad</span>",
-        "permiso"     => "<span class=\"badge badge--permiso\">Permiso</span>",
-        _             => $"<span class=\"badge\">{System.Net.WebUtility.HtmlEncode(tipo)}</span>",
-    };
+        var nombre = tipos.FirstOrDefault(t => t.Codigo.Equals(codigo, StringComparison.OrdinalIgnoreCase))?.Nombre ?? codigo;
+        return codigo.ToLower() switch
+        {
+            "vacaciones"  => $"<span class=\"badge badge--vacaciones\">{System.Net.WebUtility.HtmlEncode(nombre)}</span>",
+            "incapacidad" => $"<span class=\"badge badge--incapacidad\">{System.Net.WebUtility.HtmlEncode(nombre)}</span>",
+            "permiso"     => $"<span class=\"badge badge--permiso\">{System.Net.WebUtility.HtmlEncode(nombre)}</span>",
+            _             => $"<span class=\"badge\">{System.Net.WebUtility.HtmlEncode(nombre)}</span>",
+        };
+    }
 }

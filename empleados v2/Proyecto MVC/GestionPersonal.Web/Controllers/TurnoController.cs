@@ -1,6 +1,8 @@
 using GestionPersonal.Application.Interfaces;
+using GestionPersonal.Constants;
 using GestionPersonal.Models.DTOs.Turno;
 using GestionPersonal.Models.Enums;
+using GestionPersonal.Web.Authorization;
 using GestionPersonal.Web.Helpers;
 using GestionPersonal.Web.ViewModels.Turno;
 using Microsoft.AspNetCore.Authorization;
@@ -9,6 +11,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace GestionPersonal.Web.Controllers;
 
 [Authorize]
+[RequierePermiso(PermisosCodigo.TurnosVer)]
 public class TurnoController : Controller
 {
     private readonly ITurnoService   _turnoService;
@@ -27,10 +30,6 @@ public class TurnoController : Controller
         var rol    = SesionHelper.GetRol(User);
         var empId  = SesionHelper.GetEmpleadoId(User);
         var sedeId = SesionHelper.GetSedeId(User);
-
-        // Operario y Direccionador no tienen acceso a la vista de turnos
-        if (rol == RolUsuario.Operario || rol == RolUsuario.Direccionador)
-            return Forbid();
 
         var plantillas   = empId.HasValue
             ? await _turnoService.ObtenerPlantillasActivasPorCreadorAsync(empId.Value)

@@ -1,0 +1,125 @@
+{
+  "version": 1,
+  "skills": {
+    "api-testing-patterns": {
+      "source": "proffesor-for-testing/agentic-qe",
+      "sourceType": "github",
+      "skillPath": ".claude/skills/api-testing-patterns/SKILL.md",
+      "computedHash": "10e7372c13d9a5fb6b9662d00aded7ce31a3df5969d035a0e4dfb5b3426958df"
+    },
+    "context-driven-testing": {
+      "source": "proffesor-for-testing/agentic-qe",
+      "sourceType": "github",
+      "skillPath": ".claude/skills/context-driven-testing/SKILL.md",
+      "computedHash": "e09821df4b9665af3a182a612a64dc3c9a1c61e539fc735c797d9a737ace8281"
+    },
+    "e2e-flow-verifier": {
+      "source": "proffesor-for-testing/agentic-qe",
+      "sourceType": "github",
+      "skillPath": ".claude/skills/e2e-flow-verifier/SKILL.md",
+      "computedHash": "973c784b066cc4acf6f7e26b2c18ef33a6788b38a23054b23464f625ae458296"
+    },
+    "e2e-testing-patterns": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "skillPath": "plugins/developer-essentials/skills/e2e-testing-patterns/SKILL.md",
+      "computedHash": "20a171bc2e543efec9d7158e06d6ee66e7dbd5205a7ebe1aa89cea90ef508cd8"
+    },
+    "javascript-testing-patterns": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "skillPath": "plugins/javascript-typescript/skills/javascript-testing-patterns/SKILL.md",
+      "computedHash": "325957f63862a4ef54726b34d3cfad105a918fcdcf6d08e11dc8d803dbd2a7a0"
+    },
+    "playwright-best-practices": {
+      "source": "currents-dev/playwright-best-practices-skill",
+      "sourceType": "github",
+      "skillPath": "SKILL.md",
+      "computedHash": "6db654e753257e642d6507d59b4fc633a2382e93429748ba0fb6817c23ef5216"
+    },
+    "qa": {
+      "source": "mattpocock/skills",
+      "sourceType": "github",
+      "skillPath": "skills/deprecated/qa/SKILL.md",
+      "computedHash": "a608d889794ef7f21a5dd31d96ca502b5e6f27b466ada759a3bf9846a2e6b236"
+    },
+    "qa-test-planner": {
+      "source": "softaworks/agent-toolkit",
+      "sourceType": "github",
+      "skillPath": "skills/qa-test-planner/SKILL.md",
+      "computedHash": "8ee0d30acc14528eff0cf0b953f5adb6185a8ed65a72a489ae9297ddfee000b0"
+    },
+    "qe-exploratory-testing-advanced": {
+      "source": "proffesor-for-testing/agentic-qe",
+      "sourceType": "github",
+      "skillPath": ".kiro/skills/qe-exploratory-testing-advanced/SKILL.md",
+      "computedHash": "b984a1b890309b4a9e2c94b60cbc0f8f1a2b850b63387c9d1feb3ede3a9fec26"
+    },
+    "qe-holistic-testing-pact": {
+      "source": "proffesor-for-testing/agentic-qe",
+      "sourceType": "github",
+      "skillPath": ".kiro/skills/qe-holistic-testing-pact/SKILL.md",
+      "computedHash": "b28e622074bf18c9822275ffced6d0110a5634baf0a9987b9f0c47a235c14fb3"
+    },
+    "qe-performance-testing": {
+      "source": "proffesor-for-testing/agentic-qe",
+      "sourceType": "github",
+      "skillPath": ".kiro/skills/qe-performance-testing/SKILL.md",
+      "computedHash": "be3015ff05aec43cb37b0633cfad3607b5ce72909ae008d69c29b6d2e629e256"
+    },
+    "qe-regression-testing": {
+      "source": "proffesor-for-testing/agentic-qe",
+      "sourceType": "github",
+      "skillPath": ".kiro/skills/qe-regression-testing/SKILL.md",
+      "computedHash": "ac5a8f1b6a26e9a567c2c0e0f6d44c99476eecc7063d502f8429760cf31cb039"
+    },
+    "qe-risk-based-testing": {
+      "source": "proffesor-for-testing/agentic-qe",
+      "sourceType": "github",
+      "skillPath": ".kiro/skills/qe-risk-based-testing/SKILL.md",
+      "computedHash": "b5eec3ea859e8b9a4497d79b61a45bc52f7f1c25dc749353d5ed1079b9741313"
+    },
+    "qe-shift-left-testing": {
+      "source": "proffesor-for-testing/agentic-qe",
+      "sourceType": "github",
+      "skillPath": ".kiro/skills/qe-shift-left-testing/SKILL.md",
+      "computedHash": "443bd27b0bf977d9dcc31cc162cfb16a7051b0bf9d1759b05989a382f6597f74"
+    },
+    "qe-test-design-techniques": {
+      "source": "proffesor-for-testing/agentic-qe",
+      "sourceType": "github",
+      "skillPath": ".kiro/skills/qe-test-design-techniques/SKILL.md",
+      "computedHash": "e1501df3cda99e660dbef0a9207c6a45c866eb7186b92cfd96e9f25334b8fa34"
+    },
+    "run-smoke-tests": {
+      "source": "cursor/plugins",
+      "sourceType": "github",
+      "skillPath": "cursor-team-kit/skills/run-smoke-tests/SKILL.md",
+      "computedHash": "d08b2e2ac4c104ff1c03197811427f336d0f5afdc8f9df2c824c22ec01e909ac"
+    },
+    "systematic-debugging": {
+      "source": "obra/superpowers",
+      "sourceType": "github",
+      "skillPath": "skills/systematic-debugging/SKILL.md",
+      "computedHash": "7246fdd3a795fc3daff0af72044ca99bf836e4e6a46844742858786fdfb86488"
+    },
+    "test-driven-development": {
+      "source": "obra/superpowers",
+      "sourceType": "github",
+      "skillPath": "skills/test-driven-development/SKILL.md",
+      "computedHash": "126f1ebf6ccd414f42544f6e83d8cc5adb089e1108eaffb7c400701e37eecd9f"
+    },
+    "testing-strategy-builder": {
+      "source": "ariegoldkin/ai-agent-hub",
+      "sourceType": "github",
+      "skillPath": "skills/testing-strategy-builder/SKILL.md",
+      "computedHash": "2afc84bd1275fd5b41568c5726ee862ea1c103036b541e16c7638619aa7d3e30"
+    },
+    "verification-before-completion": {
+      "source": "obra/superpowers",
+      "sourceType": "github",
+      "skillPath": "skills/verification-before-completion/SKILL.md",
+      "computedHash": "9b446f0c7fe1cfb560b1d34439523b1a76d5f177290007b2c053a1c749a4a8ba"
+    }
+  }
+}

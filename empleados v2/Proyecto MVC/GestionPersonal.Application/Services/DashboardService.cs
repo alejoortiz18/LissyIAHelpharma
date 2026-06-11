@@ -64,9 +64,9 @@ public class DashboardService : IDashboardService
             EmpleadosDirectos           = empleados.Count(e => e.Estado == EstadoEmpleado.Activo && !noDisponiblesIds.Contains(e.Id) && e.TipoVinculacion == TipoVinculacion.Directo),
             EmpleadosTemporales         = empleados.Count(e => e.Estado == EstadoEmpleado.Activo && !noDisponiblesIds.Contains(e.Id) && e.TipoVinculacion == TipoVinculacion.Temporal),
             EmpleadosConNovedad         = novedadesHoy.Select(n => n.EmpleadoId).Distinct().Count(),
-            EnVacaciones                = novedadesHoy.Count(n => n.TipoEvento == TipoEvento.Vacaciones),
-            ConIncapacidad              = novedadesHoy.Count(n => n.TipoEvento == TipoEvento.Incapacidad),
-            ConPermiso                  = novedadesHoy.Count(n => n.TipoEvento == TipoEvento.Permiso),
+            EnVacaciones                = novedadesHoy.Count(n => EsTipo(n.TipoEvento, TipoEvento.Vacaciones)),
+            ConIncapacidad              = novedadesHoy.Count(n => EsTipo(n.TipoEvento, TipoEvento.Incapacidad)),
+            ConPermiso                  = novedadesHoy.Count(n => EsTipo(n.TipoEvento, TipoEvento.Permiso)),
             HorasExtrasPendientes       = horasPendientes,
             HorasExtrasAprobadasEsteMes = horasAprobadas,
             TotalHorasAprobadasEsteMes  = totalHoras,
@@ -92,7 +92,7 @@ public class DashboardService : IDashboardService
             EmpleadoId     = e.EmpleadoId,
             EmpleadoNombre = e.Empleado?.NombreCompleto ?? string.Empty,
             SedeNombre     = e.Empleado?.Sede?.Nombre   ?? string.Empty,
-            TipoNovedad    = e.TipoEvento.ToString(),
+            TipoNovedad    = e.TipoEvento,
             Periodo        = $"{e.FechaInicio:dd/MMM} – {e.FechaFin:dd/MMM}",
             Estado         = e.Estado.ToString()
         }).ToList();
@@ -151,4 +151,7 @@ public class DashboardService : IDashboardService
 
         return resultado;
     }
+
+    private static bool EsTipo(string tipoCodigo, TipoEvento tipoReferencia) =>
+        tipoCodigo.Equals(tipoReferencia.ToString(), StringComparison.OrdinalIgnoreCase);
 }

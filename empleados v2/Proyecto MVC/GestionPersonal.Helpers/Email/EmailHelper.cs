@@ -70,10 +70,19 @@ public class EmailHelper : IEmailHelper
 
     private async Task EnviarInternoAsync(MimeMessage mensaje, CancellationToken ct)
     {
+        if (string.IsNullOrWhiteSpace(_settings.Password))
+            throw new InvalidOperationException(
+                "EmailSettings:Smtp:Password no está configurado. Revise appsettings.Production.json o la variable EmailSettings__Smtp__Password.");
+
         using var smtp = new SmtpClient();
         await smtp.ConnectAsync(_settings.Host, _settings.Port,
                                  SecureSocketOptions.StartTls, ct);
-        await smtp.AuthenticateAsync(_settings.Username, _settings.Password, ct);
+
+        // Office 365: autenticación básica con la cuenta de servicio (no el buzón From).
+        await smtp.AuthenticateAsync(
+            _settings.Username.Trim(),
+            _settings.Password,
+            ct);
         await smtp.SendAsync(mensaje, ct);
         await smtp.DisconnectAsync(quit: true, ct);
     }

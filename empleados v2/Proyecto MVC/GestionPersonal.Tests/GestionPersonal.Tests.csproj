@@ -21,6 +21,7 @@
     <ProjectReference Include="..\GestionPersonal.Domain\GestionPersonal.Domain.csproj" />
     <ProjectReference Include="..\GestionPersonal.Models\GestionPersonal.Models.csproj" />
     <ProjectReference Include="..\GestionPersonal.Constants\GestionPersonal.Constants.csproj" />
+    <ProjectReference Include="..\GestionPersonal.Helpers\GestionPersonal.Helpers.csproj" />
   </ItemGroup>
 
   <ItemGroup>

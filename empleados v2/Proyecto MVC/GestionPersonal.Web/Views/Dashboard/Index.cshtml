@@ -1,7 +1,9 @@
 @model DashboardViewModel
+@using GestionPersonal.Constants
 @{
     ViewData["Title"] = "Dashboard";
     ViewData["BreadcrumbCurrent"] = "Dashboard";
+    var esLissy = LissyConstant.EsCorreoLissy(User.FindFirstValue(System.Security.Claims.ClaimTypes.Email));
 }
 
 <div class="page-header">
@@ -14,6 +16,29 @@
 @if (TempData["Exito"] != null)
 {
   <div class="alert alert--success" style="margin-bottom:var(--sp-4)" role="alert">@TempData["Exito"]</div>
+}
+
+@if (esLissy)
+{
+  <div class="card" style="margin-bottom:var(--sp-5);border-color:var(--c-brand-200);background:linear-gradient(135deg,#f8fafc 0%,#eff6ff 100%)">
+    <div class="card-body" style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:var(--sp-4)">
+      <div>
+        <h2 class="card-title" style="margin-bottom:var(--sp-2)">Datos maestros</h2>
+        <p class="card-desc" style="margin:0;max-width:36rem">
+          Administra sedes, cargos y empresas temporales que usa el sistema al registrar empleados y novedades.
+        </p>
+      </div>
+      <a asp-controller="DatosMaestros" asp-action="Index" class="btn btn-primary btn-lg">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <ellipse cx="12" cy="5" rx="9" ry="3"/>
+          <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/>
+          <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>
+        </svg>
+        Ingresar datos maestros
+      </a>
+    </div>
+  </div>
 }
 
 <!-- KPI Cards -->

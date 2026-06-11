@@ -7,8 +7,6 @@ using GestionPersonal.Helpers.Security;
 using GestionPersonal.Models.DTOs.Cuenta;
 using GestionPersonal.Models.DTOs.Notificaciones;
 using GestionPersonal.Models.Models;
-using System.Security.Cryptography;
-using System.Text;
 
 namespace GestionPersonal.Application.Services;
 

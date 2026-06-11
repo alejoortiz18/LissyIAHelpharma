@@ -1,6 +1,8 @@
 using GestionPersonal.Application.Interfaces;
+using GestionPersonal.Constants;
 using GestionPersonal.Models.DTOs.EventoLaboral;
 using GestionPersonal.Models.Enums;
+using GestionPersonal.Web.Authorization;
 using GestionPersonal.Web.Helpers;
 using GestionPersonal.Web.ViewModels.EventoLaboral;
 using Microsoft.AspNetCore.Authorization;
@@ -10,10 +12,12 @@ using Microsoft.AspNetCore.Hosting;
 namespace GestionPersonal.Web.Controllers;
 
 [Authorize]
+[RequierePermiso(PermisosCodigo.EventosLaboralesVer)]
 public class EventoLaboralController : Controller
 {
     private readonly IEventoLaboralService _eventoService;
     private readonly IEmpleadoService      _empleadoService;
+    private readonly ICatalogoService      _catalogoService;
     private readonly IWebHostEnvironment   _env;
 
     private static readonly HashSet<string> _extensionesPermitidas =
@@ -23,10 +27,12 @@ public class EventoLaboralController : Controller
     public EventoLaboralController(
         IEventoLaboralService eventoService,
         IEmpleadoService      empleadoService,
+        ICatalogoService      catalogoService,
         IWebHostEnvironment   env)
     {
         _eventoService   = eventoService;
         _empleadoService = empleadoService;
+        _catalogoService = catalogoService;
         _env             = env;
     }
 
@@ -40,10 +46,6 @@ public class EventoLaboralController : Controller
         var rol    = SesionHelper.GetRol(User);
         var sedeId = SesionHelper.GetSedeId(User);
         var empId  = SesionHelper.GetEmpleadoId(User);
-
-        // Operario y Direccionador no tienen acceso a eventos laborales
-        if (rol == RolUsuario.Operario || rol == RolUsuario.Direccionador)
-            return Forbid();
 
         IReadOnlyList<EventoLaboralDto> todos;
 
@@ -81,6 +83,14 @@ public class EventoLaboralController : Controller
             ? await _empleadoService.ObtenerTodosAsync()
             : await _empleadoService.ObtenerPorSedeAsync(sedeId);
 
+        string? nombreEmpleadoSesion = null;
+        if (empId.HasValue)
+        {
+            var empleadoSesion = empleadosList.FirstOrDefault(e => e.Id == empId.Value);
+            if (empleadoSesion is not null)
+                nombreEmpleadoSesion = empleadoSesion.NombreCompleto;
+        }
+
         var q = todos.AsEnumerable();
         if (!string.IsNullOrWhiteSpace(buscar))
         {
@@ -101,11 +111,13 @@ public class EventoLaboralController : Controller
         var paginas = (int)Math.Ceiling(total / (double)tam);
         pagina      = Math.Clamp(pagina, 1, Math.Max(1, paginas));
         var paginado = lista.Skip((pagina - 1) * tam).Take(tam).ToList();
+        var tiposActivos = await _catalogoService.ObtenerTiposSolicitudActivosAsync();
 
         var vm = new EventosViewModel
         {
-            Eventos        = paginado,
-            Empleados      = empleadosList.Where(e => e.Estado == "Activo").ToList(),
+            Eventos               = paginado,
+            Empleados             = empleadosList.Where(e => e.Estado == "Activo").ToList(),
+            TiposSolicitudActivos = tiposActivos,
             Buscar         = buscar,
             Tipo           = tipo,
             Estado         = estado,
@@ -114,6 +126,9 @@ public class EventoLaboralController : Controller
             Pagina         = pagina,
             TotalPaginas   = paginas,
             TotalRegistros = total,
+            EmpleadoSesionId = empId,
+            EmpleadoSesionNombre = nombreEmpleadoSesion,
+            FijarEmpleadoSesion = rol == RolUsuario.Operario,
         };
 
         ViewData["Title"] = "Eventos laborales";
@@ -173,8 +188,12 @@ public class EventoLaboralController : Controller
         var rol   = SesionHelper.GetRol(User);
         var empId = SesionHelper.GetEmpleadoId(User);
 
-        if (rol == RolUsuario.Operario)
-            return Json(new { exito = false, mensaje = "No tienes permisos para registrar eventos." });
+        if (rol == RolUsuario.Operario || rol == RolUsuario.Direccionador)
+        {
+            if (!empId.HasValue)
+                return Json(new { exito = false, mensaje = "Tu usuario no tiene empleado vinculado." });
+            dto.EmpleadoId = empId.Value;
+        }
 
         if (rol == RolUsuario.Regente || rol == RolUsuario.AuxiliarRegente)
         {

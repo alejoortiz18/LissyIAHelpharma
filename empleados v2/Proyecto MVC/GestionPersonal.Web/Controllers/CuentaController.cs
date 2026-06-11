@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using GestionPersonal.Application.Interfaces;
+using GestionPersonal.Constants;
 using GestionPersonal.Models.DTOs.Cuenta;
 using GestionPersonal.Web.Helpers;
 using GestionPersonal.Web.ViewModels.Cuenta;
@@ -13,10 +14,12 @@ namespace GestionPersonal.Web.Controllers;
 public class CuentaController : Controller
 {
     private readonly ICuentaService _cuentaService;
+    private readonly IRolSistemaService _rolSistemaService;
 
-    public CuentaController(ICuentaService cuentaService)
+    public CuentaController(ICuentaService cuentaService, IRolSistemaService rolSistemaService)
     {
         _cuentaService = cuentaService;
+        _rolSistemaService = rolSistemaService;
     }
 
     // GET /Cuenta/Login
@@ -24,7 +27,7 @@ public class CuentaController : Controller
     public IActionResult Login()
     {
         if (User.Identity?.IsAuthenticated == true)
-            return RedirectToAction("Index", "Dashboard");
+            return NavegacionHelper.RedirigirInicio(this, User);
         return View(new LoginViewModel());
     }
 
@@ -60,6 +63,10 @@ public class CuentaController : Controller
             claims.Add(new Claim("EmpleadoId", sesion.EmpleadoId.Value.ToString()));
         claims.Add(new Claim(ClaimTypes.Name, sesion.NombreCompleto));
 
+        var permisos = await _rolSistemaService.ObtenerCodigosPermisoPorRolAsync(sesion.Rol.ToString());
+        foreach (var codigo in permisos)
+            claims.Add(new Claim(PermisoClaimTypes.Permiso, codigo));
+
         var identity  = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
         var principal = new ClaimsPrincipal(identity);
         await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal);
@@ -67,7 +74,7 @@ public class CuentaController : Controller
         if (sesion.DebeCambiarPassword)
             return RedirectToAction("CambiarPassword");
 
-        return RedirectToAction("Index", "Dashboard");
+        return NavegacionHelper.RedirigirInicio(this, principal);
     }
 
     // GET /Cuenta/Logout
@@ -84,7 +91,7 @@ public class CuentaController : Controller
 
     // POST /Cuenta/RecuperarPassword
     [HttpPost]
-    [ValidateAntiForgeryToken]
+    [IgnoreAntiforgeryToken]
     public async Task<IActionResult> RecuperarPassword(RecuperarPasswordViewModel vm)
     {
         if (!ModelState.IsValid) return View(vm);
@@ -173,6 +180,6 @@ public class CuentaController : Controller
         await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal);
 
         TempData["Exito"] = "Contraseña actualizada correctamente.";
-        return RedirectToAction("Index", "Dashboard");
+        return NavegacionHelper.RedirigirInicio(this, principal);
     }
 }

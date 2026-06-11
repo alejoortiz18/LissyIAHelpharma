@@ -14,7 +14,7 @@ public class PerfilEmpleadoViewModel
     public IReadOnlyList<PlantillaTurnoDto> Plantillas { get; init; } = [];
     public IReadOnlyList<AsignacionTurnoDto> HistorialTurnos { get; init; } = [];
 
-    /// <summary>Tab activo: "datos" | "historial" | "horario"</summary>
+    /// <summary>Tab activo: "datos" | "historial" | "horario" | "personal-a-cargo"</summary>
     public string Tab { get; init; } = "datos";
 
     /// <summary>Resumen de días totalizados por tipo de evento (respeta los filtros de fecha).</summary>
@@ -31,4 +31,13 @@ public class PerfilEmpleadoViewModel
 
     /// <summary>True si el empleado está en la jerarquía (directa o indirecta) del usuario en sesión.</summary>
     public bool EsSubordinadoDelJefeEnSesion { get; init; }
+
+    /// <summary>True si el cargo del empleado del perfil puede tener personal a cargo.</summary>
+    public bool EsJefeConPersonalACargo { get; init; }
+
+    public IReadOnlyList<EmpleadoListaDto> PersonalACargo { get; init; } = [];
+
+    public string? FiltroBuscarPersonal { get; init; }
+    public string? FiltroEstadoPersonal { get; init; }
+    public string? FiltroTipoVinculacionPersonal { get; init; }
 }

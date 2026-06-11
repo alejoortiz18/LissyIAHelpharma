@@ -47,6 +47,8 @@
 
 .btn-danger-outline { background: #fff; color: var(--c-error-600); border: 1px solid var(--c-error-600); }
 .btn-danger-outline:hover { background: var(--c-error-50); }
+.btn-danger-text { color: var(--c-error-600); }
+.btn-danger-text:hover { background: var(--c-error-50); color: var(--c-error-700); }
 
 .btn-success { background: var(--c-success-600); color: #fff; border: 1px solid var(--c-success-600); }
 .btn-success:hover { background: var(--c-success-700); }
@@ -490,6 +492,97 @@ tbody tr:hover td { background: var(--c-gray-50); }
 }
 .modal--lg { max-width: 42rem; }
 .modal--sm { max-width: 22rem; }
+.modal-subtitle--muted {
+  font-size: 0.8125rem;
+  color: var(--c-gray-500);
+  font-weight: 400;
+  margin-top: 0.25rem;
+  line-height: 1.4;
+}
+
+/* Roles del sistema — permisos en modal */
+.rol-permisos-section {
+  margin-top: var(--sp-2);
+  padding-top: var(--sp-4);
+  border-top: 1px solid var(--c-gray-100);
+}
+.rol-permisos-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-3);
+  flex-wrap: wrap;
+}
+.rol-permisos-head .form-label { margin-bottom: 0; }
+.rol-permisos-actions {
+  display: flex;
+  gap: var(--sp-2);
+  flex-shrink: 0;
+}
+.rol-permisos-panel {
+  max-height: 17rem;
+  overflow-y: auto;
+  border: 1px solid var(--c-gray-200);
+  border-radius: var(--r-lg);
+  padding: var(--sp-4);
+  background: var(--c-gray-50);
+}
+.rol-permisos-grupo + .rol-permisos-grupo {
+  margin-top: var(--sp-4);
+  padding-top: var(--sp-4);
+  border-top: 1px dashed var(--c-gray-200);
+}
+.rol-permisos-grupo-titulo {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--c-brand-700);
+  margin: 0 0 var(--sp-3);
+}
+.rol-permisos-lista {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+.rol-permiso-item {
+  padding: var(--sp-2) var(--sp-3);
+  background: #fff;
+  border: 1px solid var(--c-gray-100);
+  border-radius: var(--r-md);
+  margin: 0;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.rol-permiso-item:hover {
+  border-color: var(--c-brand-200);
+  box-shadow: var(--shadow-sm);
+}
+.rol-permiso-item:has(input:checked) {
+  border-color: var(--c-brand-300);
+  background: var(--c-brand-50);
+}
+.rol-permiso-nombre {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--c-gray-800);
+  line-height: 1.35;
+}
+.rol-permiso-desc {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--c-gray-500);
+  margin-top: 0.125rem;
+  line-height: 1.35;
+}
+.rol-permiso-codigo {
+  display: inline-block;
+  font-size: 0.6875rem;
+  color: var(--c-gray-400);
+  font-family: ui-monospace, Consolas, monospace;
+  margin-top: 0.25rem;
+}
 @keyframes modal-in {
   from { opacity: 0; transform: scale(0.96) translateY(0.5rem); }
   to   { opacity: 1; transform: scale(1) translateY(0); }
@@ -569,6 +662,57 @@ tbody tr:hover td { background: var(--c-gray-50); }
   color: var(--c-error-600);
   margin-top: 2px;
   font-weight: 500;
+}
+
+/* ── Modal — info / activar (confirmación positiva) ─────────── */
+.modal--info-confirm {
+  border-top: 3px solid var(--c-brand-600);
+}
+.modal--info-confirm .modal-header {
+  background: var(--c-brand-50);
+  border-bottom-color: var(--c-brand-100);
+}
+.modal--info-confirm .modal-title {
+  color: var(--c-brand-800, #1e3a8a);
+}
+.modal--info-confirm .modal-subtitle {
+  color: var(--c-brand-600);
+}
+.modal-confirm-icon--primary {
+  background: var(--c-brand-100);
+  color: var(--c-brand-700);
+}
+
+/* ── Confirm dialog — cuerpo ──────────────────────────────── */
+.confirm-message {
+  font-size: 0.875rem;
+  color: var(--c-gray-600);
+  line-height: 1.55;
+  margin: 0;
+}
+.confirm-item-card {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--sp-3) var(--sp-4);
+  margin-bottom: var(--sp-4);
+  background: var(--c-gray-50);
+  border: 1px solid var(--c-gray-200);
+  border-radius: var(--r-md);
+}
+.confirm-item-type {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--c-gray-500);
+}
+.confirm-item-name {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--c-gray-900);
+  margin: 0;
+  word-break: break-word;
 }
 
 /* ── Desvincular — employee summary card ────────────────────── */

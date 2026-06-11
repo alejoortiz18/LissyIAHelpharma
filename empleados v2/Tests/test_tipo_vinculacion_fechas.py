@@ -29,6 +29,7 @@ ANALISTA_PASSWORD = "Usuario1"
 # Cédulas únicas para los empleados creados en estas pruebas (no colisionan con el seeding)
 CC_TEMPORAL_LUEGO_DIRECTO = "55512301"   # TC-FEC-01
 CC_DIRECTO_NUEVO          = "55512302"   # TC-FEC-02
+CC_TEMPORAL_SIN_FIN       = "55512303"   # TC-FEC-04
 
 FECHA_INGRESO         = "2026-06-01"
 FECHA_INICIO_CONTRATO = "2026-06-15"   # diferente de FechaIngreso a propósito
@@ -37,6 +38,7 @@ FECHA_FIN_CONTRATO    = "2027-06-01"
 # Correos generados por los helpers de formulario
 _CORREO_01 = f"fec.{CC_TEMPORAL_LUEGO_DIRECTO}@yopmail.com"
 _CORREO_02 = f"fec.{CC_DIRECTO_NUEVO}@yopmail.com"
+_CORREO_03 = f"fec.{CC_TEMPORAL_SIN_FIN}@yopmail.com"
 
 
 # ── utilidades SQL ─────────────────────────────────────────────────────────────
@@ -110,8 +112,8 @@ def _buscar_id_empleado(page: Page, cedula: str) -> int:
 # ── fixture de limpieza ────────────────────────────────────────────────────────
 
 def _borrar_empleados_prueba() -> None:
-    cedulas = f"'{CC_TEMPORAL_LUEGO_DIRECTO}', '{CC_DIRECTO_NUEVO}'"
-    correos = f"'{_CORREO_01}', '{_CORREO_02}'"
+    cedulas = f"'{CC_TEMPORAL_LUEGO_DIRECTO}', '{CC_DIRECTO_NUEVO}', '{CC_TEMPORAL_SIN_FIN}'"
+    correos = f"'{_CORREO_01}', '{_CORREO_02}', '{_CORREO_03}'"
     sql = (
         # 1. Contactos de emergencia (FK → Empleados)
         f"DELETE ce FROM dbo.ContactosEmergencia ce "
@@ -155,6 +157,27 @@ def _crear_empleado_temporal(page: Page, cedula: str) -> None:
     page.fill("input[name='Dto.FechaIngreso']",      FECHA_INGRESO)
     page.select_option("select[name='Dto.EmpresaTemporalId']", index=1)
     page.fill("input[name='Dto.FechaFinContrato']",  FECHA_FIN_CONTRATO)
+    page.click("button[type=submit]")
+    page.wait_for_load_state("networkidle")
+
+
+def _crear_empleado_temporal_sin_fin(page: Page, cedula: str) -> None:
+    """Rellena Nuevo como Temporal sin fecha fin de contrato."""
+    page.goto(f"{BASE_URL}/Empleado/Nuevo")
+    page.wait_for_load_state("networkidle")
+    page.fill("input[name='Dto.NombreCompleto']", f"Prueba Fec {cedula}")
+    page.fill("input[name='Dto.Cedula']", cedula)
+    page.fill("input[name='Dto.Telefono']", "3001239903")
+    page.fill("input[name='Dto.CorreoElectronico']", f"fec.{cedula}@yopmail.com")
+    page.fill("input[name='Dto.Direccion']", "Cra 7 #7-7")
+    page.fill("input[name='Dto.Ciudad']", "Cali")
+    page.fill("input[name='Dto.Departamento']", "Valle del Cauca")
+    page.select_option("select[name='Dto.SedeId']", index=1)
+    page.select_option("select[name='Dto.CargoId']", index=1)
+    page.select_option("select[name='Dto.Rol']", "Operario")
+    page.select_option("#TipoVinculacion", "Temporal")
+    page.fill("input[name='Dto.FechaIngreso']", FECHA_INGRESO)
+    page.select_option("select[name='Dto.EmpresaTemporalId']", index=1)
     page.click("button[type=submit]")
     page.wait_for_load_state("networkidle")
 
@@ -317,7 +340,7 @@ def test_tc_fec_03_validacion_bd_regla_negocio_fechas():
     # Excluir cédulas de prueba de otros archivos para evitar interferencias
     cedulas_excluidas = (
         "'12345001', '12345002', "
-        f"'{CC_TEMPORAL_LUEGO_DIRECTO}', '{CC_DIRECTO_NUEVO}'"
+        f"'{CC_TEMPORAL_LUEGO_DIRECTO}', '{CC_DIRECTO_NUEVO}', '{CC_TEMPORAL_SIN_FIN}'"
     )
 
     # ── Caso A: Directo sin FechaInicioContrato (viola la regla) ──────────────
@@ -359,4 +382,38 @@ def test_tc_fec_03_validacion_bd_regla_negocio_fechas():
     assert violadores_temporal_empresa == [], (
         f"TC-FEC-03 FALLO: Empleados Temporal sin EmpresaTemporalId: "
         f"{violadores_temporal_empresa}"
+    )
+
+
+# ── TC-FEC-04: Temporal sin fin de contrato → +6 meses desde ingreso ───────────
+
+def test_tc_fec_04_temporal_sin_fecha_fin_asigna_seis_meses(page: Page):
+    """
+    TC-FEC-04: Crear empleado Temporal sin FechaFinContrato.
+    Debe guardarse con fin = FechaIngreso + 6 meses (2026-12-01).
+    """
+    hacer_login_completo(page, ANALISTA_EMAIL, ANALISTA_PASSWORD)
+
+    _crear_empleado_temporal_sin_fin(page, CC_TEMPORAL_SIN_FIN)
+    assert "/Empleado" in page.url, (
+        f"La creación Temporal sin fin no redirigió a /Empleado. URL: {page.url}"
+    )
+
+    datos = _datos_contrato(CC_TEMPORAL_SIN_FIN)
+    assert datos is not None, (
+        f"Empleado CC={CC_TEMPORAL_SIN_FIN} no encontrado en BD tras la creación."
+    )
+    assert datos["TipoVinculacion"] == "Temporal"
+    assert datos["FechaInicioContrato"] is None
+    assert datos["EmpresaTemporalId"] is not None
+
+    fin = datos["FechaFinContrato"]
+    if hasattr(fin, "year"):
+        fin_str = fin.isoformat()[:10]
+    else:
+        fin_str = str(fin)[:10]
+
+    assert fin_str == "2026-12-01", (
+        f"FechaFinContrato esperada 2026-12-01 (ingreso {FECHA_INGRESO} + 6 meses), "
+        f"obtenida: {fin_str}"
     )

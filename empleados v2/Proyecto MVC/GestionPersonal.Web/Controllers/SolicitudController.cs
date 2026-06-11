@@ -1,6 +1,7 @@
 using GestionPersonal.Application.Interfaces;
+using GestionPersonal.Constants;
 using GestionPersonal.Models.DTOs.EventoLaboral;
-using GestionPersonal.Models.Enums;
+using GestionPersonal.Web.Authorization;
 using GestionPersonal.Web.Helpers;
 using GestionPersonal.Web.ViewModels.Solicitud;
 using Microsoft.AspNetCore.Authorization;
@@ -9,20 +10,26 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace GestionPersonal.Web.Controllers;
 
-[Authorize(Roles = "Operario,Direccionador")]
+[Authorize]
+[RequierePermiso(PermisosCodigo.SolicitudesVer)]
 public class SolicitudController : Controller
 {
     private readonly ISolicitudService _solicitudService;
+    private readonly ICatalogoService _catalogoService;
     private readonly IWebHostEnvironment _env;
 
     private static readonly HashSet<string> _extensionesPermitidas =
         new(StringComparer.OrdinalIgnoreCase) { ".pdf", ".jpg", ".jpeg", ".png" };
     private const long _maxTamanoBytes = 5 * 1024 * 1024; // 5 MB
 
-    public SolicitudController(ISolicitudService solicitudService, IWebHostEnvironment env)
+    public SolicitudController(
+        ISolicitudService solicitudService,
+        ICatalogoService catalogoService,
+        IWebHostEnvironment env)
     {
         _solicitudService = solicitudService;
-        _env = env;
+        _catalogoService  = catalogoService;
+        _env              = env;
     }
 
     // GET /Solicitud
@@ -51,14 +58,17 @@ public class SolicitudController : Controller
         pagina      = Math.Clamp(pagina, 1, Math.Max(1, paginas));
         var paginado = lista.Skip((pagina - 1) * tam).Take(tam).ToList();
 
+        var tiposActivos = await _catalogoService.ObtenerTiposSolicitudActivosAsync();
+
         var vm = new SolicitudesViewModel
         {
-            Solicitudes    = paginado,
-            Tipo           = tipo,
-            Estado         = estado,
-            Pagina         = pagina,
-            TotalPaginas   = paginas,
-            TotalRegistros = total
+            Solicitudes           = paginado,
+            TiposSolicitudActivos = tiposActivos,
+            Tipo                  = tipo,
+            Estado                = estado,
+            Pagina                = pagina,
+            TotalPaginas          = paginas,
+            TotalRegistros        = total
         };
 
         return View(vm);
@@ -67,6 +77,7 @@ public class SolicitudController : Controller
     // POST /Solicitud/Crear
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [RequierePermiso(PermisosCodigo.SolicitudesCrear)]
     public async Task<IActionResult> Crear(
         string tipoEvento,
         string fechaInicio,
@@ -82,9 +93,10 @@ public class SolicitudController : Controller
         if (!empId.HasValue)
             return Forbid();
 
-        if (!Enum.TryParse<TipoEvento>(tipoEvento, ignoreCase: true, out var tipo))
+        var tipoCatalog = await _catalogoService.ObtenerTipoSolicitudActivoPorCodigoAsync(tipoEvento);
+        if (tipoCatalog is null)
         {
-            TempData["Error"] = "El tipo de solicitud seleccionado no es válido.";
+            TempData["Error"] = "El tipo de solicitud seleccionado no es válido o no está disponible.";
             return RedirectToAction(nameof(Index));
         }
 
@@ -104,11 +116,11 @@ public class SolicitudController : Controller
         var dto = new CrearEventoLaboralDto
         {
             EmpleadoId    = empId.Value,
-            TipoEvento    = tipo,
+            TipoEvento    = tipoCatalog.Codigo,
             FechaInicio   = inicio,
             FechaFin      = fin,
             Descripcion   = CombinarDescripcion(descripcion, observaciones),
-            DiasDisfrutar = (tipo == TipoEvento.Vacaciones && diasDisfrutar.HasValue && diasDisfrutar > 0)
+            DiasDisfrutar = (tipoCatalog.EsVacaciones && diasDisfrutar.HasValue && diasDisfrutar > 0)
                             ? diasDisfrutar
                             : null,
             // AutorizadoPor y EstadoInicial son forzados por SolicitudService

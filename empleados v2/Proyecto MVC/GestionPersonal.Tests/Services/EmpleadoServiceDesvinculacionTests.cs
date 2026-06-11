@@ -14,12 +14,13 @@ public class EmpleadoServiceDesvinculacionTests
 {
     // ── Mocks ─────────────────────────────────────────────────────────
     private readonly Mock<IEmpleadoRepository>                _repoMock        = new();
+    private readonly Mock<ICatalogoService>                   _catalogoSvcMock = new();
     private readonly Mock<IUsuarioService>                    _usuarioSvcMock  = new();
     private readonly Mock<IHistorialDesvinculacionRepository> _historialMock   = new();
     private readonly Mock<IEventoLaboralRepository>           _eventoRepoMock  = new();
 
     private EmpleadoService CrearSut() =>
-        new(_repoMock.Object, _usuarioSvcMock.Object,
+        new(_repoMock.Object, _catalogoSvcMock.Object, _usuarioSvcMock.Object,
             _historialMock.Object, _eventoRepoMock.Object);
 
     /// <summary>Crea un <see cref="Empleado"/> activo con datos mínimos.</summary>

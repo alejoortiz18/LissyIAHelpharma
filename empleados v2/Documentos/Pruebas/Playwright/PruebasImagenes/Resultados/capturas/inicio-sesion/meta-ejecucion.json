@@ -1,0 +1,19 @@
+{
+  "inicio": "2026-06-01T15:53:09.938Z",
+  "resultado": "PASS",
+  "urlExito": "http://localhost:5002/Dashboard/Index",
+  "urlFallo": "http://localhost:5002/",
+  "mensajeError": "Datos incorrectos",
+  "usuarios": {
+    "exito": {
+      "correo": "carlos.rodriguez@yopmail.com",
+      "password": "Usuario1",
+      "rol": "Jefe — Carlos Rodríguez"
+    },
+    "fallo": {
+      "correo": "carlos.rodriguez@yopmail.com",
+      "password": "WrongPass123",
+      "rol": "Misma cuenta — contraseña inválida"
+    }
+  }
+}

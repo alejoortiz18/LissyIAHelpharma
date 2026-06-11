@@ -1,4 +1,5 @@
 using GestionPersonal.Application.Interfaces;
+using GestionPersonal.Constants;
 using GestionPersonal.Constants.Messages;
 using GestionPersonal.Domain.Interfaces;
 using GestionPersonal.Models.DTOs.Empleado;
@@ -10,18 +11,23 @@ namespace GestionPersonal.Application.Services;
 
 public class EmpleadoService : IEmpleadoService
 {
+    private const int MesesFinContratoTemporalPorDefecto = 6;
+
     private readonly IEmpleadoRepository _repo;
+    private readonly ICatalogoService _catalogoService;
     private readonly IUsuarioService _usuarioService;
     private readonly IHistorialDesvinculacionRepository _historialRepo;
     private readonly IEventoLaboralRepository _eventoRepo;
 
     public EmpleadoService(
         IEmpleadoRepository repo,
+        ICatalogoService catalogoService,
         IUsuarioService usuarioService,
         IHistorialDesvinculacionRepository historialRepo,
         IEventoLaboralRepository eventoRepo)
     {
         _repo            = repo;
+        _catalogoService = catalogoService;
         _usuarioService  = usuarioService;
         _historialRepo   = historialRepo;
         _eventoRepo      = eventoRepo;
@@ -83,6 +89,24 @@ public class EmpleadoService : IEmpleadoService
             if (dto.FechaInicioContrato.Value < dto.FechaIngreso.Value)
                 return ResultadoOperacion.Fail("La fecha de inicio de contrato no puede ser anterior a la fecha de ingreso.");
         }
+        else if (dto.TipoVinculacion == TipoVinculacion.Temporal)
+        {
+            if (dto.EmpresaTemporalId is null or < 1)
+                return ResultadoOperacion.Fail("La empresa temporal es obligatoria para contrato temporal.");
+        }
+
+        var fechaFinContrato = dto.TipoVinculacion == TipoVinculacion.Temporal
+            ? ResolverFechaFinContratoTemporal(dto.FechaFinContrato, dto.FechaIngreso!.Value)
+            : dto.FechaFinContrato;
+
+        var cargoNombre = await ObtenerNombreCargoAsync(dto.CargoId, ct);
+        var validacionJefe = await ValidarReglaJerarquiaJefeAsync(
+            empleadoId: null,
+            sedeId: dto.SedeId,
+            cargoEmpleadoNombre: cargoNombre,
+            jefeInmediatoId: dto.JefeInmediatoId,
+            ct: ct);
+        if (!validacionJefe.Exito) return validacionJefe;
 
         // Crear usuario de acceso
         var resultadoUsuario = await _usuarioService.CrearParaEmpleadoAsync(
@@ -113,7 +137,7 @@ public class EmpleadoService : IEmpleadoService
             DiasVacacionesPrevios  = dto.DiasVacacionesPrevios,
             EmpresaTemporalId      = dto.TipoVinculacion == TipoVinculacion.Temporal ? dto.EmpresaTemporalId : null,
             FechaInicioContrato    = dto.TipoVinculacion == TipoVinculacion.Directo ? dto.FechaInicioContrato : (DateOnly?)null,
-            FechaFinContrato       = dto.FechaFinContrato,
+            FechaFinContrato       = fechaFinContrato,
             Estado                 = EstadoEmpleado.Activo,
             FechaCreacion          = DateTime.UtcNow,
             CreadoPor              = creadoPorUsuarioId,
@@ -138,6 +162,15 @@ public class EmpleadoService : IEmpleadoService
         var emp = await _repo.ObtenerPorIdConDetallesAsync(dto.Id, ct);
         if (emp is null)
             return ResultadoOperacion.Fail(EmpleadoConstant.EmpleadoNoEncontrado);
+
+        var cargoNombre = await ObtenerNombreCargoAsync(dto.CargoId, ct);
+        var validacionJefe = await ValidarReglaJerarquiaJefeAsync(
+            empleadoId: dto.Id,
+            sedeId: dto.SedeId,
+            cargoEmpleadoNombre: cargoNombre,
+            jefeInmediatoId: dto.JefeInmediatoId,
+            ct: ct);
+        if (!validacionJefe.Exito) return validacionJefe;
 
         emp.NombreCompleto        = dto.NombreCompleto;
         emp.FechaNacimiento       = dto.FechaNacimiento;
@@ -167,10 +200,13 @@ public class EmpleadoService : IEmpleadoService
         }
         else
         {
+            if (dto.EmpresaTemporalId is null or < 1)
+                return ResultadoOperacion.Fail("La empresa temporal es obligatoria para contrato temporal.");
+
             // Contrato temporal: FechaInicioContrato siempre null
             emp.EmpresaTemporalId   = dto.EmpresaTemporalId;
             emp.FechaInicioContrato = null;
-            emp.FechaFinContrato    = dto.FechaFinContrato;
+            emp.FechaFinContrato    = ResolverFechaFinContratoTemporal(dto.FechaFinContrato, emp.FechaIngreso);
         }
         emp.FechaModificacion     = DateTime.UtcNow;
         emp.ModificadoPor         = modificadoPorUsuarioId;
@@ -196,6 +232,14 @@ public class EmpleadoService : IEmpleadoService
             }
         }
         // Si ambos están vacíos, se preserva el contacto existente sin modificarlo
+
+        if (emp.UsuarioId.HasValue)
+        {
+            var resUsuario = await _usuarioService.ActualizarParaEmpleadoAsync(
+                emp.UsuarioId.Value, dto.CorreoElectronico, dto.Rol, dto.SedeId, ct);
+            if (!resUsuario.Exito)
+                return resUsuario;
+        }
 
         _repo.Actualizar(emp);
         await _repo.GuardarCambiosAsync(ct);
@@ -236,10 +280,133 @@ public class EmpleadoService : IEmpleadoService
         int empleadoId, int jefeEmpleadoId, CancellationToken ct = default)
         => _repo.EsSubordinadoTransitivoAsync(empleadoId, jefeEmpleadoId, ct);
 
+    public async Task<IReadOnlySet<int>> ObtenerDescendientesAsync(int jefeEmpleadoId, CancellationToken ct = default)
+    {
+        var todos = await _repo.ObtenerTodosAsync(ct);
+        var porJefe = todos
+            .Where(e => e.JefeInmediatoId.HasValue)
+            .GroupBy(e => e.JefeInmediatoId!.Value)
+            .ToDictionary(g => g.Key, g => g.Select(e => e.Id).ToList());
+
+        var resultado = new HashSet<int>();
+        var cola = new Queue<int>();
+        cola.Enqueue(jefeEmpleadoId);
+
+        while (cola.Count > 0)
+        {
+            var actual = cola.Dequeue();
+            if (!porJefe.TryGetValue(actual, out var hijos)) continue;
+            foreach (var hijo in hijos)
+            {
+                if (resultado.Add(hijo))
+                    cola.Enqueue(hijo);
+            }
+        }
+
+        return resultado;
+    }
+
+    public async Task<IReadOnlyList<EmpleadoListaDto>> ObtenerPersonalACargoAsync(
+        int jefeEmpleadoId, CancellationToken ct = default)
+    {
+        var descendientes = await ObtenerDescendientesAsync(jefeEmpleadoId, ct);
+        if (descendientes.Count == 0)
+            return [];
+
+        var hoy = DateOnly.FromDateTime(DateTime.Today);
+        var todos = await _repo.ObtenerTodosAsync(ct);
+        var noDisponibles = (await _eventoRepo.ObtenerActivosHoyGlobalAsync(hoy, ct))
+            .Select(ev => ev.EmpleadoId).ToHashSet();
+
+        return todos
+            .Where(e => descendientes.Contains(e.Id))
+            .Select(e => MapToListaDto(e, noDisponibles))
+            .OrderBy(e => e.NombreCompleto)
+            .ToList();
+    }
+
+    /// <summary>
+    /// Si no se indica fin de contrato temporal, se asigna 6 meses después de la fecha de ingreso.
+    /// </summary>
+    private static DateOnly ResolverFechaFinContratoTemporal(DateOnly? fechaFin, DateOnly fechaIngreso)
+        => fechaFin ?? fechaIngreso.AddMonths(MesesFinContratoTemporalPorDefecto);
+
+    private async Task<string> ObtenerNombreCargoAsync(int cargoId, CancellationToken ct)
+    {
+        var cargos = await _catalogoService.ObtenerCargosParaSelectAsync(cargoId, ct);
+        return cargos.FirstOrDefault(c => c.Id == cargoId)?.Nombre ?? string.Empty;
+    }
+
+    private async Task<ResultadoOperacion> ValidarReglaJerarquiaJefeAsync(
+        int? empleadoId,
+        int sedeId,
+        string cargoEmpleadoNombre,
+        int? jefeInmediatoId,
+        CancellationToken ct)
+    {
+        var cargoEsAnalista = CargoJefeSede.EsCargoAnalistaServiciosFarmaceuticos(cargoEmpleadoNombre);
+        if (cargoEsAnalista)
+        {
+            if (jefeInmediatoId.HasValue)
+                return ResultadoOperacion.Fail("El cargo Analista de Servicios Farmacéuticos no debe tener jefe inmediato.");
+            return ResultadoOperacion.Ok();
+        }
+
+        if (!jefeInmediatoId.HasValue)
+            return ResultadoOperacion.Fail("Debe seleccionar un jefe inmediato válido según la jerarquía por cargo.");
+
+        var jefesPermitidos = await ObtenerJefesPermitidosAsync(sedeId, cargoEmpleadoNombre, empleadoId, ct);
+        if (jefesPermitidos.Count == 0)
+            return ResultadoOperacion.Fail("No hay jefes configurados para ese cargo. Verifique Director, Regente o Analista de Servicios Farmacéuticos.");
+
+        var jefe = jefesPermitidos.FirstOrDefault(x => x.Id == jefeInmediatoId.Value);
+        if (jefe is null)
+            return ResultadoOperacion.Fail("El jefe inmediato seleccionado no corresponde a la jerarquía definida para el cargo.");
+
+        return ResultadoOperacion.Ok();
+    }
+
+    private async Task<List<Empleado>> ObtenerJefesPermitidosAsync(
+        int sedeId,
+        string cargoEmpleadoNombre,
+        int? empleadoIdExcluir,
+        CancellationToken ct)
+    {
+        var activos = (await _repo.ObtenerTodosAsync(ct))
+            .Where(e => e.Estado == EstadoEmpleado.Activo)
+            .Where(e => !empleadoIdExcluir.HasValue || e.Id != empleadoIdExcluir.Value)
+            .ToList();
+
+        var analistas = activos
+            .Where(e => CargoJefeSede.EsCargoAnalistaServiciosFarmaceuticos(e.Cargo?.Nombre))
+            .ToList();
+
+        var directoresSede = activos
+            .Where(e => e.SedeId == sedeId && CargoJefeSede.EsCargoDirector(e.Cargo?.Nombre))
+            .ToList();
+
+        var regentesSede = activos
+            .Where(e => e.SedeId == sedeId && CargoJefeSede.EsCargoRegente(e.Cargo?.Nombre))
+            .ToList();
+
+        if (CargoJefeSede.EsCargoDirector(cargoEmpleadoNombre))
+            return analistas;
+
+        if (CargoJefeSede.EsCargoRegente(cargoEmpleadoNombre))
+            return directoresSede.Count > 0 ? directoresSede : analistas;
+
+        // Auxiliar, Direccionador y demás cargos:
+        // Director -> Regente -> Analista de Servicios Farmacéuticos.
+        if (directoresSede.Count > 0) return directoresSede;
+        if (regentesSede.Count > 0) return regentesSede;
+        return analistas;
+    }
+
     // ── Mappers privados ──────────────────────────────────────────
     private static EmpleadoListaDto MapToListaDto(Empleado e, HashSet<int>? noDisponibles = null) => new()
     {
         Id              = e.Id,
+        SedeId          = e.SedeId,
         JefeInmediatoId = e.JefeInmediatoId,
         NombreCompleto  = e.NombreCompleto,
         Cedula          = e.Cedula,
@@ -281,6 +448,7 @@ public class EmpleadoService : IEmpleadoService
         JefeInmediatoNombre        = e.JefeInmediato?.NombreCompleto,
         FechaIngreso               = e.FechaIngreso.ToString("dd/MM/yyyy"),
         DiasVacacionesPrevios      = e.DiasVacacionesPrevios,
+        EmpresaTemporalId          = e.EmpresaTemporalId,
         EmpresaTemporalNombre      = e.EmpresaTemporal?.Nombre,
         FechaInicioContrato        = e.FechaInicioContrato?.ToString("dd/MM/yyyy"),
         FechaFinContrato           = e.FechaFinContrato?.ToString("dd/MM/yyyy"),

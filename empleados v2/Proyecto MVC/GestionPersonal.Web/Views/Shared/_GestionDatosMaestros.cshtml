@@ -1,0 +1,1212 @@
+﻿@model CatalogosViewModel
+@{
+    var maestrosCtrl = ViewData["MaestrosController"] as string ?? "Catalogos";
+    var maestrosTitulo = ViewData["MaestrosTitulo"] as string ?? "Catálogos del sistema";
+    var maestrosDesc = ViewData["MaestrosDesc"] as string ?? "Administra las sedes, cargos y empresas temporales disponibles.";
+    var antiforgery = ViewContext.HttpContext.RequestServices
+        .GetRequiredService<Microsoft.AspNetCore.Antiforgery.IAntiforgery>()
+        .GetAndStoreTokens(ViewContext.HttpContext).RequestToken;
+}
+
+<div class="page-header">
+  <div class="page-header-info">
+    <h1 class="page-title">@maestrosTitulo</h1>
+    <p class="page-desc">@maestrosDesc</p>
+  </div>
+</div>
+
+<!-- Tabs -->
+<div data-tabs-container>
+  <div class="tabs" role="tablist" aria-label="Catálogos">
+    <a asp-controller="@maestrosCtrl" asp-action="Index" asp-route-tab="sedes"
+       class="tab-btn @(Model.Tab == "sedes" ? "is-active" : "")"
+       role="tab" aria-selected="@(Model.Tab == "sedes" ? "true" : "false")"
+       aria-controls="tab-sedes">Sedes</a>
+    <a asp-controller="@maestrosCtrl" asp-action="Index" asp-route-tab="cargos"
+       class="tab-btn @(Model.Tab == "cargos" ? "is-active" : "")"
+       role="tab" aria-selected="@(Model.Tab == "cargos" ? "true" : "false")"
+       aria-controls="tab-cargos">Cargos</a>
+    <a asp-controller="@maestrosCtrl" asp-action="Index" asp-route-tab="empresas"
+       class="tab-btn @(Model.Tab == "empresas" ? "is-active" : "")"
+       role="tab" aria-selected="@(Model.Tab == "empresas" ? "true" : "false")"
+       aria-controls="tab-empresas">Empresas temporales</a>
+    <a asp-controller="@maestrosCtrl" asp-action="Index" asp-route-tab="tipos-solicitud"
+       class="tab-btn @(Model.Tab == "tipos-solicitud" ? "is-active" : "")"
+       role="tab" aria-selected="@(Model.Tab == "tipos-solicitud" ? "true" : "false")"
+       aria-controls="tab-tipos-solicitud">Tipos de solicitud</a>
+    <a asp-controller="@maestrosCtrl" asp-action="Index" asp-route-tab="roles"
+       class="tab-btn @(Model.Tab == "roles" ? "is-active" : "")"
+       role="tab" aria-selected="@(Model.Tab == "roles" ? "true" : "false")"
+       aria-controls="tab-roles">Roles del sistema</a>
+  </div>
+
+  <!-- ──────────── TAB: Sedes ──────────── -->
+  @if (Model.Tab == "sedes")
+  {
+    <div class="tab-panel is-active" role="tabpanel" id="tab-sedes" tabindex="0">
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <h2 class="card-title">Sedes</h2>
+            <p class="card-desc">Ubicaciones donde opera la empresa.</p>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="abrirCrearSede()" id="btn-nueva-sede">
+            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+            Nueva sede
+          </button>
+        </div>
+        @if (!Model.Sedes.Any())
+        {
+          <div class="card-body">
+            <div class="empty-state">
+              <p class="empty-title">Sin sedes registradas</p>
+              <p class="empty-desc">Crea la primera sede usando el botón "Nueva sede".</p>
+            </div>
+          </div>
+        }
+        else
+        {
+          <div class="table-wrapper">
+            <div class="table-scroll">
+              <table aria-label="Sedes">
+                <thead>
+                  <tr>
+                    <th scope="col">Nombre</th>
+                    <th scope="col">Ciudad</th>
+                    <th scope="col">Dirección</th>
+                    <th scope="col">Estado</th>
+                    <th scope="col"><span class="sr-only">Acciones</span></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @foreach (var s in Model.Sedes)
+                  {
+                    <tr>
+                      <td style="font-weight:600">@s.Nombre</td>
+                      <td>@s.Ciudad</td>
+                      <td style="font-size:.8125rem">@(s.Direccion ?? "—")</td>
+                      <td>
+                        @if (s.Estado == "Activa")
+                        { <span class="badge badge--activo"><span class="badge-dot"></span>Activa</span> }
+                        else
+                        { <span class="badge badge--inactivo"><span class="badge-dot"></span>Inactiva</span> }
+                      </td>
+                      <td>
+                        <div class="table-actions">
+                          <button type="button" class="btn btn-ghost btn-sm"
+                                  onclick="abrirEditarSede(this)"
+                                  data-id="@s.Id"
+                                  data-nombre="@s.Nombre"
+                                  data-ciudad="@s.Ciudad"
+                                  data-direccion="@(s.Direccion ?? "")"
+                                  aria-label="Editar sede @s.Nombre">
+                            Editar
+                          </button>
+                          @if (s.Estado == "Activa")
+                          {
+                            <button type="button" class="btn btn-ghost btn-sm btn-danger-text"
+                                    onclick="darDeBajaSede(this)"
+                                    data-id="@s.Id"
+                                    data-nombre="@s.Nombre"
+                                    aria-label="Eliminar o inactivar sede @s.Nombre">
+                              Eliminar
+                            </button>
+                          }
+                          else
+                          {
+                            <button type="button" class="btn btn-ghost btn-sm"
+                                    onclick="activarSede(this)"
+                                    data-id="@s.Id"
+                                    data-nombre="@s.Nombre"
+                                    aria-label="Activar sede @s.Nombre">
+                              Activar
+                            </button>
+                          }
+                        </div>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  }
+
+  <!-- ──────────── TAB: Cargos ──────────── -->
+  @if (Model.Tab == "cargos")
+  {
+    <div class="tab-panel is-active" role="tabpanel" id="tab-cargos" tabindex="0">
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <h2 class="card-title">Cargos</h2>
+            <p class="card-desc">Posiciones laborales disponibles para los empleados.</p>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="abrirCrearCargo()" id="btn-nuevo-cargo">
+            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+            Nuevo cargo
+          </button>
+        </div>
+        @if (!Model.Cargos.Any())
+        {
+          <div class="card-body">
+            <div class="empty-state">
+              <p class="empty-title">Sin cargos registrados</p>
+              <p class="empty-desc">Crea el primer cargo usando el botón "Nuevo cargo".</p>
+            </div>
+          </div>
+        }
+        else
+        {
+          <div class="table-wrapper">
+            <div class="table-scroll">
+              <table aria-label="Cargos">
+                <thead>
+                  <tr>
+                    <th scope="col">Nombre del cargo</th>
+                    <th scope="col">Estado</th>
+                    <th scope="col"><span class="sr-only">Acciones</span></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @foreach (var c in Model.Cargos)
+                  {
+                    <tr>
+                      <td style="font-weight:600">@c.Nombre</td>
+                      <td>
+                        @if (c.Estado == "Activo")
+                        { <span class="badge badge--activo"><span class="badge-dot"></span>Activo</span> }
+                        else
+                        { <span class="badge badge--inactivo"><span class="badge-dot"></span>Inactivo</span> }
+                      </td>
+                      <td>
+                        <div class="table-actions">
+                          <button type="button" class="btn btn-ghost btn-sm"
+                                  onclick="abrirEditarCargo(this)"
+                                  data-id="@c.Id"
+                                  data-nombre="@c.Nombre"
+                                  aria-label="Editar cargo @c.Nombre">
+                            Editar
+                          </button>
+                          @if (c.Estado == "Activo")
+                          {
+                            <button type="button" class="btn btn-ghost btn-sm btn-danger-text"
+                                    onclick="darDeBajaCargo(this)"
+                                    data-id="@c.Id"
+                                    data-nombre="@c.Nombre"
+                                    aria-label="Eliminar o inactivar cargo @c.Nombre">
+                              Eliminar
+                            </button>
+                          }
+                          else
+                          {
+                            <button type="button" class="btn btn-ghost btn-sm"
+                                    onclick="activarCargo(this)"
+                                    data-id="@c.Id"
+                                    data-nombre="@c.Nombre"
+                                    aria-label="Activar cargo @c.Nombre">
+                              Activar
+                            </button>
+                          }
+                        </div>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  }
+
+  <!-- ──────────── TAB: Empresas temporales ──────────── -->
+  @if (Model.Tab == "empresas")
+  {
+    <div class="tab-panel is-active" role="tabpanel" id="tab-empresas" tabindex="0">
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <h2 class="card-title">Empresas temporales</h2>
+            <p class="card-desc">Agencias que proveen empleados con contratación temporal.</p>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="abrirCrearEmpresa()" id="btn-nueva-empresa">
+            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+            Nueva empresa
+          </button>
+        </div>
+        @if (!Model.EmpresasTemporales.Any())
+        {
+          <div class="card-body">
+            <div class="empty-state">
+              <p class="empty-title">Sin empresas temporales registradas</p>
+              <p class="empty-desc">Crea la primera empresa usando el botón "Nueva empresa".</p>
+            </div>
+          </div>
+        }
+        else
+        {
+          <div class="table-wrapper">
+            <div class="table-scroll">
+              <table aria-label="Empresas temporales">
+                <thead>
+                  <tr>
+                    <th scope="col">Nombre</th>
+                    <th scope="col">Estado</th>
+                    <th scope="col"><span class="sr-only">Acciones</span></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @foreach (var emp in Model.EmpresasTemporales)
+                  {
+                    <tr>
+                      <td style="font-weight:600">@emp.Nombre</td>
+                      <td>
+                        @if (emp.Estado == "Activa")
+                        { <span class="badge badge--activo"><span class="badge-dot"></span>Activa</span> }
+                        else
+                        { <span class="badge badge--inactivo"><span class="badge-dot"></span>Inactiva</span> }
+                      </td>
+                      <td>
+                        <div class="table-actions">
+                          <button type="button" class="btn btn-ghost btn-sm"
+                                  onclick="abrirEditarEmpresa(this)"
+                                  data-id="@emp.Id"
+                                  data-nombre="@emp.Nombre"
+                                  aria-label="Editar empresa @emp.Nombre">
+                            Editar
+                          </button>
+                          @if (emp.Estado == "Activa")
+                          {
+                            <button type="button" class="btn btn-ghost btn-sm btn-danger-text"
+                                    onclick="darDeBajaEmpresa(this)"
+                                    data-id="@emp.Id"
+                                    data-nombre="@emp.Nombre"
+                                    aria-label="Eliminar o inactivar empresa @emp.Nombre">
+                              Eliminar
+                            </button>
+                          }
+                          else
+                          {
+                            <button type="button" class="btn btn-ghost btn-sm"
+                                    onclick="activarEmpresa(this)"
+                                    data-id="@emp.Id"
+                                    data-nombre="@emp.Nombre"
+                                    aria-label="Activar empresa @emp.Nombre">
+                              Activar
+                            </button>
+                          }
+                        </div>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  }
+
+  <!-- ──────────── TAB: Tipos de solicitud ──────────── -->
+  @if (Model.Tab == "tipos-solicitud")
+  {
+    <div class="tab-panel is-active" role="tabpanel" id="tab-tipos-solicitud" tabindex="0">
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <h2 class="card-title">Tipos de solicitud</h2>
+            <p class="card-desc">Opciones que verán los operarios al crear una solicitud laboral.</p>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="abrirCrearTipoSolicitud()" id="btn-nuevo-tipo-solicitud">
+            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+            Nuevo tipo
+          </button>
+        </div>
+        @if (!Model.TiposSolicitud.Any())
+        {
+          <div class="card-body">
+            <div class="empty-state">
+              <p class="empty-title">Sin tipos de solicitud</p>
+              <p class="empty-desc">Crea el primer tipo para que los operarios puedan registrar solicitudes.</p>
+            </div>
+          </div>
+        }
+        else
+        {
+          <div class="table-wrapper">
+            <div class="table-scroll">
+              <table aria-label="Tipos de solicitud">
+                <thead>
+                  <tr>
+                    <th scope="col">Nombre</th>
+                    <th scope="col">Código</th>
+                    <th scope="col">Vacaciones</th>
+                    <th scope="col">Estado</th>
+                    <th scope="col"><span class="sr-only">Acciones</span></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @foreach (var t in Model.TiposSolicitud)
+                  {
+                    <tr>
+                      <td style="font-weight:600">@t.Nombre</td>
+                      <td><code>@t.Codigo</code></td>
+                      <td>@(t.EsVacaciones ? "Sí" : "No")</td>
+                      <td>
+                        @if (t.Estado == "Activo")
+                        { <span class="badge badge--activo"><span class="badge-dot"></span>Activo</span> }
+                        else
+                        { <span class="badge badge--inactivo"><span class="badge-dot"></span>Inactivo</span> }
+                      </td>
+                      <td>
+                        <div class="table-actions">
+                          <button type="button" class="btn btn-ghost btn-sm"
+                                  onclick="abrirEditarTipoSolicitud(this)"
+                                  data-id="@t.Id"
+                                  data-nombre="@t.Nombre"
+                                  data-codigo="@t.Codigo"
+                                  data-es-vacaciones="@(t.EsVacaciones ? "1" : "0")"
+                                  aria-label="Editar tipo @t.Nombre">
+                            Editar
+                          </button>
+                          @if (t.Estado == "Activo")
+                          {
+                            <button type="button" class="btn btn-ghost btn-sm btn-danger-text"
+                                    onclick="darDeBajaTipoSolicitud(this)"
+                                    data-id="@t.Id"
+                                    data-nombre="@t.Nombre"
+                                    aria-label="Inactivar tipo @t.Nombre">
+                              Eliminar
+                            </button>
+                          }
+                          else
+                          {
+                            <button type="button" class="btn btn-ghost btn-sm"
+                                    onclick="activarTipoSolicitud(this)"
+                                    data-id="@t.Id"
+                                    data-nombre="@t.Nombre"
+                                    aria-label="Activar tipo @t.Nombre">
+                              Activar
+                            </button>
+                          }
+                        </div>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  }
+
+  <!-- ──────────── TAB: Roles del sistema ──────────── -->
+  @if (Model.Tab == "roles")
+  {
+    <div class="tab-panel is-active" role="tabpanel" id="tab-roles" tabindex="0">
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <h2 class="card-title">Roles del sistema</h2>
+            <p class="card-desc">Define qué módulos y acciones puede usar cada rol en la plataforma.</p>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="abrirCrearRol()" id="btn-nuevo-rol">
+            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+            Nuevo rol
+          </button>
+        </div>
+        @if (!Model.RolesSistema.Any())
+        {
+          <div class="card-body">
+            <div class="empty-state">
+              <p class="empty-title">Sin roles configurados</p>
+              <p class="empty-desc">Ejecuta la migración de BD o crea el primer rol.</p>
+            </div>
+          </div>
+        }
+        else
+        {
+          <div class="table-wrapper">
+            <div class="table-scroll">
+              <table aria-label="Roles del sistema">
+                <thead>
+                  <tr>
+                    <th scope="col">Código</th>
+                    <th scope="col">Nombre</th>
+                    <th scope="col">Permisos</th>
+                    <th scope="col">Tipo</th>
+                    <th scope="col">Estado</th>
+                    <th scope="col"><span class="sr-only">Acciones</span></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @foreach (var rol in Model.RolesSistema)
+                  {
+                    <tr>
+                      <td><code style="font-size:.75rem">@rol.Codigo</code></td>
+                      <td style="font-weight:600">@RolesSistemaTextos.Nombre(rol.Codigo, rol.Nombre)</td>
+                      <td>@rol.Permisos.Count</td>
+                      <td>@(rol.EsRolSistema ? "Sistema" : "Personalizado")</td>
+                      <td>
+                        @if (rol.Estado == "Activo")
+                        { <span class="badge badge--activo"><span class="badge-dot"></span>Activo</span> }
+                        else
+                        { <span class="badge badge--inactivo"><span class="badge-dot"></span>Inactivo</span> }
+                      </td>
+                      <td>
+                        <div class="table-actions">
+                          <button type="button" class="btn btn-ghost btn-sm"
+                                  onclick="abrirEditarRol(@rol.Id)"
+                                  aria-label="Editar rol @rol.Nombre">
+                            Editar permisos
+                          </button>
+                          @if (rol.Estado == "Activo")
+                          {
+                            <button type="button" class="btn btn-ghost btn-sm btn-danger-text"
+                                    onclick="darDeBajaRol(this)"
+                                    data-id="@rol.Id"
+                                    data-nombre="@RolesSistemaTextos.Nombre(rol.Codigo, rol.Nombre)"
+                                    aria-label="Eliminar o inactivar rol @rol.Nombre">
+                              Eliminar
+                            </button>
+                          }
+                          else
+                          {
+                            <button type="button" class="btn btn-ghost btn-sm"
+                                    onclick="activarRol(this)"
+                                    data-id="@rol.Id"
+                                    data-nombre="@RolesSistemaTextos.Nombre(rol.Codigo, rol.Nombre)"
+                                    aria-label="Activar rol @rol.Nombre">
+                              Activar
+                            </button>
+                          }
+                        </div>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  }
+
+</div><!-- /data-tabs-container -->
+
+<!-- ═══════════════════════════════════════════════════════════
+     Modal: Sede (crear / editar)
+     ═══════════════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="modal-sede" hidden aria-modal="true"
+     aria-labelledby="sede-title" role="dialog">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 class="modal-title" id="sede-title">Nueva sede</h2>
+      <button class="modal-close btn" data-modal-close aria-label="Cerrar">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <form id="form-sede" novalidate>
+        <div class="form-group">
+          <label class="form-label" for="sede-nombre">
+            Nombre de la sede <span class="required" aria-hidden="true">*</span>
+          </label>
+          <input class="form-input" type="text" id="sede-nombre" maxlength="200"
+                 placeholder="Ej. Sede Norte" autocomplete="off" required>
+        </div>
+        <div class="form-grid form-grid-2">
+          <div class="form-group">
+            <label class="form-label" for="sede-ciudad">
+              Ciudad <span class="required" aria-hidden="true">*</span>
+            </label>
+            <input class="form-input" type="text" id="sede-ciudad" maxlength="100"
+                   placeholder="Ej. Bogotá" autocomplete="off" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="sede-direccion">
+              Dirección <span class="required" aria-hidden="true">*</span>
+            </label>
+            <input class="form-input" type="text" id="sede-direccion" maxlength="300"
+                   placeholder="Ej. Cra 15 # 90-12" autocomplete="off" required>
+          </div>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" data-modal-close>Cancelar</button>
+      <button class="btn btn-primary" id="btn-guardar-sede">Crear sede</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     Modal: Cargo (crear / editar)
+     ═══════════════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="modal-cargo" hidden aria-modal="true"
+     aria-labelledby="cargo-title" role="dialog">
+  <div class="modal modal--sm">
+    <div class="modal-header">
+      <h2 class="modal-title" id="cargo-title">Nuevo cargo</h2>
+      <button class="modal-close btn" data-modal-close aria-label="Cerrar">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <form id="form-cargo" novalidate>
+        <div class="form-group" style="margin-bottom:0">
+          <label class="form-label" for="cargo-nombre">
+            Nombre del cargo <span class="required" aria-hidden="true">*</span>
+          </label>
+          <input class="form-input" type="text" id="cargo-nombre" maxlength="200"
+                 placeholder="Ej. Regente de Farmacia" autocomplete="off" required>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" data-modal-close>Cancelar</button>
+      <button class="btn btn-primary" id="btn-guardar-cargo">Crear cargo</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     Modal: Tipo de solicitud (crear / editar)
+     ═══════════════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="modal-tipo-solicitud" hidden aria-modal="true"
+     aria-labelledby="tipo-sol-title" role="dialog">
+  <div class="modal modal--sm">
+    <div class="modal-header">
+      <h2 class="modal-title" id="tipo-sol-title">Nuevo tipo de solicitud</h2>
+      <button class="modal-close btn" data-modal-close aria-label="Cerrar">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <form id="form-tipo-solicitud" novalidate>
+        <div class="form-group">
+          <label class="form-label" for="tipo-sol-nombre">
+            Nombre visible <span class="required" aria-hidden="true">*</span>
+          </label>
+          <input class="form-input" type="text" id="tipo-sol-nombre" maxlength="200"
+                 placeholder="Ej. Permiso médico" autocomplete="off" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="tipo-sol-codigo">
+            Código interno <span class="required" aria-hidden="true">*</span>
+          </label>
+          <input class="form-input" type="text" id="tipo-sol-codigo" maxlength="50"
+                 placeholder="Ej. PermisoMedico" autocomplete="off" required
+                 pattern="[A-Za-z0-9_]+" title="Solo letras, números y guión bajo">
+          <p class="form-hint">Sin espacios. Es el valor que se guarda en cada solicitud.</p>
+        </div>
+        <label class="form-check" style="margin-bottom:0">
+          <input type="checkbox" class="form-check-input" id="tipo-sol-es-vacaciones">
+          <span class="form-check-label">Controla saldo de vacaciones (días a disfrutar)</span>
+        </label>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" data-modal-close>Cancelar</button>
+      <button class="btn btn-primary" id="btn-guardar-tipo-solicitud">Crear tipo</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     Modal: Empresa temporal (crear / editar)
+     ═══════════════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="modal-empresa" hidden aria-modal="true"
+     aria-labelledby="empresa-title" role="dialog">
+  <div class="modal modal--sm">
+    <div class="modal-header">
+      <h2 class="modal-title" id="empresa-title">Nueva empresa temporal</h2>
+      <button class="modal-close btn" data-modal-close aria-label="Cerrar">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <form id="form-empresa" novalidate>
+        <div class="form-group" style="margin-bottom:0">
+          <label class="form-label" for="empresa-nombre">
+            Nombre de la empresa <span class="required" aria-hidden="true">*</span>
+          </label>
+          <input class="form-input" type="text" id="empresa-nombre" maxlength="200"
+                 placeholder="Ej. Temporales S.A." autocomplete="off" required>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" data-modal-close>Cancelar</button>
+      <button class="btn btn-primary" id="btn-guardar-empresa">Crear empresa</button>
+    </div>
+  </div>
+</div>
+
+@{
+    var permisosModalPorModulo = Model.PermisosPlataforma
+        .GroupBy(p => PermisosPlataformaTextos.Modulo(p.Codigo))
+        .OrderBy(g => g.Key)
+        .ToList();
+}
+
+<!-- ═══════════════════════════════════════════════════════════
+     Modal: Rol del sistema (crear / editar)
+     ═══════════════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="modal-rol" hidden aria-modal="true"
+     aria-labelledby="rol-title" role="dialog">
+  <div class="modal modal--lg">
+    <div class="modal-header">
+      <div class="modal-header-inner" style="flex-direction:column;align-items:flex-start;gap:0">
+        <h2 class="modal-title" id="rol-title">Nuevo rol</h2>
+        <p class="modal-subtitle--muted" id="rol-subtitle">Define el nombre y los permisos de acceso en la plataforma.</p>
+      </div>
+      <button class="modal-close btn" data-modal-close aria-label="Cerrar">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <form id="form-rol" novalidate>
+        <div class="form-grid form-grid-2">
+          <div class="form-group">
+            <label class="form-label" for="rol-codigo">
+              Código del rol <span class="required" aria-hidden="true">*</span>
+            </label>
+            <input class="form-input" type="text" id="rol-codigo" maxlength="50"
+                   placeholder="Ej. CoordinadorRH" autocomplete="off" required />
+            <p class="form-hint">Sin espacios. Coincide con el valor en <code>Usuarios.Rol</code>.</p>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="rol-estado">Estado</label>
+            <select class="form-select" id="rol-estado" disabled aria-describedby="rol-estado-hint">
+              <option value="Activo">Activo</option>
+              <option value="Inactivo">Inactivo</option>
+            </select>
+            <p class="form-hint" id="rol-estado-hint">Al crear, el rol queda activo.</p>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="rol-nombre">
+            Nombre visible <span class="required" aria-hidden="true">*</span>
+          </label>
+          <input class="form-input" type="text" id="rol-nombre" maxlength="200"
+                 placeholder="Ej. Coordinador de recursos humanos" autocomplete="off" required />
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+          <label class="form-label" for="rol-descripcion">Descripción</label>
+          <textarea class="form-input" id="rol-descripcion" maxlength="500" rows="2"
+                    placeholder="Breve descripción del alcance del rol (opcional)"
+                    style="resize:vertical;min-height:4.5rem"></textarea>
+        </div>
+
+        <section class="rol-permisos-section" aria-labelledby="rol-permisos-label">
+          <div class="rol-permisos-head">
+            <label class="form-label" id="rol-permisos-label">
+              Permisos en la plataforma <span class="required" aria-hidden="true">*</span>
+            </label>
+            <div class="rol-permisos-actions">
+              <button type="button" class="btn btn-ghost btn-sm" id="btn-permisos-todos">Seleccionar todos</button>
+              <button type="button" class="btn btn-ghost btn-sm" id="btn-permisos-ninguno">Quitar todos</button>
+            </div>
+          </div>
+          <div class="rol-permisos-panel" id="rol-permisos-container">
+            @foreach (var grupo in permisosModalPorModulo)
+            {
+              <div class="rol-permisos-grupo">
+                <h3 class="rol-permisos-grupo-titulo">@grupo.Key</h3>
+                <div class="rol-permisos-lista">
+                  @foreach (var p in grupo.OrderBy(x => x.Orden))
+                  {
+                    var desc = PermisosPlataformaTextos.Descripcion(p.Codigo);
+                    <label class="form-check rol-permiso-item">
+                      <input type="checkbox" class="permiso-check" value="@p.Id"
+                             aria-describedby="permiso-desc-@p.Id" />
+                      <span class="form-check-label">
+                        <span class="rol-permiso-nombre">@PermisosPlataformaTextos.Nombre(p.Codigo)</span>
+                        @if (!string.IsNullOrWhiteSpace(desc))
+                        {
+                          <span class="rol-permiso-desc" id="permiso-desc-@p.Id">@desc</span>
+                        }
+                        <code class="rol-permiso-codigo">@p.Codigo</code>
+                      </span>
+                    </label>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+        </section>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" data-modal-close>Cancelar</button>
+      <button type="button" class="btn btn-primary" id="btn-guardar-rol">Crear rol</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  const TOKEN = '@antiforgery';
+
+  /* ── Estado de edición (null = modo crear) ─────────── */
+  let sedeEditId         = null;
+  let cargoEditId        = null;
+  let empresaEditId      = null;
+  let tipoSolicitudEditId = null;
+  let rolEditId          = null;
+
+  /* ── Helper AJAX ────────────────────────────────────── */
+  function postAjax(url, body, btn) {
+    if (btn) { btn.disabled = true; btn.classList.add('btn-loading'); }
+    const fd = new FormData();
+    fd.append('__RequestVerificationToken', TOKEN);
+    for (const [k, v] of Object.entries(body)) {
+      if (Array.isArray(v)) {
+        v.forEach((item, i) => fd.append(`${k}[${i}]`, item));
+      } else {
+        fd.append(k, v);
+      }
+    }
+    return fetch(url, { method: 'POST', body: fd })
+      .then(r => r.json())
+      .finally(() => {
+        if (btn) { btn.disabled = false; btn.classList.remove('btn-loading'); }
+      });
+  }
+
+  function getPermisosSeleccionados() {
+    return Array.from(document.querySelectorAll('#rol-permisos-container .permiso-check:checked'))
+      .map(cb => parseInt(cb.value, 10));
+  }
+
+  function setPermisosSeleccionados(ids) {
+    document.querySelectorAll('#rol-permisos-container .permiso-check').forEach(cb => {
+      cb.checked = ids.includes(parseInt(cb.value, 10));
+    });
+  }
+
+  function resetFormRol() {
+    document.getElementById('rol-codigo').value = '';
+    document.getElementById('rol-codigo').readOnly = false;
+    document.getElementById('rol-nombre').value = '';
+    document.getElementById('rol-descripcion').value = '';
+    document.getElementById('rol-estado').value = 'Activo';
+    document.getElementById('rol-estado').disabled = true;
+    document.getElementById('rol-estado-hint').textContent = 'Al crear, el rol queda activo.';
+    setPermisosSeleccionados([]);
+  }
+
+  window.abrirCrearRol = function () {
+    rolEditId = null;
+    document.getElementById('rol-title').textContent = 'Nuevo rol';
+    document.getElementById('rol-subtitle').textContent = 'Define el nombre y los permisos de acceso en la plataforma.';
+    document.getElementById('btn-guardar-rol').textContent = 'Crear rol';
+    resetFormRol();
+    openModal('modal-rol');
+  };
+
+  window.abrirEditarRol = function (id) {
+    fetch('@Url.Action("ObtenerRolAjax", maestrosCtrl)?id=' + id)
+      .then(r => r.json())
+      .then(data => {
+        if (!data.exito) { showToast(data.mensaje || 'No se pudo cargar el rol.', 'error'); return; }
+        const d = data.datos;
+        rolEditId = d.id;
+        document.getElementById('rol-title').textContent = 'Editar rol';
+        document.getElementById('rol-subtitle').textContent = 'Actualiza el nombre, estado y permisos del rol.';
+        document.getElementById('btn-guardar-rol').textContent = 'Guardar cambios';
+        document.getElementById('rol-codigo').value = d.codigo;
+        document.getElementById('rol-codigo').readOnly = true;
+        document.getElementById('rol-nombre').value = d.nombre;
+        document.getElementById('rol-descripcion').value = d.descripcion || '';
+        document.getElementById('rol-estado').value = d.estado;
+        document.getElementById('rol-estado').disabled = false;
+        document.getElementById('rol-estado-hint').textContent = 'Los roles inactivos no reciben permisos al iniciar sesión.';
+        setPermisosSeleccionados(d.permisoIds || []);
+        openModal('modal-rol');
+      })
+      .catch(() => showToast('Error de red.', 'error'));
+  };
+
+  function recargar(tab) {
+    window.location.href = '@Url.Action("Index", maestrosCtrl)?tab=' + tab;
+  }
+
+  function confirmarBaja(nombre, tipoLabel) {
+    return confirmAction({
+      title: '¿Eliminar o dar de baja?',
+      subtitle: 'Esta acción puede ser irreversible',
+      itemType: tipoLabel,
+      itemName: nombre,
+      message: 'Si el registro está en uso por empleados o usuarios, se inactivará automáticamente y dejará de aparecer en los listados de asignación.',
+      confirmLabel: 'Eliminar / Dar de baja',
+      type: 'danger'
+    });
+  }
+
+  function confirmarActivar(nombre, tipoLabel) {
+    return confirmAction({
+      title: '¿Activar registro?',
+      subtitle: 'Volverá a estar disponible',
+      itemType: tipoLabel,
+      itemName: nombre,
+      message: 'El registro aparecerá nuevamente en los listados de asignación al crear o editar empleados.',
+      confirmLabel: 'Activar',
+      type: 'primary'
+    });
+  }
+
+  function ejecutarBaja(url, id, tab, btn) {
+    postAjax(url, { id: id }, btn)
+      .then(data => {
+        if (data.exito) {
+          showToast(data.mensaje || 'Operación realizada.', 'success');
+          setTimeout(() => recargar(tab), 700);
+        } else {
+          showToast(data.mensaje || 'No se pudo completar la operación.', 'error');
+        }
+      })
+      .catch(() => showToast('Error de red.', 'error'));
+  }
+
+  window.darDeBajaSede = async function (btn) {
+    const id = parseInt(btn.dataset.id, 10);
+    const nombre = btn.dataset.nombre || 'Sede sin nombre';
+    if (!await confirmarBaja(nombre, 'Sede')) return;
+    ejecutarBaja('@Url.Action("DarDeBajaSedeAjax", maestrosCtrl)', id, 'sedes', btn);
+  };
+
+  window.activarSede = async function (btn) {
+    const id = parseInt(btn.dataset.id, 10);
+    const nombre = btn.dataset.nombre || 'Sede';
+    if (!await confirmarActivar(nombre, 'Sede')) return;
+    ejecutarBaja('@Url.Action("ActivarSedeAjax", maestrosCtrl)', id, 'sedes', btn);
+  };
+
+  window.darDeBajaCargo = async function (btn) {
+    const id = parseInt(btn.dataset.id, 10);
+    const nombre = btn.dataset.nombre || 'Cargo sin nombre';
+    if (!await confirmarBaja(nombre, 'Cargo')) return;
+    ejecutarBaja('@Url.Action("DarDeBajaCargoAjax", maestrosCtrl)', id, 'cargos', btn);
+  };
+
+  window.activarCargo = async function (btn) {
+    const id = parseInt(btn.dataset.id, 10);
+    const nombre = btn.dataset.nombre || 'Cargo';
+    if (!await confirmarActivar(nombre, 'Cargo')) return;
+    ejecutarBaja('@Url.Action("ActivarCargoAjax", maestrosCtrl)', id, 'cargos', btn);
+  };
+
+  window.darDeBajaTipoSolicitud = async function (btn) {
+    const id = parseInt(btn.dataset.id, 10);
+    const nombre = btn.dataset.nombre || 'Tipo de solicitud';
+    if (!await confirmarBaja(nombre, 'Tipo de solicitud')) return;
+    ejecutarBaja('@Url.Action("DarDeBajaTipoSolicitudAjax", maestrosCtrl)', id, 'tipos-solicitud', btn);
+  };
+
+  window.activarTipoSolicitud = async function (btn) {
+    const id = parseInt(btn.dataset.id, 10);
+    const nombre = btn.dataset.nombre || 'Tipo de solicitud';
+    if (!await confirmarActivar(nombre, 'Tipo de solicitud')) return;
+    ejecutarBaja('@Url.Action("ActivarTipoSolicitudAjax", maestrosCtrl)', id, 'tipos-solicitud', btn);
+  };
+
+  window.darDeBajaEmpresa = async function (btn) {
+    const id = parseInt(btn.dataset.id, 10);
+    const nombre = btn.dataset.nombre || 'Empresa sin nombre';
+    if (!await confirmarBaja(nombre, 'Empresa temporal')) return;
+    ejecutarBaja('@Url.Action("DarDeBajaEmpresaAjax", maestrosCtrl)', id, 'empresas', btn);
+  };
+
+  window.activarEmpresa = async function (btn) {
+    const id = parseInt(btn.dataset.id, 10);
+    const nombre = btn.dataset.nombre || 'Empresa';
+    if (!await confirmarActivar(nombre, 'Empresa temporal')) return;
+    ejecutarBaja('@Url.Action("ActivarEmpresaAjax", maestrosCtrl)', id, 'empresas', btn);
+  };
+
+  window.darDeBajaRol = async function (btn) {
+    const id = parseInt(btn.dataset.id, 10);
+    const nombre = btn.dataset.nombre || 'Rol sin nombre';
+    if (!await confirmarBaja(nombre, 'Rol del sistema')) return;
+    ejecutarBaja('@Url.Action("DarDeBajaRolAjax", maestrosCtrl)', id, 'roles', btn);
+  };
+
+  window.activarRol = async function (btn) {
+    const id = parseInt(btn.dataset.id, 10);
+    const nombre = btn.dataset.nombre || 'Rol';
+    if (!await confirmarActivar(nombre, 'Rol del sistema')) return;
+    ejecutarBaja('@Url.Action("ActivarRolAjax", maestrosCtrl)', id, 'roles', btn);
+  };
+
+  /* ════════════════════════════════════════
+     SEDES
+     ════════════════════════════════════════ */
+  window.abrirCrearSede = function () {
+    sedeEditId = null;
+    document.getElementById('form-sede').reset();
+    document.getElementById('sede-title').textContent     = 'Nueva sede';
+    document.getElementById('btn-guardar-sede').textContent = 'Crear sede';
+    openModal('modal-sede');
+  };
+
+  window.abrirEditarSede = function (btn) {
+    sedeEditId = parseInt(btn.dataset.id, 10);
+    document.getElementById('sede-nombre').value    = btn.dataset.nombre    ?? '';
+    document.getElementById('sede-ciudad').value    = btn.dataset.ciudad    ?? '';
+    document.getElementById('sede-direccion').value = btn.dataset.direccion ?? '';
+    document.getElementById('sede-title').textContent     = 'Editar sede';
+    document.getElementById('btn-guardar-sede').textContent = 'Guardar cambios';
+    openModal('modal-sede');
+  };
+
+  /* ════════════════════════════════════════
+     CARGOS
+     ════════════════════════════════════════ */
+  window.abrirCrearCargo = function () {
+    cargoEditId = null;
+    document.getElementById('form-cargo').reset();
+    document.getElementById('cargo-title').textContent     = 'Nuevo cargo';
+    document.getElementById('btn-guardar-cargo').textContent = 'Crear cargo';
+    openModal('modal-cargo');
+  };
+
+  window.abrirEditarCargo = function (btn) {
+    cargoEditId = parseInt(btn.dataset.id, 10);
+    document.getElementById('cargo-nombre').value = btn.dataset.nombre ?? '';
+    document.getElementById('cargo-title').textContent     = 'Editar cargo';
+    document.getElementById('btn-guardar-cargo').textContent = 'Guardar cambios';
+    openModal('modal-cargo');
+  };
+
+  /* ════════════════════════════════════════
+     EMPRESAS
+     ════════════════════════════════════════ */
+  window.abrirCrearTipoSolicitud = function () {
+    tipoSolicitudEditId = null;
+    document.getElementById('tipo-sol-title').textContent = 'Nuevo tipo de solicitud';
+    document.getElementById('btn-guardar-tipo-solicitud').textContent = 'Crear tipo';
+    document.getElementById('tipo-sol-nombre').value = '';
+    document.getElementById('tipo-sol-codigo').value = '';
+    document.getElementById('tipo-sol-codigo').readOnly = false;
+    document.getElementById('tipo-sol-es-vacaciones').checked = false;
+    openModal('modal-tipo-solicitud');
+  };
+
+  window.abrirEditarTipoSolicitud = function (btn) {
+    tipoSolicitudEditId = btn.dataset.id;
+    document.getElementById('tipo-sol-title').textContent = 'Editar tipo de solicitud';
+    document.getElementById('btn-guardar-tipo-solicitud').textContent = 'Guardar cambios';
+    document.getElementById('tipo-sol-nombre').value = btn.dataset.nombre || '';
+    document.getElementById('tipo-sol-codigo').value = btn.dataset.codigo || '';
+    document.getElementById('tipo-sol-codigo').readOnly = true;
+    document.getElementById('tipo-sol-es-vacaciones').checked = btn.dataset.esVacaciones === '1';
+    openModal('modal-tipo-solicitud');
+  };
+
+  window.abrirCrearEmpresa = function () {
+    empresaEditId = null;
+    document.getElementById('form-empresa').reset();
+    document.getElementById('empresa-title').textContent     = 'Nueva empresa temporal';
+    document.getElementById('btn-guardar-empresa').textContent = 'Crear empresa';
+    openModal('modal-empresa');
+  };
+
+  window.abrirEditarEmpresa = function (btn) {
+    empresaEditId = parseInt(btn.dataset.id, 10);
+    document.getElementById('empresa-nombre').value = btn.dataset.nombre ?? '';
+    document.getElementById('empresa-title').textContent     = 'Editar empresa temporal';
+    document.getElementById('btn-guardar-empresa').textContent = 'Guardar cambios';
+    openModal('modal-empresa');
+  };
+
+  /* ════════════════════════════════════════
+     GUARDAR — se decide crear o editar por el estado del id
+     ════════════════════════════════════════ */
+  document.addEventListener('DOMContentLoaded', function () {
+
+    /* — Sede — */
+    document.getElementById('btn-guardar-sede')?.addEventListener('click', function () {
+      const nombre    = (document.getElementById('sede-nombre')?.value    ?? '').trim();
+      const ciudad    = (document.getElementById('sede-ciudad')?.value    ?? '').trim();
+      const direccion = (document.getElementById('sede-direccion')?.value ?? '').trim();
+
+      if (!nombre || !ciudad || !direccion) {
+        showToast('Completa todos los campos obligatorios.', 'error'); return;
+      }
+
+      const esEditar = sedeEditId !== null;
+      const url = esEditar
+        ? '@Url.Action("EditarSedeAjax", maestrosCtrl)'
+        : '@Url.Action("CrearSedeAjax", maestrosCtrl)';
+      const body = esEditar
+        ? { Id: sedeEditId, Nombre: nombre, Ciudad: ciudad, Direccion: direccion }
+        : { Nombre: nombre, Ciudad: ciudad, Direccion: direccion };
+
+      postAjax(url, body, this)
+        .then(data => {
+          if (data.exito) {
+            showToast(data.mensaje || (esEditar ? 'Sede actualizada.' : 'Sede creada.'), 'success');
+            closeModal('modal-sede');
+            setTimeout(() => recargar('sedes'), 700);
+          } else {
+            showToast(data.mensaje || 'Error al guardar.', 'error');
+          }
+        })
+        .catch(() => showToast('Error de red.', 'error'));
+    });
+
+    /* — Cargo — */
+    document.getElementById('btn-guardar-cargo')?.addEventListener('click', function () {
+      const nombre = (document.getElementById('cargo-nombre')?.value ?? '').trim();
+      if (!nombre) { showToast('El nombre del cargo es obligatorio.', 'error'); return; }
+
+      const esEditar = cargoEditId !== null;
+      const url = esEditar
+        ? '@Url.Action("EditarCargoAjax", maestrosCtrl)'
+        : '@Url.Action("CrearCargoAjax", maestrosCtrl)';
+      const body = esEditar ? { Id: cargoEditId, Nombre: nombre } : { Nombre: nombre };
+
+      postAjax(url, body, this)
+        .then(data => {
+          if (data.exito) {
+            showToast(data.mensaje || (esEditar ? 'Cargo actualizado.' : 'Cargo creado.'), 'success');
+            closeModal('modal-cargo');
+            setTimeout(() => recargar('cargos'), 700);
+          } else {
+            showToast(data.mensaje || 'Error al guardar.', 'error');
+          }
+        })
+        .catch(() => showToast('Error de red.', 'error'));
+    });
+
+    /* — Tipo de solicitud — */
+    document.getElementById('btn-guardar-tipo-solicitud')?.addEventListener('click', function () {
+      const nombre = (document.getElementById('tipo-sol-nombre')?.value ?? '').trim();
+      const codigo = (document.getElementById('tipo-sol-codigo')?.value ?? '').trim();
+      const esVac  = document.getElementById('tipo-sol-es-vacaciones')?.checked ?? false;
+
+      if (!nombre || !codigo) {
+        showToast('Completa nombre y código.', 'error'); return;
+      }
+      if (!/^[A-Za-z0-9_]+$/.test(codigo)) {
+        showToast('El código solo puede contener letras, números y guión bajo.', 'error'); return;
+      }
+
+      const esEditar = tipoSolicitudEditId !== null;
+      const url = esEditar
+        ? '@Url.Action("EditarTipoSolicitudAjax", maestrosCtrl)'
+        : '@Url.Action("CrearTipoSolicitudAjax", maestrosCtrl)';
+      const body = esEditar
+        ? { Id: tipoSolicitudEditId, Nombre: nombre, EsVacaciones: esVac }
+        : { Nombre: nombre, Codigo: codigo, EsVacaciones: esVac };
+
+      postAjax(url, body, this)
+        .then(data => {
+          if (data.exito) {
+            showToast(data.mensaje || 'Guardado correctamente.', 'success');
+            closeModal('modal-tipo-solicitud');
+            setTimeout(() => recargar('tipos-solicitud'), 700);
+          } else {
+            showToast(data.mensaje || 'Error al guardar.', 'error');
+          }
+        })
+        .catch(() => showToast('Error de red.', 'error'));
+    });
+
+    /* — Empresa — */
+    document.getElementById('btn-guardar-empresa')?.addEventListener('click', function () {
+      const nombre = (document.getElementById('empresa-nombre')?.value ?? '').trim();
+      if (!nombre) { showToast('El nombre de la empresa es obligatorio.', 'error'); return; }
+
+      const esEditar = empresaEditId !== null;
+      const url = esEditar
+        ? '@Url.Action("EditarEmpresaAjax", maestrosCtrl)'
+        : '@Url.Action("CrearEmpresaAjax", maestrosCtrl)';
+      const body = esEditar ? { Id: empresaEditId, Nombre: nombre } : { Nombre: nombre };
+
+      postAjax(url, body, this)
+        .then(data => {
+          if (data.exito) {
+            showToast(data.mensaje || (esEditar ? 'Empresa actualizada.' : 'Empresa creada.'), 'success');
+            closeModal('modal-empresa');
+            setTimeout(() => recargar('empresas'), 700);
+          } else {
+            showToast(data.mensaje || 'Error al guardar.', 'error');
+          }
+        })
+        .catch(() => showToast('Error de red.', 'error'));
+    });
+
+    document.getElementById('btn-permisos-todos')?.addEventListener('click', function () {
+      document.querySelectorAll('#rol-permisos-container .permiso-check').forEach(cb => { cb.checked = true; });
+    });
+    document.getElementById('btn-permisos-ninguno')?.addEventListener('click', function () {
+      document.querySelectorAll('#rol-permisos-container .permiso-check').forEach(cb => { cb.checked = false; });
+    });
+
+    document.getElementById('btn-guardar-rol')?.addEventListener('click', function () {
+      const codigo = (document.getElementById('rol-codigo')?.value ?? '').trim();
+      const nombre = (document.getElementById('rol-nombre')?.value ?? '').trim();
+      const descripcion = (document.getElementById('rol-descripcion')?.value ?? '').trim();
+      const permisoIds = getPermisosSeleccionados();
+      if (!nombre) { showToast('El nombre del rol es obligatorio.', 'error'); return; }
+      if (!rolEditId && !codigo) { showToast('El código del rol es obligatorio.', 'error'); return; }
+      if (permisoIds.length === 0) { showToast('Selecciona al menos un permiso.', 'error'); return; }
+
+      const esEditar = rolEditId !== null;
+      const url = esEditar
+        ? '@Url.Action("EditarRolAjax", maestrosCtrl)'
+        : '@Url.Action("CrearRolAjax", maestrosCtrl)';
+      const body = esEditar
+        ? { Id: rolEditId, Nombre: nombre, Descripcion: descripcion, Estado: document.getElementById('rol-estado').value, PermisoIds: permisoIds }
+        : { Codigo: codigo, Nombre: nombre, Descripcion: descripcion, PermisoIds: permisoIds };
+
+      postAjax(url, body, this)
+        .then(data => {
+          if (data.exito) {
+            showToast(data.mensaje || 'Rol guardado.', 'success');
+            closeModal('modal-rol');
+            setTimeout(() => recargar('roles'), 700);
+          } else {
+            showToast(data.mensaje || 'Error al guardar.', 'error');
+          }
+        })
+        .catch(() => showToast('Error de red.', 'error'));
+    });
+  });
+})();
+</script>
+

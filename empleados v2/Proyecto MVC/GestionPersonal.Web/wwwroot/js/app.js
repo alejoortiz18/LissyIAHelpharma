@@ -54,6 +54,8 @@ document.addEventListener('DOMContentLoaded', function () {
     });
     document.addEventListener('keydown', function (e) {
         if (e.key === 'Escape') {
+            var confirmEl = document.getElementById('confirm-modal');
+            if (confirmEl && !confirmEl.hidden) return;
             var open = document.querySelector('.modal-overlay:not([hidden])');
             if (open) closeModal(open.id);
         }
@@ -126,32 +128,102 @@ function showToast(message, type, duration) {
 }
 
 /* ── Confirm dialog (global) ────────────────────────────────── */
-function confirmAction(title, message, confirmLabel, type) {
-    type = type || 'danger';
+var _confirmPending = null;
+
+/**
+ * Muestra el modal de confirmación del sitio.
+ * @param {string|object} titleOrOpts — título o { title, subtitle, message, confirmLabel, type, itemType, itemName }
+ */
+function confirmAction(titleOrOpts, message, confirmLabel, type) {
+    var opts = typeof titleOrOpts === 'object' && titleOrOpts !== null
+        ? titleOrOpts
+        : {
+            title: titleOrOpts,
+            message: message || '',
+            confirmLabel: confirmLabel || 'Confirmar',
+            type: type || 'danger'
+        };
+
+    opts.type = opts.type || 'danger';
+    opts.confirmLabel = opts.confirmLabel || 'Confirmar';
+
     return new Promise(function (resolve) {
         var overlay = document.getElementById('confirm-modal');
-        if (!overlay) { resolve(true); return; }
-        document.getElementById('confirm-title').textContent   = title;
-        document.getElementById('confirm-message').textContent = message;
+        if (!overlay) { resolve(window.confirm(opts.title + '\n\n' + (opts.message || ''))); return; }
+
+        if (_confirmPending) {
+            _confirmPending.resolve(false);
+            _confirmPending.teardown();
+            _confirmPending = null;
+        }
+
+        var panel = document.getElementById('confirm-modal-panel');
+        var isDanger = opts.type === 'danger';
+
+        document.getElementById('confirm-title').textContent = opts.title || 'Confirmar';
+        var subtitleEl = document.getElementById('confirm-subtitle');
+        subtitleEl.textContent = opts.subtitle || '';
+        subtitleEl.hidden = !opts.subtitle;
+
+        document.getElementById('confirm-message').textContent = opts.message || '';
+
+        var itemWrap = document.getElementById('confirm-item-wrap');
+        var hasItem = !!(opts.itemName);
+        itemWrap.hidden = !hasItem;
+        if (hasItem) {
+            document.getElementById('confirm-item-type').textContent = opts.itemType || '';
+            document.getElementById('confirm-item-name').textContent = opts.itemName;
+        }
+
+        document.getElementById('confirm-icon-danger').hidden = !isDanger;
+        document.getElementById('confirm-icon-primary').hidden = isDanger;
+
+        panel.classList.toggle('modal--danger-confirm', isDanger);
+        panel.classList.toggle('modal--info-confirm', !isDanger);
+
         var btn = document.getElementById('confirm-btn');
-        btn.textContent = confirmLabel;
-        btn.className   = 'btn ' + (type === 'danger' ? 'btn-danger' : 'btn-primary');
-        openModal('confirm-modal');
-        function onConfirm() {
+        btn.textContent = opts.confirmLabel;
+        btn.className = 'btn ' + (isDanger ? 'btn-danger' : 'btn-primary');
+
+        function finish(ok) {
             closeModal('confirm-modal');
-            btn.removeEventListener('click', onConfirm);
-            resolve(true);
-        }
-        btn.addEventListener('click', onConfirm);
-        var cancelBtn = overlay.querySelector('[data-modal-close]');
-        if (cancelBtn) {
-            function onCancel() {
-                closeModal('confirm-modal');
-                cancelBtn.removeEventListener('click', onCancel);
-                resolve(false);
+            if (_confirmPending) {
+                _confirmPending.teardown();
+                _confirmPending = null;
             }
-            cancelBtn.addEventListener('click', onCancel);
+            resolve(ok);
         }
+
+        function onConfirm() { finish(true); }
+        function onCancel() { finish(false); }
+
+        btn.addEventListener('click', onConfirm);
+        overlay.querySelectorAll('[data-confirm-cancel]').forEach(function (el) {
+            el.addEventListener('click', onCancel);
+        });
+        function onOverlayClick(e) {
+            if (e.target === overlay) onCancel();
+        }
+        overlay.addEventListener('click', onOverlayClick);
+        function onEscape(e) {
+            if (e.key === 'Escape' && !overlay.hidden) onCancel();
+        }
+        document.addEventListener('keydown', onEscape);
+
+        _confirmPending = {
+            resolve: resolve,
+            teardown: function () {
+                btn.removeEventListener('click', onConfirm);
+                overlay.querySelectorAll('[data-confirm-cancel]').forEach(function (el) {
+                    el.removeEventListener('click', onCancel);
+                });
+                overlay.removeEventListener('click', onOverlayClick);
+                document.removeEventListener('keydown', onEscape);
+            }
+        };
+
+        openModal('confirm-modal');
+        btn.focus();
     });
 }
 

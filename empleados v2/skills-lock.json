@@ -60,6 +60,11 @@
       "source": "custom",
       "sourceType": "local",
       "computedHash": null
+    },
+    "doc-coauthoring": {
+      "source": "anthropics/skills",
+      "sourceType": "github",
+      "computedHash": null
     }
   }
 }

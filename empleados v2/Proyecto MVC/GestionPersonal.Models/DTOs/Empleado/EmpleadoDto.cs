@@ -42,6 +42,7 @@ public class EmpleadoDto
     public decimal DiasVacacionesPrevios { get; init; }
 
     // Contrato temporal
+    public int? EmpresaTemporalId { get; init; }
     public string? EmpresaTemporalNombre { get; init; }
     public string? FechaInicioContrato { get; init; }
     public string? FechaFinContrato { get; init; }

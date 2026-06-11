@@ -6,7 +6,8 @@ public class EventoLaboral
 {
     public int Id { get; set; }
     public int EmpleadoId { get; set; }
-    public TipoEvento TipoEvento { get; set; }
+    /// <summary>Código del tipo (catálogo TiposSolicitud).</summary>
+    public string TipoEvento { get; set; } = null!;
     public DateOnly FechaInicio { get; set; }
     public DateOnly FechaFin { get; set; }
     public EstadoEvento Estado { get; set; }

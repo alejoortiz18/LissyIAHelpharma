@@ -15,4 +15,10 @@ public interface IEmpleadoService
 
     /// <summary>Devuelve true si el empleado está en la jerarquía descendente (directa o indirecta) del jefe.</summary>
     Task<bool> EsSubordinadoTransitivoAsync(int empleadoId, int jefeEmpleadoId, CancellationToken ct = default);
+
+    /// <summary>IDs de todos los empleados en el árbol descendente del jefe (BFS).</summary>
+    Task<IReadOnlySet<int>> ObtenerDescendientesAsync(int jefeEmpleadoId, CancellationToken ct = default);
+
+    /// <summary>Lista completa del personal a cargo del jefe (directos e indirectos).</summary>
+    Task<IReadOnlyList<EmpleadoListaDto>> ObtenerPersonalACargoAsync(int jefeEmpleadoId, CancellationToken ct = default);
 }

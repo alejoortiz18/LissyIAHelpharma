@@ -1,0 +1,60 @@
+@model GestionPersonal.Web.ViewModels.Sedes.SedesIndexViewModel
+@{
+    ViewData["Title"] = "Sedes";
+    ViewData["BreadcrumbCurrent"] = "Sedes";
+}
+
+<div class="page-header">
+  <div class="page-header-info">
+    <h1 class="page-title">Sedes</h1>
+    <p class="page-desc">Resumen general por sede, responsables y cantidad de usuarios.</p>
+  </div>
+</div>
+
+@if (!Model.Sedes.Any())
+{
+  <div class="empty-state">
+    <div class="empty-icon" aria-hidden="true">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 21h18"/><path d="M5 21V7l8-4 8 4v14"/>
+      </svg>
+    </div>
+    <p class="empty-title">Sin sedes registradas</p>
+    <p class="empty-desc">No se encontraron sedes para mostrar.</p>
+  </div>
+}
+else
+{
+  <div class="stats-grid" style="--cols:3;gap:var(--sp-4)">
+    @foreach (var s in Model.Sedes)
+    {
+      <article class="stat-card" style="min-height:16.5rem;display:flex;flex-direction:column;justify-content:space-between">
+        <div>
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:var(--sp-3)">
+            <h2 style="margin:0;font-size:1rem;color:var(--c-gray-900)">@s.Nombre</h2>
+            <span class="badge" style="white-space:nowrap">@s.Ciudad</span>
+          </div>
+          <p style="margin:var(--sp-2) 0 var(--sp-3);font-size:.875rem;color:var(--c-gray-600)">@s.Direccion</p>
+          <p style="margin:0 0 var(--sp-2);font-size:.8125rem;color:var(--c-gray-500);text-transform:uppercase;letter-spacing:.04em">Usuarios</p>
+          <p class="stat-value tabular-nums" style="margin:0 0 var(--sp-3)">@s.CantidadUsuarios</p>
+
+          <p style="margin:0 0 var(--sp-2);font-size:.8125rem;color:var(--c-gray-500);text-transform:uppercase;letter-spacing:.04em">Responsable</p>
+          @if (s.ResponsableNombre == "Sin responsable")
+          {
+            <span class="badge badge--inactivo"><span class="badge-dot"></span>Sin responsable</span>
+          }
+          else
+          {
+            <p style="margin:0;font-weight:600;color:var(--c-gray-900)">@s.ResponsableNombre</p>
+            <p style="margin:0;font-size:.8125rem;color:var(--c-gray-600)">@s.ResponsableCargo</p>
+          }
+        </div>
+        <div style="margin-top:var(--sp-4)">
+          <a asp-action="Detalle" asp-route-id="@s.SedeId" target="_blank" rel="noopener"
+             class="btn btn-secondary btn-sm">Ver</a>
+        </div>
+      </article>
+    }
+  </div>
+}

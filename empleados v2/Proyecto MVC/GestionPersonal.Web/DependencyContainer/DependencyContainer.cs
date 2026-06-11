@@ -5,6 +5,7 @@ using GestionPersonal.Infrastructure.AccessDependency;
 using GestionPersonal.Models.Models.Email;
 using GestionPersonal.Web.AutoMapper;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -23,6 +24,16 @@ public static class DependencyContainer
 
         services.AddAutoMapper(cfg => cfg.AddProfile<AutoMapperURT>());
 
+        var environmentName =
+            Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")
+            ?? Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT")
+            ?? configuration["ASPNETCORE_ENVIRONMENT"]
+            ?? configuration["DOTNET_ENVIRONMENT"];
+
+        var esDesarrollo = string.Equals(
+            environmentName, "Development",
+            StringComparison.OrdinalIgnoreCase);
+
         services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
             .AddCookie(options =>
             {
@@ -32,11 +43,22 @@ public static class DependencyContainer
                 options.ExpireTimeSpan    = TimeSpan.FromMinutes(30);
                 options.SlidingExpiration = true;
                 options.Cookie.HttpOnly   = true;
-                options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+                // En Development (HTTP local) permitir cookie; en producción exige HTTPS.
+                options.Cookie.SecurePolicy = esDesarrollo
+                    ? CookieSecurePolicy.SameAsRequest
+                    : CookieSecurePolicy.Always;
                 options.Cookie.SameSite   = SameSiteMode.Strict;
             });
 
         services.AddAuthorization();
+
+        // SameAsRequest: en HTTP local (p. ej. IIS con Production) la cookie sí se envía; en HTTPS prod sigue siendo Secure.
+        services.AddAntiforgery(options =>
+        {
+            options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+            options.Cookie.HttpOnly     = true;
+            options.Cookie.SameSite     = SameSiteMode.Lax;
+        });
 
         services.AddControllersWithViews(options =>
             options.Filters.Add(new ResponseCacheAttribute

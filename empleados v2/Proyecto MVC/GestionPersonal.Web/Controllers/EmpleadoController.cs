@@ -1,11 +1,13 @@
 using AutoMapper;
 using GestionPersonal.Application.Interfaces;
+using GestionPersonal.Constants;
 using GestionPersonal.Models.DTOs.Empleado;
 using GestionPersonal.Models.DTOs.EventoLaboral;
 using GestionPersonal.Models.DTOs.HoraExtra;
 using GestionPersonal.Models.DTOs.Turno;
 using GestionPersonal.Models.Entities.GestionPersonalEntities;
 using GestionPersonal.Models.Enums;
+using GestionPersonal.Web.Authorization;
 using GestionPersonal.Web.Helpers;
 using GestionPersonal.Web.ViewModels.Empleado;
 using GestionPersonal.Web.ViewModels.Turno;
@@ -19,19 +21,22 @@ public class EmpleadoController : Controller
 {
     private readonly IEmpleadoService _empleadoService;
     private readonly ICatalogoService _catalogoService;
+    private readonly IRolSistemaService _rolSistemaService;
     private readonly ITurnoService    _turnoService;
     private readonly IMapper          _mapper;
 
     public EmpleadoController(
         IEmpleadoService empleadoService,
         ICatalogoService catalogoService,
+        IRolSistemaService rolSistemaService,
         ITurnoService    turnoService,
         IMapper          mapper)
     {
-        _empleadoService = empleadoService;
-        _catalogoService = catalogoService;
-        _turnoService    = turnoService;
-        _mapper          = mapper;
+        _empleadoService   = empleadoService;
+        _catalogoService   = catalogoService;
+        _rolSistemaService = rolSistemaService;
+        _turnoService      = turnoService;
+        _mapper            = mapper;
     }
 
     // GET /Empleado?buscar=&sedeId=&cargoId=&estado=&tipoVinculacion=&pagina=1
@@ -44,13 +49,12 @@ public class EmpleadoController : Controller
         var rol    = SesionHelper.GetRol(User);
         var miSede = SesionHelper.GetSedeId(User);
 
-        // Operario y Direccionador solo ven su propio perfil
-        if (rol == RolUsuario.Operario || rol == RolUsuario.Direccionador)
+        if (!PermisoHelper.TienePermiso(User, PermisosCodigo.EmpleadosVerListado))
         {
             var empId = SesionHelper.GetEmpleadoId(User);
-            if (empId.HasValue)
+            if (PermisoHelper.TienePermiso(User, PermisosCodigo.EmpleadosVerPerfilPropio) && empId.HasValue)
                 return RedirectToAction("Perfil", new { id = empId.Value });
-            return RedirectToAction("Index", "Dashboard");
+            return RedirectToAction("AccesoDenegado", "Cuenta");
         }
 
         IReadOnlyList<EmpleadoListaDto> todos;
@@ -115,12 +119,9 @@ public class EmpleadoController : Controller
 
     // GET /Empleado/Nuevo
     [HttpGet]
+    [RequierePermiso(PermisosCodigo.EmpleadosCrear)]
     public async Task<IActionResult> Nuevo()
     {
-        var rol = SesionHelper.GetRol(User);
-        if (rol == RolUsuario.Operario || rol == RolUsuario.Direccionador
-            || rol == RolUsuario.Regente || rol == RolUsuario.AuxiliarRegente)
-            return Forbid();
 
         var vm = await ConstruirNuevoVm(new CrearEmpleadoDto());
         ViewData["Title"] = "Nuevo empleado";
@@ -241,7 +242,8 @@ public class EmpleadoController : Controller
     // GET /Empleado/Perfil/{id}?tab=datos&desde=2026-01-01&hasta=2026-04-30
     [HttpGet]
     public async Task<IActionResult> Perfil(int id, string tab = "datos",
-        DateOnly? desde = null, DateOnly? hasta = null)
+        DateOnly? desde = null, DateOnly? hasta = null,
+        string? buscar = null, string? estado = null, string? tipoVinculacion = null)
     {
         var rol     = SesionHelper.GetRol(User);
         var empId   = SesionHelper.GetEmpleadoId(User);
@@ -322,7 +324,7 @@ public class EmpleadoController : Controller
                 ? await eventoSvc.ObtenerPorEmpleadoConFiltroAsync(id, null, null)
                 : eventos;
             var disfrutadas = todosEventos
-                .Where(ev => ev.TipoEvento == TipoEvento.Vacaciones.ToString() &&
+                .Where(ev => ev.TipoEvento.Equals(nameof(TipoEvento.Vacaciones), StringComparison.OrdinalIgnoreCase) &&
                              ev.Estado     != "Anulado" &&
                              System.DateOnly.TryParseExact(ev.FechaInicio, "dd/MM/yyyy",
                                  System.Globalization.CultureInfo.InvariantCulture,
@@ -339,6 +341,51 @@ public class EmpleadoController : Controller
         bool esSubordinadoTransitivo = empId.HasValue
             && await _empleadoService.EsSubordinadoTransitivoAsync(id, empId.Value);
 
+        var esJefeConPersonal = CargoJefeSede.PuedeTenerPersonalACargo(empleado.CargoNombre);
+        IReadOnlyList<EmpleadoListaDto> personalACargo = [];
+        if (esJefeConPersonal)
+        {
+            // Nueva regla:
+            // - Analista: ver todos los Directores y Regentes de toda la plataforma.
+            // - Director/Regente: ver todos los empleados creados en su misma sede.
+            var todos = await _empleadoService.ObtenerTodosAsync();
+            var queryPersonal = todos.AsEnumerable()
+                .Where(p => p.Id != empleado.Id);
+
+            if (CargoJefeSede.EsCargoAnalistaServiciosFarmaceuticos(empleado.CargoNombre))
+            {
+                queryPersonal = queryPersonal.Where(p =>
+                    CargoJefeSede.EsCargoDirector(p.CargoNombre) ||
+                    CargoJefeSede.EsCargoRegente(p.CargoNombre));
+            }
+            else
+            {
+                queryPersonal = queryPersonal.Where(p => p.SedeId == empleado.SedeId);
+            }
+
+            if (!string.IsNullOrWhiteSpace(buscar))
+            {
+                var b = buscar.Trim().ToLower();
+                queryPersonal = queryPersonal.Where(p =>
+                    p.NombreCompleto.ToLower().Contains(b) ||
+                    p.Cedula.Contains(b));
+            }
+            if (!string.IsNullOrEmpty(estado))
+                queryPersonal = queryPersonal.Where(p =>
+                    p.Estado.Equals(estado, StringComparison.OrdinalIgnoreCase));
+            if (!string.IsNullOrEmpty(tipoVinculacion))
+                queryPersonal = queryPersonal.Where(p =>
+                    p.TipoVinculacion.Equals(tipoVinculacion, StringComparison.OrdinalIgnoreCase));
+
+            personalACargo = queryPersonal
+                .OrderBy(p => p.NombreCompleto)
+                .ToList();
+        }
+        else if (tab.Equals("personal-a-cargo", StringComparison.OrdinalIgnoreCase))
+        {
+            tab = "datos";
+        }
+
         var vm = new PerfilEmpleadoViewModel
         {
             Empleado              = empleado,
@@ -353,6 +400,11 @@ public class EmpleadoController : Controller
             FiltroDesde           = desde?.ToString("yyyy-MM-dd"),
             FiltroHasta           = hasta?.ToString("yyyy-MM-dd"),
             EsSubordinadoDelJefeEnSesion = esSubordinadoTransitivo,
+            EsJefeConPersonalACargo      = esJefeConPersonal,
+            PersonalACargo               = personalACargo,
+            FiltroBuscarPersonal         = buscar,
+            FiltroEstadoPersonal         = estado,
+            FiltroTipoVinculacionPersonal = tipoVinculacion,
         };
 
         ViewData["Title"] = empleado.NombreCompleto;
@@ -429,8 +481,9 @@ public class EmpleadoController : Controller
         var cargos    = await _catalogoService.ObtenerCargosActivosAsync();
         var empresas  = await _catalogoService.ObtenerEmpresasTemporalesActivasAsync();
         var todosEmps = await _empleadoService.ObtenerTodosAsync();
-        var jefes     = todosEmps.Where(e => e.Rol == RolUsuario.DirectorTecnico.ToString()
-                                          && e.Estado == "Activo").ToList();
+        var jefes     = todosEmps.Where(e =>
+                                e.Estado == "Activo"
+                             && CargoJefeSede.PuedeSerJefePotencial(e.CargoNombre)).ToList();
         return new NuevoEmpleadoViewModel
         {
             Dto               = dto,
@@ -443,19 +496,22 @@ public class EmpleadoController : Controller
 
     private async Task<EditarEmpleadoViewModel> ConstruirEditarVm(EditarEmpleadoDto dto)
     {
-        var sedes     = await _catalogoService.ObtenerSedesActivasAsync();
-        var cargos    = await _catalogoService.ObtenerCargosActivosAsync();
-        var empresas  = await _catalogoService.ObtenerEmpresasTemporalesActivasAsync();
+        var sedes     = await _catalogoService.ObtenerSedesParaSelectAsync(dto.SedeId);
+        var cargos    = await _catalogoService.ObtenerCargosParaSelectAsync(dto.CargoId);
+        var empresas  = await _catalogoService.ObtenerEmpresasTemporalesParaSelectAsync(dto.EmpresaTemporalId);
+        var roles     = await _rolSistemaService.ObtenerRolesParaSelectAsync(dto.Rol);
         var todosEmps = await _empleadoService.ObtenerTodosAsync();
-        var jefes     = todosEmps.Where(e => e.Rol == RolUsuario.DirectorTecnico.ToString()
-                                          && e.Estado == "Activo").ToList();
+        var jefes     = todosEmps.Where(e =>
+                                e.Estado == "Activo"
+                             && CargoJefeSede.PuedeSerJefePotencial(e.CargoNombre)).ToList();
         return new EditarEmpleadoViewModel
         {
-            Dto               = dto,
-            Sedes             = sedes,
-            Cargos            = cargos,
+            Dto                = dto,
+            Sedes              = sedes,
+            Cargos             = cargos,
             EmpresasTemporales = empresas,
-            Jefes             = jefes,
+            Jefes              = jefes,
+            RolesSistema       = roles,
         };
     }
 

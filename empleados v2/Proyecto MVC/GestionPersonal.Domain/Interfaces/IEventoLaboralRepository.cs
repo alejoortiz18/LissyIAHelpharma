@@ -16,7 +16,7 @@ public interface IEventoLaboralRepository
     Task<IReadOnlyList<EventoLaboral>> ObtenerActivosEnFechaAsync(int empleadoId, DateOnly fecha, CancellationToken ct = default);
 
     /// <summary>Eventos activos o finalizados del empleado por tipo (para calcular saldo vacaciones).</summary>
-    Task<IReadOnlyList<EventoLaboral>> ObtenerPorEmpleadoYTipoAsync(int empleadoId, TipoEvento tipo, CancellationToken ct = default);
+    Task<IReadOnlyList<EventoLaboral>> ObtenerPorEmpleadoYTipoAsync(int empleadoId, string tipoCodigo, CancellationToken ct = default);
 
     /// <summary>Eventos del empleado filtrados por rango de FechaInicio (ambos extremos opcionales e inclusivos).</summary>
     Task<IReadOnlyList<EventoLaboral>> ObtenerPorEmpleadoConFiltroAsync(

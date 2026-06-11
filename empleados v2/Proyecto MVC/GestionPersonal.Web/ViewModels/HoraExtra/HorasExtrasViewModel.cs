@@ -24,4 +24,9 @@ public class HorasExtrasViewModel
     public int Pagina { get; init; } = 1;
     public int TotalPaginas { get; init; }
     public int TotalRegistros { get; init; }
+
+    public bool PuedeCrear { get; init; }
+    public bool PuedeAprobar { get; init; }
+    public bool CrearSoloPropias { get; init; }
+    public int? EmpleadoIdSesion { get; init; }
 }

@@ -1,18 +1,18 @@
 @model EventosViewModel
-@using GestionPersonal.Models.Enums
+@using GestionPersonal.Constants
 @using GestionPersonal.Web.Helpers
 @{
     ViewData["Title"] = "Eventos laborales";
     ViewData["BreadcrumbCurrent"] = "Eventos laborales";
-    var rol = SesionHelper.GetRol(User);
-    bool puedeRegistrar = rol != RolUsuario.Operario;
-    bool puedeGestionar = rol == RolUsuario.Regente ||
-                          rol == RolUsuario.AuxiliarRegente ||
-                          rol == RolUsuario.DirectorTecnico ||
-                          rol == RolUsuario.Analista;
+    bool puedeRegistrar = PermisoHelper.TienePermiso(User, PermisosCodigo.EventosLaboralesCrear);
+    bool puedeGestionar = PermisoHelper.TieneAlgunPermiso(User,
+        PermisosCodigo.EventosLaboralesEditar,
+        PermisosCodigo.EventosLaboralesAnular);
     var antiforgery = ViewContext.HttpContext.RequestServices
         .GetRequiredService<Microsoft.AspNetCore.Antiforgery.IAntiforgery>()
         .GetAndStoreTokens(ViewContext.HttpContext).RequestToken;
+    var fijarEmpleadoSesion = Model.FijarEmpleadoSesion && Model.EmpleadoSesionId.HasValue && !string.IsNullOrWhiteSpace(Model.EmpleadoSesionNombre);
+    var empleadoSesionTexto = Model.EmpleadoSesionNombre ?? string.Empty;
 }
 
 <style>
@@ -24,7 +24,7 @@
     <h1 class="page-title">Eventos Laborales</h1>
     <p class="page-desc">Vacaciones, incapacidades y permisos de los empleados de la sede.</p>
   </div>
-  @if (puedeRegistrar)
+  @if (puedeRegistrar && Model.TiposSolicitudActivos.Any())
   {
     <div class="page-actions">
       <button class="btn btn-primary" data-modal-open="modal-nuevo-evento">
@@ -52,9 +52,10 @@
          placeholder="Buscar empleado…" value="@Model.Buscar" autocomplete="off" aria-label="Buscar por empleado" />
   <select name="tipo" class="form-select" aria-label="Tipo de evento">
     <option value="">Todos los tipos</option>
-    <option value="Vacaciones" selected="@(Model.Tipo == "Vacaciones")">Vacaciones</option>
-    <option value="Incapacidad" selected="@(Model.Tipo == "Incapacidad")">Incapacidad</option>
-    <option value="Permiso" selected="@(Model.Tipo == "Permiso")">Permiso</option>
+    @foreach (var t in Model.TiposSolicitudActivos)
+    {
+      <option value="@t.Codigo" selected="@(Model.Tipo == t.Codigo)">@t.Nombre</option>
+    }
   </select>
   <select name="estado" class="form-select" aria-label="Estado del evento">
     <option value="">Todos los estados</option>
@@ -122,12 +123,12 @@ else
                    asp-route-tab="historial" class="table-link">@ev.EmpleadoNombre</a>
               </td>
               <td>@ev.SedeNombre</td>
-              <td>@Html.Raw(BadgeTipo(ev.TipoEvento))</td>
+              <td>@Html.Raw(BadgeTipo(ev.TipoEvento, Model.TiposSolicitudActivos))</td>
               <td class="tabular-nums" style="font-size:.8125rem;white-space:nowrap">
                 @ev.FechaInicio → @ev.FechaFin
               </td>
               <td style="font-size:.8125rem;max-width:10rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
-                @if (ev.TipoEvento == "Vacaciones")
+                @if (Model.TiposSolicitudActivos.Any(t => t.Codigo.Equals(ev.TipoEvento, StringComparison.OrdinalIgnoreCase) && t.EsVacaciones))
                 {
                   @($"{ev.DiasSolicitados} días")
                 }
@@ -231,8 +232,10 @@ else
                      autocomplete="off" spellcheck="false"
                      placeholder="Escribe nombre o cédula para buscar…"
                      aria-autocomplete="list" aria-controls="ev-empleado-list"
-                     aria-expanded="false" role="combobox" />
-              <input type="hidden" id="ev-empleado" name="EmpleadoId" />
+                     aria-expanded="false" role="combobox"
+                     value="@(fijarEmpleadoSesion ? empleadoSesionTexto : string.Empty)"
+                     @(fijarEmpleadoSesion ? "readonly" : "") />
+              <input type="hidden" id="ev-empleado" name="EmpleadoId" value="@(fijarEmpleadoSesion ? Model.EmpleadoSesionId : null)" />
               <ul id="ev-empleado-list" role="listbox"
                   style="display:none;position:absolute;z-index:999;left:0;right:0;top:100%;
                          background:var(--color-surface,#fff);border:1px solid var(--color-border,#d1d5db);
@@ -246,9 +249,10 @@ else
             <label class="form-label" for="ev-tipo">Tipo de evento <span class="required" aria-hidden="true">*</span></label>
             <select class="form-select" id="ev-tipo" name="TipoEvento" required>
               <option value="">Selecciona tipo…</option>
-              <option value="Vacaciones">Vacaciones</option>
-              <option value="Incapacidad">Incapacidad</option>
-              <option value="Permiso">Permiso</option>
+              @foreach (var t in Model.TiposSolicitudActivos)
+              {
+                <option value="@t.Codigo" data-es-vacaciones="@(t.EsVacaciones ? "1" : "0")">@t.Nombre</option>
+              }
             </select>
           </div>
         </div>
@@ -447,6 +451,9 @@ else
 <script>
 (function () {
   'use strict';
+  const EMPLEADO_FIJO = @(fijarEmpleadoSesion ? "true" : "false");
+  const EMPLEADO_FIJO_ID = '@(Model.EmpleadoSesionId?.ToString() ?? "")';
+  const EMPLEADO_FIJO_TEXTO = '@(empleadoSesionTexto.Replace("'", "\\'"))';
 
   var anularEventoId = null;
   var vacSaldo = null;                      // cached balance for current employee/type
@@ -540,6 +547,7 @@ else
     }
 
     searchInput.addEventListener('input', function () {
+      if (EMPLEADO_FIJO) return;
       hiddenInput.value = '';           // clear selection when user types
       var q = this.value.trim();
       clearTimeout(debounceTimer);
@@ -548,6 +556,7 @@ else
     });
 
     searchInput.addEventListener('keydown', function (e) {
+      if (EMPLEADO_FIJO) return;
       var items = listBox.querySelectorAll('[role="option"]');
       if (!items.length) return;
       if (e.key === 'ArrowDown') {
@@ -570,13 +579,22 @@ else
     });
   }());
 
+  function esTipoVacaciones() {
+    var sel = document.getElementById('ev-tipo');
+    var opt = sel.options[sel.selectedIndex];
+    return opt && opt.dataset.esVacaciones === '1';
+  }
+
+  function codigoTipoSeleccionado() {
+    return document.getElementById('ev-tipo').value;
+  }
+
   /* ── Vacation balance ─────────────────────────────────────── */
   function updateVacBalance() {
     var empId = document.getElementById('ev-empleado').value;
-    var tipo  = document.getElementById('ev-tipo').value;
     var widget = document.getElementById('vac-balance-widget');
 
-    if (!empId || tipo !== 'Vacaciones') {
+    if (!empId || !esTipoVacaciones()) {
       widget.hidden = true;
       vacSaldo = null;
       updateDiasCalc();
@@ -606,11 +624,10 @@ else
   function updateDiasCalc() {
     var inicio = document.getElementById('ev-inicio').value;
     var fin    = document.getElementById('ev-fin').value;
-    var tipo   = document.getElementById('ev-tipo').value;
     var campo  = document.getElementById('campo-dias');
     var sinSaldo = document.getElementById('vac-sin-saldo');
 
-    if (tipo === 'Vacaciones' && inicio && fin) {
+    if (esTipoVacaciones() && inicio && fin) {
       var dias = calcDiasHabiles(inicio, fin);
       document.getElementById('ev-dias-calc').value = dias + ' día' + (dias !== 1 ? 's' : '') + ' hábiles';
       campo.hidden = false;
@@ -624,8 +641,8 @@ else
   /* ── Reset modal ──────────────────────────────────────────── */
   function resetModal() {
     document.getElementById('form-evento').reset();
-    document.getElementById('ev-empleado-search').value   = '';
-    document.getElementById('ev-empleado').value          = '';
+    document.getElementById('ev-empleado-search').value   = EMPLEADO_FIJO ? EMPLEADO_FIJO_TEXTO : '';
+    document.getElementById('ev-empleado').value          = EMPLEADO_FIJO ? EMPLEADO_FIJO_ID : '';
     document.getElementById('vac-balance-widget').hidden   = true;
     document.getElementById('campos-incapacidad').hidden   = true;
     document.getElementById('campos-permiso').hidden       = true;
@@ -640,12 +657,15 @@ else
 
   /* ── Event type toggle ────────────────────────────────────── */
   document.getElementById('ev-tipo').addEventListener('change', function () {
-    document.getElementById('campos-incapacidad').hidden = this.value !== 'Incapacidad';
-    document.getElementById('campos-permiso').hidden     = this.value !== 'Permiso';    // Ocultar sección de vacaciones si no es vacaciones
-    if (this.value !== 'Vacaciones') {
+    var codigo = codigoTipoSeleccionado();
+    document.getElementById('campos-incapacidad').hidden = codigo !== 'Incapacidad';
+    document.getElementById('campos-permiso').hidden =
+      !codigo || codigo === 'Incapacidad' || esTipoVacaciones();
+    if (!esTipoVacaciones()) {
       document.getElementById('ev-campo-dias-disfrutar').hidden = true;
       document.getElementById('campos-vacaciones-descripcion').hidden = true;
-    }    document.getElementById('doc-hint').textContent = this.value === 'Incapacidad'
+    }
+    document.getElementById('doc-hint').textContent = codigo === 'Incapacidad'
       ? 'Requerido — certificado médico (PDF, JPG o PNG, máx. 5 MB).'
       : 'Opcional — PDF, JPG o PNG (máx. 5 MB).';
     updateVacBalance();
@@ -653,6 +673,10 @@ else
 
   document.getElementById('ev-inicio').addEventListener('change', updateDiasCalc);
   document.getElementById('ev-fin').addEventListener('change', updateDiasCalc);
+  if (EMPLEADO_FIJO && EMPLEADO_FIJO_ID) {
+    document.getElementById('ev-empleado').value = EMPLEADO_FIJO_ID;
+    document.getElementById('ev-empleado-search').value = EMPLEADO_FIJO_TEXTO;
+  }
 
   /* ── Save event via AJAX ──────────────────────────────────── */
   document.getElementById('btn-guardar-evento').addEventListener('click', function () {
@@ -665,7 +689,7 @@ else
     if (!empId || !tipo || !inicio || !fin || !autorizante) {
       showToast('Completa todos los campos obligatorios.', 'error'); return;
     }
-    if (tipo === 'Vacaciones') {
+    if (esTipoVacaciones()) {
       var diasDisfrutar = parseInt(document.getElementById('ev-dias-disfrutar').value, 10);
       if (isNaN(diasDisfrutar) || diasDisfrutar < 1) {
         showToast('Ingresa los días a disfrutar (mínimo 1).', 'error'); return;
@@ -677,13 +701,18 @@ else
       if (!motivo) {
         showToast('El motivo es obligatorio para las vacaciones.', 'error'); return;
       }
+    } else if (tipo !== 'Incapacidad') {
+      var descOtro = document.getElementById('ev-descripcion').value.trim();
+      if (!descOtro) {
+        showToast('La descripción o justificación es obligatoria.', 'error'); return;
+      }
     }
 
     var form = document.getElementById('form-evento');
     var data = new FormData(form);
 
     // Para vacaciones: inyectar motivo+observaciones en el campo Descripcion
-    if (tipo === 'Vacaciones') {
+    if (esTipoVacaciones()) {
       var motiVac = document.getElementById('ev-vac-motivo').value.trim();
       var obsVac  = document.getElementById('ev-vac-observaciones').value.trim();
       var descFinal = obsVac ? motiVac + ' | Observaciones: ' + obsVac : motiVac;
@@ -836,7 +865,6 @@ else
 
 }());
 </script>
-}
 
 @functions {
     string BadgeEstado(string estado) => estado.ToLower() switch
@@ -850,11 +878,15 @@ else
         "anulado"    => "<span class=\"badge badge--anulado\"><span class=\"badge-dot\"></span>Anulado</span>",
         _            => $"<span class=\"badge\">{System.Net.WebUtility.HtmlEncode(estado)}</span>",
     };
-    string BadgeTipo(string tipo) => tipo.ToLower() switch
+    string BadgeTipo(string codigo, IReadOnlyList<GestionPersonal.Models.Entities.GestionPersonalEntities.TipoSolicitud> tipos)
     {
-        "vacaciones"  => "<span class=\"badge badge--vacaciones\">Vacaciones</span>",
-        "incapacidad" => "<span class=\"badge badge--incapacidad\">Incapacidad</span>",
-        "permiso"     => "<span class=\"badge badge--permiso\">Permiso</span>",
-        _             => $"<span class=\"badge\">{System.Net.WebUtility.HtmlEncode(tipo)}</span>",
-    };
+        var nombre = tipos.FirstOrDefault(t => t.Codigo.Equals(codigo, StringComparison.OrdinalIgnoreCase))?.Nombre ?? codigo;
+        return codigo.ToLower() switch
+        {
+            "vacaciones"  => $"<span class=\"badge badge--vacaciones\">{System.Net.WebUtility.HtmlEncode(nombre)}</span>",
+            "incapacidad" => $"<span class=\"badge badge--incapacidad\">{System.Net.WebUtility.HtmlEncode(nombre)}</span>",
+            "permiso"     => $"<span class=\"badge badge--permiso\">{System.Net.WebUtility.HtmlEncode(nombre)}</span>",
+            _             => $"<span class=\"badge\">{System.Net.WebUtility.HtmlEncode(nombre)}</span>",
+        };
+    }
 }

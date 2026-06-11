@@ -289,14 +289,14 @@
 
         <div class="form-group">
           <label asp-for="Dto.JefeInmediatoId" class="form-label">Jefe inmediato</label>
-          <select asp-for="Dto.JefeInmediatoId" class="form-select">
+          <select asp-for="Dto.JefeInmediatoId" id="jefe-inmediato-select" class="form-select">
             <option value="">Sin jefe inmediato</option>
             @foreach (var j in Model.Jefes)
             {
-              <option value="@j.Id">@j.NombreCompleto</option>
+              <option value="@j.Id" data-sede-id="@j.SedeId" data-cargo="@j.CargoNombre">@j.NombreCompleto</option>
             }
           </select>
-          <span class="form-hint">Solo empleados con rol Jefe activos en el sistema.</span>
+          <span class="form-hint">Se muestra el nombre del jefe según jerarquía por cargo y sede.</span>
         </div>
 
         <div id="seccion-fecha-ingreso">
@@ -361,9 +361,10 @@
 
         <div class="form-group">
           <label asp-for="Dto.FechaFinContrato" class="form-label">
-            Fin de contrato <span class="required" aria-hidden="true">*</span>
+            Fin de contrato
           </label>
           <input asp-for="Dto.FechaFinContrato" type="date" class="form-input" />
+          <p class="form-hint">Si no la indicas, se asignará automáticamente 6 meses después de la fecha de ingreso.</p>
           <span asp-validation-for="Dto.FechaFinContrato" class="form-error"></span>
         </div>
 
@@ -447,6 +448,78 @@
 
     sel.addEventListener('change', toggle);
     toggle();
+})();
+
+(function () {
+    const sedeSel = document.getElementById('Dto_SedeId');
+    const cargoSel = document.getElementById('Dto_CargoId');
+    const jefeSel = document.getElementById('jefe-inmediato-select');
+    if (!sedeSel || !cargoSel || !jefeSel) return;
+
+    function esCargoDirector(cargo) {
+        const c = (cargo || '').toLowerCase();
+        return /\bdirector\b/.test(c) && !c.includes('auxiliar');
+    }
+    function esCargoRegente(cargo) {
+        const c = (cargo || '').toLowerCase();
+        return /\bregente\b/.test(c) && !c.includes('auxiliar');
+    }
+    function esCargoAnalista(cargo) {
+        const c = (cargo || '').toLowerCase();
+        return /\banalista\b/.test(c) && /farmac/.test(c);
+    }
+    function cargoSeleccionado() {
+        const o = cargoSel.options[cargoSel.selectedIndex];
+        return o ? o.text : '';
+    }
+
+    const opcionesOriginales = Array.from(jefeSel.options).map(o => ({
+        value: o.value,
+        text: o.text,
+        sedeId: o.dataset.sedeId || '',
+        cargo: o.dataset.cargo || ''
+    }));
+
+    function aplicarFiltroJefes() {
+        const sedeId = sedeSel.value || '';
+        const actual = jefeSel.value;
+        const base = opcionesOriginales.filter(o => !o.value); // "Sin jefe inmediato"
+        const candidatos = opcionesOriginales.filter(o => o.value && o.sedeId === sedeId);
+        const analistas = opcionesOriginales.filter(o => o.value && esCargoAnalista(o.cargo));
+        const directores = candidatos.filter(o => esCargoDirector(o.cargo));
+        const regentes = candidatos.filter(o => esCargoRegente(o.cargo));
+        const cargoEmp = cargoSeleccionado();
+
+        let jerarquia = [];
+        if (esCargoAnalista(cargoEmp)) {
+            jerarquia = [];
+        } else if (esCargoDirector(cargoEmp)) {
+            jerarquia = analistas;
+        } else if (esCargoRegente(cargoEmp)) {
+            jerarquia = directores.length ? directores : analistas;
+        } else {
+            jerarquia = directores.length ? directores : (regentes.length ? regentes : analistas);
+        }
+
+        const listaFinal = esCargoAnalista(cargoEmp) ? base : jerarquia;
+
+        jefeSel.innerHTML = '';
+        for (const item of listaFinal) {
+            const opt = document.createElement('option');
+            opt.value = item.value;
+            opt.text = item.text;
+            if (item.sedeId) opt.dataset.sedeId = item.sedeId;
+            if (item.cargo) opt.dataset.cargo = item.cargo;
+            jefeSel.appendChild(opt);
+        }
+
+        const existeActual = listaFinal.some(o => o.value === actual);
+        jefeSel.value = existeActual ? actual : '';
+    }
+
+    sedeSel.addEventListener('change', aplicarFiltroJefes);
+    cargoSel.addEventListener('change', aplicarFiltroJefes);
+    aplicarFiltroJefes();
 })();
 </script>
 }

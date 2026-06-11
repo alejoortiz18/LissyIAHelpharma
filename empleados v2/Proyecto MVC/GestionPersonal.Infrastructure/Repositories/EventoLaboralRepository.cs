@@ -52,10 +52,10 @@ public class EventoLaboralRepository : IEventoLaboralRepository
             .ToListAsync(ct);
 
     public async Task<IReadOnlyList<EventoLaboral>> ObtenerPorEmpleadoYTipoAsync(
-        int empleadoId, TipoEvento tipo, CancellationToken ct = default)
+        int empleadoId, string tipoCodigo, CancellationToken ct = default)
         => await _context.EventosLaborales
             .Where(e => e.EmpleadoId == empleadoId
-                     && e.TipoEvento == tipo
+                     && e.TipoEvento == tipoCodigo
                      && e.Estado != EstadoEvento.Anulado)
             .AsNoTracking()
             .ToListAsync(ct);

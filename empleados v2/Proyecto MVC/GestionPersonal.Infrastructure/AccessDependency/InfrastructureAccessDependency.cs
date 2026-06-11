@@ -26,6 +26,7 @@ public static class InfrastructureAccessDependency
         services.AddScoped<IHoraExtraRepository, HoraExtraRepository>();
         services.AddScoped<ITurnoRepository, TurnoRepository>();
         services.AddScoped<ICatalogoRepository, CatalogoRepository>();
+        services.AddScoped<IRolSistemaRepository, RolSistemaRepository>();
         services.AddScoped<IHistorialDesvinculacionRepository, HistorialDesvinculacionRepository>();
         services.AddScoped<INotificacionRepository, NotificacionRepository>();
 
