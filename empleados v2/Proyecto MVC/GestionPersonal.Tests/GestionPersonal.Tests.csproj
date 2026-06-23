@@ -22,6 +22,7 @@
     <ProjectReference Include="..\GestionPersonal.Models\GestionPersonal.Models.csproj" />
     <ProjectReference Include="..\GestionPersonal.Constants\GestionPersonal.Constants.csproj" />
     <ProjectReference Include="..\GestionPersonal.Helpers\GestionPersonal.Helpers.csproj" />
+    <ProjectReference Include="..\GestionPersonal.Web\GestionPersonal.Web.csproj" />
   </ItemGroup>
 
   <ItemGroup>

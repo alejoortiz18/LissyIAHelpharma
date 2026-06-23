@@ -58,8 +58,8 @@ public class EmpleadoController : Controller
         }
 
         IReadOnlyList<EmpleadoListaDto> todos;
-        // Administrador, Analista y DirectorTecnico: acceso total sin filtro de sede
-        if (rol == RolUsuario.Administrador || rol == RolUsuario.Analista || rol == RolUsuario.DirectorTecnico)
+        // Analista y Administrador: todo el personal. Demás roles (incl. DirectorTecnico): solo su sede.
+        if (EmpleadoAccesoHelper.TieneAlcanceMultiSede(rol))
             todos = await _empleadoService.ObtenerTodosAsync();
         else
             todos = await _empleadoService.ObtenerPorSedeAsync(miSede);
@@ -147,6 +147,10 @@ public class EmpleadoController : Controller
             return View("Nuevo", refreshed);
         }
 
+        var miSede = SesionHelper.GetSedeId(User);
+        if (rol == RolUsuario.DirectorTecnico && vm.Dto.SedeId != miSede)
+            return Forbid();
+
         var usuarioId = SesionHelper.GetUsuarioId(User);
 
         vm.Dto.UrlBaseRestablecimiento = Url.Action(
@@ -169,7 +173,8 @@ public class EmpleadoController : Controller
     [HttpGet]
     public async Task<IActionResult> Editar(int id)
     {
-        var rol = SesionHelper.GetRol(User);
+        var rol    = SesionHelper.GetRol(User);
+        var miSede = SesionHelper.GetSedeId(User);
         if (rol == RolUsuario.Operario)
             return Forbid();
 
@@ -189,6 +194,9 @@ public class EmpleadoController : Controller
         if (!resultadoEditar.Exito || resultadoEditar.Datos is null)
             return NotFound();
 
+        if (!EmpleadoAccesoHelper.PuedeAccederEmpleado(rol, miSede, resultadoEditar.Datos.SedeId))
+            return Forbid();
+
         var editarDto = _mapper.Map<EditarEmpleadoDto>(resultadoEditar.Datos);
         var vm = await ConstruirEditarVm(editarDto);
         ViewData["Title"] = "Editar empleado";
@@ -203,7 +211,8 @@ public class EmpleadoController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Actualizar(EditarEmpleadoViewModel vm)
     {
-        var rol = SesionHelper.GetRol(User);
+        var rol    = SesionHelper.GetRol(User);
+        var miSede = SesionHelper.GetSedeId(User);
         if (rol == RolUsuario.Operario)
             return Forbid();
 
@@ -218,6 +227,15 @@ public class EmpleadoController : Controller
             if (!esPropio && !esSubordinado)
                 return Forbid();
         }
+
+        var empleadoActual = await _empleadoService.ObtenerPerfilAsync(vm.Dto.Id);
+        if (!empleadoActual.Exito || empleadoActual.Datos is null)
+            return NotFound();
+        if (!EmpleadoAccesoHelper.PuedeAccederEmpleado(rol, miSede, empleadoActual.Datos.SedeId))
+            return Forbid();
+
+        if (rol == RolUsuario.DirectorTecnico && vm.Dto.SedeId != miSede)
+            return Forbid();
 
         if (!ModelState.IsValid)
         {
@@ -269,6 +287,9 @@ public class EmpleadoController : Controller
         if (!empleadoResult.Exito || empleadoResult.Datos is null)
             return NotFound();
         var empleado = empleadoResult.Datos;
+
+        if (!EmpleadoAccesoHelper.PuedeAccederEmpleado(rol, miSede, empleado.SedeId))
+            return Forbid();
 
         // El DTO del empleado incluye el nombre del turno actual si existe
         // Para el detalle del turno (detalles por día), buscamos en las plantillas activas del jefe en sesión
@@ -423,10 +444,14 @@ public class EmpleadoController : Controller
             && rolCheck != RolUsuario.Analista)
             return Forbid();
 
+        var miSede = SesionHelper.GetSedeId(User);
         var empResult = await _empleadoService.ObtenerPerfilAsync(id);
         if (!empResult.Exito || empResult.Datos is null)
             return NotFound();
         var empleado = empResult.Datos;
+
+        if (!EmpleadoAccesoHelper.PuedeAccederEmpleado(rolCheck, miSede, empleado.SedeId))
+            return Forbid();
 
         var vm = new DesvincularEmpleadoViewModel
         {
@@ -460,6 +485,13 @@ public class EmpleadoController : Controller
             return RedirectToAction("Perfil", new { id = vm.Dto.EmpleadoId });
         }
 
+        var miSede = SesionHelper.GetSedeId(User);
+        var empObj = await _empleadoService.ObtenerPerfilAsync(vm.Dto.EmpleadoId);
+        if (!empObj.Exito || empObj.Datos is null)
+            return NotFound();
+        if (!EmpleadoAccesoHelper.PuedeAccederEmpleado(rol, miSede, empObj.Datos.SedeId))
+            return Forbid();
+
         var usuarioId = SesionHelper.GetUsuarioId(User);
         var resultado = await _empleadoService.DesvincularAsync(vm.Dto, usuarioId);
 
@@ -477,10 +509,18 @@ public class EmpleadoController : Controller
 
     private async Task<NuevoEmpleadoViewModel> ConstruirNuevoVm(CrearEmpleadoDto dto)
     {
-        var sedes     = await _catalogoService.ObtenerSedesActivasAsync();
+        var rol    = SesionHelper.GetRol(User);
+        var miSede = SesionHelper.GetSedeId(User);
+
+        var sedes = await _catalogoService.ObtenerSedesActivasAsync();
+        if (rol == RolUsuario.DirectorTecnico)
+            sedes = sedes.Where(s => s.Id == miSede).ToList();
+
         var cargos    = await _catalogoService.ObtenerCargosActivosAsync();
         var empresas  = await _catalogoService.ObtenerEmpresasTemporalesActivasAsync();
-        var todosEmps = await _empleadoService.ObtenerTodosAsync();
+        var todosEmps = EmpleadoAccesoHelper.TieneAlcanceMultiSede(rol)
+            ? await _empleadoService.ObtenerTodosAsync()
+            : await _empleadoService.ObtenerPorSedeAsync(miSede);
         var jefes     = todosEmps.Where(e =>
                                 e.Estado == "Activo"
                              && CargoJefeSede.PuedeSerJefePotencial(e.CargoNombre)).ToList();
@@ -496,11 +536,19 @@ public class EmpleadoController : Controller
 
     private async Task<EditarEmpleadoViewModel> ConstruirEditarVm(EditarEmpleadoDto dto)
     {
-        var sedes     = await _catalogoService.ObtenerSedesParaSelectAsync(dto.SedeId);
+        var rol    = SesionHelper.GetRol(User);
+        var miSede = SesionHelper.GetSedeId(User);
+
+        var sedes = await _catalogoService.ObtenerSedesParaSelectAsync(dto.SedeId);
+        if (rol == RolUsuario.DirectorTecnico)
+            sedes = sedes.Where(s => s.Id == miSede).ToList();
+
         var cargos    = await _catalogoService.ObtenerCargosParaSelectAsync(dto.CargoId);
         var empresas  = await _catalogoService.ObtenerEmpresasTemporalesParaSelectAsync(dto.EmpresaTemporalId);
         var roles     = await _rolSistemaService.ObtenerRolesParaSelectAsync(dto.Rol);
-        var todosEmps = await _empleadoService.ObtenerTodosAsync();
+        var todosEmps = EmpleadoAccesoHelper.TieneAlcanceMultiSede(rol)
+            ? await _empleadoService.ObtenerTodosAsync()
+            : await _empleadoService.ObtenerPorSedeAsync(miSede);
         var jefes     = todosEmps.Where(e =>
                                 e.Estado == "Activo"
                              && CargoJefeSede.PuedeSerJefePotencial(e.CargoNombre)).ToList();
